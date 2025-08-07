@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Malla a Filas Limpia (con horas correctas)</title>
+  <title>Malla a Filas sin Créditos, con Prerrequisito</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9;}
@@ -21,11 +21,13 @@
 </head>
 <body>
   <div class="container">
-    <h2>Extrae materias y horas teóricas, prácticas, autónomas</h2>
+    <h2>Malla a Filas (Sin Créditos, Con Prerrequisito editable)</h2>
     <div class="info">
       <b>1.</b> Selecciona <b>Carrera</b> y <b>Año de Malla</b>.<br>
       <b>2.</b> Sube tu malla curricular en Excel.<br>
-      <b>3.</b> El sistema mostrará solo materias reales, una por fila, y las horas teóricas/prácticas/autónomas extraídas correctamente.
+      <b>3.</b> El sistema muestra materias reales, con código y horas.<br>
+      <b>4.</b> Descarga y completa PRERREQUISITO según las flechas de tu malla.<br>
+      <b>Nota:</b> Las flechas NO pueden ser leídas automáticamente de Excel. Llena los prerrequisitos con el código de la materia previa según el diagrama.
     </div>
     <label>Carrera:
       <select id="selectCarrera">
@@ -47,19 +49,18 @@
 <script>
 let estructura = [];
 const CABECERAS = [
-  "CARRERA", "AÑO", "CICLO", "MATERIA", "CÓDIGO", "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", "CRÉDITOS", "PRERREQUISITO"
+  "CARRERA", "AÑO", "CICLO", "MATERIA", "CÓDIGO", "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", "PRERREQUISITO"
 ];
 
 function codigoValido(codigo) {
   if(!codigo) return false;
-  // Ejemplo: PP-01-CONT1, CH-01-MAT01, FT-01-ADM1, etc.
-  return !!codigo.match(/^[A-Z]{2,3}-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-/);
+  return !!codigo.match(/^[A-Z]{2,3}-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-/) || !!codigo.match(/^[A-Z]{2,3}-\d{2,}/);
 }
 
 function materiaValida(nombre, codigo) {
   if(!nombre || !codigo) return false;
   let txt = nombre.toString().toLowerCase();
-  if(txt.includes("total") || txt.includes("componente") || txt.includes("carga horaria") || txt.includes("requisito") || txt.includes("práctica") || txt.includes("num. asignaturas")) return false;
+  if(txt.includes("total") || txt.includes("componente") || txt.includes("carga horaria") || txt.includes("requisito") || txt.includes("práctica") || txt.includes("num. asignaturas") || txt.includes("servicio comunitario") || txt.includes("prácticas laboral")) return false;
   return codigoValido(codigo);
 }
 
@@ -80,19 +81,13 @@ document.getElementById('fileInput').addEventListener('change', function(e){
       let ciclos = json[0] || [];
       for(let col=0; col<ciclos.length; col++){
         let ciclo = (ciclos[col] || "").toString().trim();
-        for(let row=1; row<json.length-1; row+=4){
+        for(let row=1; row<json.length-1; row++){
           let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
           let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
-          // Las horas están en la fila siguiente
-          let horas = (json[row+2] && typeof json[row+2][col] !== "undefined") ? json[row+2][col].toString().trim() : "";
-          let ht = "", hp = "", ha = "";
-          if(horas && horas.match(/^\d+ \d+ \d+$/)) {
-            let arr = horas.split(" ");
-            ht = arr[0] || "";
-            hp = arr[1] || "";
-            ha = arr[2] || "";
-          }
-          let creditos = (json[row+3] && !isNaN(json[row+3][col])) ? json[row+3][col].toString().trim() : "";
+          // Horas están a la derecha del código
+          let ht = (json[row+1] && typeof json[row+1][col+1] !== "undefined") ? json[row+1][col+1] : "";
+          let hp = (json[row+1] && typeof json[row+1][col+2] !== "undefined") ? json[row+1][col+2] : "";
+          let ha = (json[row+1] && typeof json[row+1][col+3] !== "undefined") ? json[row+1][col+3] : "";
           if(materiaValida(nombre, codigo)){
             estructura.push({
               "CARRERA": carrera,
@@ -103,7 +98,6 @@ document.getElementById('fileInput').addEventListener('change', function(e){
               "HORAS TEÓRICAS": ht,
               "HORAS PRÁCTICAS": hp,
               "HORAS AUTÓNOMAS": ha,
-              "CRÉDITOS": creditos,
               "PRERREQUISITO": ""
             });
           }
@@ -131,8 +125,8 @@ function descargarExcel(){
   });
   let ws = XLSX.utils.aoa_to_sheet(data);
   let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Malla Filas Limpia");
-  XLSX.writeFile(wb, "malla_filas_limpia.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, "Malla Sin Creditos");
+  XLSX.writeFile(wb, "malla_sin_creditos.xlsx");
 }
 </script>
 </body>
