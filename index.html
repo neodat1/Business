@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Planificación Automática (Materias PP-)</title>
+  <title>Estructurador de Malla (Planificación Académica)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9;}
-    .container { background: white; max-width: 1100px; margin: 32px auto; border-radius: 12px; box-shadow: 0 0 8px #bbb; padding: 32px;}
+    .container { background: white; max-width: 1000px; margin: 32px auto; border-radius: 12px; box-shadow: 0 0 8px #bbb; padding: 32px;}
     h2 { color: #932432; }
     table { width: 100%; border-collapse: collapse; margin-top: 18px;}
     th, td { border: 1px solid #ccc; padding: 8px; font-size: 15px;}
@@ -19,18 +19,18 @@
 </head>
 <body>
   <div class="container">
-    <h2>Planificación Automática: Materias oficiales (PP-) con Horas</h2>
+    <h2>Estructurador de Malla para Planificación Académica</h2>
     <div class="info">
-      1. Sube todas tus mallas curriculares reales (Excel).<br>
-      2. El sistema consolida solo las materias cuyo código inicia con <b>PP-</b>, muestra horas, carrera y créditos.<br>
-      3. Puedes descargar el resultado para llenar tu planificación.
+      <b>1.</b> Sube tu malla curricular (Excel real, por ejemplo <b>administracion2019.xlsx</b>).<br>
+      <b>2.</b> El sistema extraerá solo materias oficiales (código <b>PP-</b>), mostrando nombre, código, carrera, horas y créditos (si hay).<br>
+      <b>3.</b> Puedes descargar la tabla para tu planificación.
     </div>
-    <input type="file" id="fileInput" multiple accept=".xlsx" class="btn">
-    <button onclick="descargarExcel()" class="btn">Descargar Consolidado</button>
+    <input type="file" id="fileInput" accept=".xlsx" class="btn">
+    <button onclick="descargarExcel()" class="btn">Descargar Estructura</button>
     <div id="output"></div>
   </div>
 <script>
-let materiasPP = [];
+let estructura = [];
 
 function limpiarTexto(str) {
   return (str||"").toString()
@@ -41,61 +41,59 @@ function limpiarTexto(str) {
 }
 
 document.getElementById('fileInput').addEventListener('change', function(e){
-  materiasPP = [];
+  estructura = [];
   document.getElementById('output').innerHTML = "Procesando...";
-  const files = e.target.files;
-  let filesProcessed = 0;
-  for (let file of files) {
-    const reader = new FileReader();
-    reader.onload = function(evt){
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      let carrera = file.name.replace(/\d{4}.*/i,"").replace(/[\W_]+/g," ").trim();
-      if (carrera==="") carrera = file.name.split('.')[0];
-      workbook.SheetNames.forEach(sheetName => {
-        const sheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-        // Busca materias oficiales con código "PP-"
-        for(let i=0; i<json.length-2; i++){
-          let filaNombre = json[i];
-          let filaCodigo = json[i+1];
-          let filaHoras = json[i+2];
-          for(let col=0; col<filaNombre.length; col++){
-            let nombre = (filaNombre[col]||"").toString().trim();
-            let codigo = (filaCodigo && filaCodigo[col]) ? filaCodigo[col].toString().trim() : "";
-            let horas = (filaHoras && !isNaN(filaHoras[col])) ? filaHoras[col].toString().trim() : "";
-            if(
-              codigo.startsWith("PP-") && 
-              nombre.length>2 && 
-              !limpiarTexto(nombre).includes("total") && 
-              !limpiarTexto(nombre).includes("componente")
-            ) {
-              materiasPP.push({
-                materia: nombre,
-                codigo: codigo,
-                carrera: carrera,
-                horas: horas
-              });
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    const data = new Uint8Array(evt.target.result);
+    const workbook = XLSX.read(data, {type: 'array'});
+    let carrera = file.name.replace(/\d{4}.*/i,"").replace(/[\W_]+/g," ").trim();
+    if (carrera==="") carrera = file.name.split('.')[0];
+    workbook.SheetNames.forEach(sheetName => {
+      const sheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(sheet, {header:1});
+      // Extrae periodo/semestre
+      let periodos = json[0] || [];
+      for(let col=0; col<periodos.length; col++){
+        let periodo = (periodos[col] || "").toString().trim();
+        // Busca materias PP-
+        for(let row=1; row<json.length-2; row+=3){
+          let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
+          let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
+          let horas = (json[row+2] && !isNaN(json[row+2][col])) ? json[row+2][col].toString().trim() : "";
+          let creditos = "";
+          // Busca créditos si existe alguna fila en el bloque de la columna
+          for(let k=row; k<row+4; k++){
+            if(json[k] && json[k][col] && limpiarTexto(json[k][col]).includes("crédito")) {
+              creditos = (json[k+1] && json[k+1][col]) ? json[k+1][col].toString().trim() : "";
             }
           }
+          if(codigo.startsWith("PP-") && nombre.length > 2){
+            estructura.push({
+              periodo, materia: nombre, codigo, carrera, horas, creditos
+            });
+          }
         }
-      });
-      filesProcessed++;
-      if(filesProcessed === files.length) renderTabla();
-    };
-    reader.readAsArrayBuffer(file);
-  }
+      }
+    });
+    renderTabla();
+  };
+  reader.readAsArrayBuffer(file);
 });
 
 function renderTabla(){
   let html = `<table>
-    <tr><th>Materia</th><th>Código</th><th>Carrera</th><th>Horas</th></tr>`;
-  materiasPP.forEach(m=>{
+    <tr><th>Periodo</th><th>Materia</th><th>Código</th><th>Carrera</th><th>Horas</th><th>Créditos</th></tr>`;
+  estructura.forEach(m=>{
     html += `<tr>
+      <td>${m.periodo}</td>
       <td>${m.materia}</td>
       <td>${m.codigo}</td>
       <td>${m.carrera}</td>
       <td>${m.horas}</td>
+      <td>${m.creditos}</td>
     </tr>`;
   });
   html += `</table>`;
@@ -103,14 +101,14 @@ function renderTabla(){
 }
 
 function descargarExcel(){
-  let data = [["Materia","Código","Carrera","Horas"]];
-  materiasPP.forEach(m=>{
-    data.push([m.materia, m.codigo, m.carrera, m.horas]);
+  let data = [["Periodo","Materia","Código","Carrera","Horas","Créditos"]];
+  estructura.forEach(m=>{
+    data.push([m.periodo, m.materia, m.codigo, m.carrera, m.horas, m.creditos]);
   });
   let ws = XLSX.utils.aoa_to_sheet(data);
   let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Materias PP Consolidado");
-  XLSX.writeFile(wb, "materias_pp_consolidado.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, "Estructura Malla");
+  XLSX.writeFile(wb, "estructura_malla.xlsx");
 }
 </script>
 </body>
