@@ -2,16 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Comparador de Materias por Carrera</title>
+  <title>Consolidado de Materias, Códigos, Carreras y Créditos</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 20px;}
-    .container { background: white; max-width: 900px; margin: auto; border-radius: 14px; box-shadow: 0 0 8px #bbb; padding: 32px;}
+    body { font-family: Arial, sans-serif; margin: 0; background: #f9f9f9; }
+    .container { background: white; max-width: 1100px; margin: 32px auto; border-radius: 12px; box-shadow: 0 0 8px #bbb; padding: 32px;}
     h2 { color: #932432; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px;}
-    th, td { border: 1px solid #ccc; padding: 8px;}
-    th { background: #932432; color: white;}
-    tr:nth-child(even) { background: #f7f7f7;}
+    table { width: 100%; border-collapse: collapse; margin-top: 24px;}
+    th, td { border: 1px solid #ccc; padding: 8px; font-size: 15px;}
+    th { background: #932432; color: #fff;}
+    tr:nth-child(even) { background: #f4f4f4;}
     .btn { padding: 8px 18px; margin: 10px 5px 0 0; border: none; border-radius: 7px; background: #35558a; color: white; cursor: pointer;}
     .btn:hover { background: #25416b;}
     .info { background: #e6ecf6; padding: 10px; border-radius: 8px; margin-bottom: 16px;}
@@ -19,18 +19,19 @@
 </head>
 <body>
   <div class="container">
-    <h2>Comparador de Materias por Carrera</h2>
+    <h2>Consolidado de Materias, Códigos, Carreras y Créditos</h2>
     <div class="info">
-      <b>1.</b> Sube <b>todas las mallas curriculares</b> (archivos Excel reales, ejemplo: administracion2019.xlsx, marketing2023.xlsx, etc.)<br>
-      <b>2.</b> Se mostrará la lista de materias consolidadas, agrupadas por nombre, mostrando los diferentes códigos y carreras.<br>
-      <b>3.</b> Descarga el archivo listo para tus formatos.<br>
+      <b>1.</b> Sube <b>todas tus mallas reales</b> (Excel).<br>
+      <b>2.</b> El sistema consolida cada materia, sus códigos, carreras y créditos.<br>
+      <b>3.</b> Si una materia está en varias carreras con diferente código/crédito, se mostrarán todos.<br>
+      <b>4.</b> Puedes descargar la tabla para llenar tus formatos.
     </div>
     <input type="file" id="fileInput" multiple accept=".xlsx" class="btn">
     <button onclick="descargarExcel()" class="btn">Descargar Consolidado</button>
     <div id="output"></div>
   </div>
 <script>
-let consolidadoMaterias = {};
+let materiasConsolidadas = {};
 
 function limpiarTexto(str) {
   return (str||"").toString()
@@ -41,7 +42,7 @@ function limpiarTexto(str) {
 }
 
 document.getElementById('fileInput').addEventListener('change', function(e){
-  consolidadoMaterias = {};
+  materiasConsolidadas = {};
   document.getElementById('output').innerHTML = "Procesando...";
   const files = e.target.files;
   let filesProcessed = 0;
@@ -50,36 +51,42 @@ document.getElementById('fileInput').addEventListener('change', function(e){
     reader.onload = function(evt){
       const data = new Uint8Array(evt.target.result);
       const workbook = XLSX.read(data, {type: 'array'});
-      // Detectar carrera por nombre de archivo
+      // Carrera del nombre del archivo:
       let carrera = file.name.replace(/\d{4}.*/i,"").replace(/[\W_]+/g," ").trim();
       if (carrera==="") carrera = file.name.split('.')[0];
-      // Revisa todas las hojas
+      // Buscar posibles hojas de malla:
       workbook.SheetNames.forEach(sheetName => {
         const sheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-        // Busca fila de encabezados (materia, asignatura, código, creditos)
-        let idxNombre = -1, idxCodigo = -1;
-        let encabezadoIdx = 0;
-        for(let i=0; i<Math.min(4,json.length); i++) {
-          let row = json[i].map(x => limpiarTexto(x));
-          idxNombre = row.findIndex(x => x.includes('materia') || x.includes('asignatura'));
-          idxCodigo = row.findIndex(x => x.includes('codigo') || x.includes('código'));
-          if(idxNombre!==-1) { encabezadoIdx = i; break;}
-        }
-        if(idxNombre===-1) return; // No encontró encabezado útil
-        // Lee las filas
-        for(let i=encabezadoIdx+1; i<json.length; i++){
-          let row = json[i];
-          let nombre = row[idxNombre];
-          let codigo = (idxCodigo!==-1) ? row[idxCodigo] : "";
-          if(!nombre || limpiarTexto(nombre).includes("total") || limpiarTexto(nombre).includes("componente")) continue;
-          let key = limpiarTexto(nombre);
-          if(!consolidadoMaterias[key]) consolidadoMaterias[key] = [];
-          consolidadoMaterias[key].push({
-            materia: nombre,
-            codigo: codigo,
-            carrera: carrera
-          });
+        // Buscar filas de materias según estructura típica de mallas (nombre, código y créditos)
+        for(let i=0; i<json.length-1; i++){
+          let fila = json[i], sigFila = json[i+1], filaCred = json[i+2];
+          for(let col=0; col<fila.length; col++){
+            let nombre = (fila[col]||"").toString().trim();
+            let nombreLimpio = limpiarTexto(nombre);
+            let codigo = (sigFila && sigFila[col]) ? sigFila[col].toString().trim() : "";
+            let creditos = (filaCred && !isNaN(filaCred[col])) ? filaCred[col].toString().trim() : "";
+            if(
+              nombre.length > 3 && 
+              !nombreLimpio.includes("total") && 
+              !nombreLimpio.includes("componente") && 
+              !nombreLimpio.includes("carga horaria") &&
+              !nombreLimpio.includes("requisito") &&
+              !nombreLimpio.includes("asignaturas")
+            ){
+              // Código debe tener al menos un guion o mayúsculas típicas (ej: CH-01-MAT01)
+              if(codigo.match(/[A-Z]{2,}[-]/) || codigo.match(/[A-Z]{2,}/) || codigo.length>4) {
+                let key = nombreLimpio;
+                if(!materiasConsolidadas[key]) materiasConsolidadas[key] = [];
+                materiasConsolidadas[key].push({
+                  materia: nombre,
+                  codigo: codigo,
+                  carrera: carrera,
+                  creditos: creditos
+                });
+              }
+            }
+          }
         }
       });
       filesProcessed++;
@@ -91,16 +98,17 @@ document.getElementById('fileInput').addEventListener('change', function(e){
 
 function renderTabla(){
   let html = `<table>
-    <tr><th>Materia</th><th>Código(s)</th><th>Carrera(s)</th></tr>`;
-  Object.values(consolidadoMaterias).forEach(arr=>{
-    // agrupa por materia, muestra todos los códigos/carreras distintos
+    <tr><th>Materia</th><th>Códigos</th><th>Carreras</th><th>Créditos</th></tr>`;
+  Object.values(materiasConsolidadas).forEach(arr=>{
     let materia = arr[0].materia;
     let codigos = [...new Set(arr.map(x=>x.codigo).filter(x=>x))].join(", ");
     let carreras = [...new Set(arr.map(x=>x.carrera))].join(", ");
+    let creditos = [...new Set(arr.map(x=>x.creditos).filter(x=>x))].join(", ");
     html += `<tr>
       <td>${materia}</td>
       <td>${codigos}</td>
       <td>${carreras}</td>
+      <td>${creditos}</td>
     </tr>`;
   });
   html += `</table>`;
@@ -108,12 +116,13 @@ function renderTabla(){
 }
 
 function descargarExcel(){
-  let data = [["Materia","Códigos","Carreras"]];
-  Object.values(consolidadoMaterias).forEach(arr=>{
+  let data = [["Materia","Códigos","Carreras","Créditos"]];
+  Object.values(materiasConsolidadas).forEach(arr=>{
     let materia = arr[0].materia;
     let codigos = [...new Set(arr.map(x=>x.codigo).filter(x=>x))].join(", ");
     let carreras = [...new Set(arr.map(x=>x.carrera))].join(", ");
-    data.push([materia, codigos, carreras]);
+    let creditos = [...new Set(arr.map(x=>x.creditos).filter(x=>x))].join(", ");
+    data.push([materia, codigos, carreras, creditos]);
   });
   let ws = XLSX.utils.aoa_to_sheet(data);
   let wb = XLSX.utils.book_new();
