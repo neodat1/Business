@@ -2,41 +2,47 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Llenador automático de Planificación</title>
+  <title>Planificación Automática (Materias PP-)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9; }
-    .container { background: white; max-width: 1000px; margin: 32px auto; border-radius: 12px; box-shadow: 0 0 8px #bbb; padding: 32px;}
+    body { font-family: Arial, sans-serif; background: #f9f9f9;}
+    .container { background: white; max-width: 1100px; margin: 32px auto; border-radius: 12px; box-shadow: 0 0 8px #bbb; padding: 32px;}
     h2 { color: #932432; }
+    table { width: 100%; border-collapse: collapse; margin-top: 18px;}
+    th, td { border: 1px solid #ccc; padding: 8px; font-size: 15px;}
+    th { background: #932432; color: #fff;}
+    tr:nth-child(even) { background: #f4f4f4;}
     .btn { padding: 8px 18px; margin: 10px 5px 0 0; border: none; border-radius: 7px; background: #35558a; color: white; cursor: pointer;}
     .btn:hover { background: #25416b;}
     .info { background: #e6ecf6; padding: 10px; border-radius: 8px; margin-bottom: 16px;}
-    table { width: 100%; border-collapse: collapse; margin-top: 18px;}
-    th, td { border: 1px solid #ccc; padding: 6px;}
-    th { background: #932432; color: #fff;}
-    tr:nth-child(even) { background: #f4f4f4;}
   </style>
 </head>
 <body>
-<div class="container">
-  <h2>Llenador automático de Planificación (Docentes/Estudiantes)</h2>
-  <div class="info">
-    <b>1.</b> Sube todas las <b>mallas curriculares</b> (Excel).<br>
-    <b>2.</b> Sube tu archivo de <b>planificación (docentes o estudiantes)</b>.<br>
-    <b>3.</b> El sistema llenará automáticamente la plantilla y podrás descargar el archivo completo.
+  <div class="container">
+    <h2>Planificación Automática: Materias oficiales (PP-) con Horas</h2>
+    <div class="info">
+      1. Sube todas tus mallas curriculares reales (Excel).<br>
+      2. El sistema consolida solo las materias cuyo código inicia con <b>PP-</b>, muestra horas, carrera y créditos.<br>
+      3. Puedes descargar el resultado para llenar tu planificación.
+    </div>
+    <input type="file" id="fileInput" multiple accept=".xlsx" class="btn">
+    <button onclick="descargarExcel()" class="btn">Descargar Consolidado</button>
+    <div id="output"></div>
   </div>
-  <input type="file" id="fileMallas" multiple accept=".xlsx" class="btn">
-  <input type="file" id="filePlanificacion" accept=".xlsx" class="btn">
-  <button onclick="descargarPlanificacion()" class="btn">Descargar Planificación Llenada</button>
-  <div id="output"></div>
-</div>
 <script>
-let materias = []; // {materia, codigo, carrera, creditos}
-let plantillaPlan = null, planHeaders = [], planOriginal = null;
+let materiasPP = [];
 
-// LECTURA DE MALLAS
-document.getElementById('fileMallas').addEventListener('change', function(e){
-  materias = [];
+function limpiarTexto(str) {
+  return (str||"").toString()
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e){
+  materiasPP = [];
+  document.getElementById('output').innerHTML = "Procesando...";
   const files = e.target.files;
   let filesProcessed = 0;
   for (let file of files) {
@@ -49,78 +55,62 @@ document.getElementById('fileMallas').addEventListener('change', function(e){
       workbook.SheetNames.forEach(sheetName => {
         const sheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-        for(let i=0; i<json.length-1; i++){
-          let fila = json[i], sigFila = json[i+1], filaCred = json[i+2];
-          for(let col=0; col<fila.length; col++){
-            let nombre = (fila[col]||"").toString().trim();
-            let codigo = (sigFila && sigFila[col]) ? sigFila[col].toString().trim() : "";
-            let creditos = (filaCred && !isNaN(filaCred[col])) ? filaCred[col].toString().trim() : "";
-            let nombreLimpio = nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+        // Busca materias oficiales con código "PP-"
+        for(let i=0; i<json.length-2; i++){
+          let filaNombre = json[i];
+          let filaCodigo = json[i+1];
+          let filaHoras = json[i+2];
+          for(let col=0; col<filaNombre.length; col++){
+            let nombre = (filaNombre[col]||"").toString().trim();
+            let codigo = (filaCodigo && filaCodigo[col]) ? filaCodigo[col].toString().trim() : "";
+            let horas = (filaHoras && !isNaN(filaHoras[col])) ? filaHoras[col].toString().trim() : "";
             if(
-              nombre.length > 3 &&
-              !nombreLimpio.includes("total") &&
-              !nombreLimpio.includes("componente") &&
-              !nombreLimpio.includes("carga horaria") &&
-              !nombreLimpio.includes("requisito") &&
-              !nombreLimpio.includes("asignaturas")
-            ){
-              if(codigo.match(/[A-Z]{2,}[-]/) || codigo.match(/[A-Z]{2,}/) || codigo.length>4) {
-                materias.push({materia: nombre, codigo, carrera, creditos});
-              }
+              codigo.startsWith("PP-") && 
+              nombre.length>2 && 
+              !limpiarTexto(nombre).includes("total") && 
+              !limpiarTexto(nombre).includes("componente")
+            ) {
+              materiasPP.push({
+                materia: nombre,
+                codigo: codigo,
+                carrera: carrera,
+                horas: horas
+              });
             }
           }
         }
       });
       filesProcessed++;
-      if(filesProcessed === files.length) document.getElementById('output').innerHTML = `<b>Mallas procesadas:</b> ${materias.length} materias detectadas.`;
+      if(filesProcessed === files.length) renderTabla();
     };
     reader.readAsArrayBuffer(file);
   }
 });
 
-// LECTURA DE PLANIFICACIÓN
-document.getElementById('filePlanificacion').addEventListener('change', function(e){
-  plantillaPlan = null; planHeaders = [];
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(evt){
-    const data = new Uint8Array(evt.target.result);
-    const workbook = XLSX.read(data, {type: 'array'});
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    planOriginal = XLSX.utils.sheet_to_json(sheet, {header:1});
-    plantillaPlan = [];
-    planHeaders = planOriginal[0].map(h => (h||"").toLowerCase());
-    // No llenamos aún, solo mostramos headers
-    document.getElementById('output').innerHTML += `<br><b>Planificación cargada:</b> ${file.name}`;
-  };
-  reader.readAsArrayBuffer(file);
-});
-
-// DESCARGA DE PLANIFICACIÓN LLENADA
-function descargarPlanificacion(){
-  if(!materias.length || !plantillaPlan) return alert("Debes subir mallas y la plantilla de planificación.");
-  let header = planHeaders;
-  let rows = [planOriginal[0]];
-  // Mapear encabezados a campos:
-  let idxMat = header.findIndex(h=>h.includes('materia')||h.includes('asignatura'));
-  let idxCod = header.findIndex(h=>h.includes('codigo')||h.includes('código'));
-  let idxCarr = header.findIndex(h=>h.includes('carrera'));
-  let idxCred = header.findIndex(h=>h.includes('credito'));
-  // Para cada materia detectada llenamos una fila
-  materias.forEach(m=>{
-    let row = Array(header.length).fill("");
-    if(idxMat!==-1) row[idxMat]=m.materia;
-    if(idxCod!==-1) row[idxCod]=m.codigo;
-    if(idxCarr!==-1) row[idxCarr]=m.carrera;
-    if(idxCred!==-1) row[idxCred]=m.creditos;
-    rows.push(row);
+function renderTabla(){
+  let html = `<table>
+    <tr><th>Materia</th><th>Código</th><th>Carrera</th><th>Horas</th></tr>`;
+  materiasPP.forEach(m=>{
+    html += `<tr>
+      <td>${m.materia}</td>
+      <td>${m.codigo}</td>
+      <td>${m.carrera}</td>
+      <td>${m.horas}</td>
+    </tr>`;
   });
-  // El resto de campos quedan vacíos para que completes lo que falte
-  let ws = XLSX.utils.aoa_to_sheet(rows);
+  html += `</table>`;
+  document.getElementById('output').innerHTML = html;
+}
+
+function descargarExcel(){
+  let data = [["Materia","Código","Carrera","Horas"]];
+  materiasPP.forEach(m=>{
+    data.push([m.materia, m.codigo, m.carrera, m.horas]);
+  });
+  let ws = XLSX.utils.aoa_to_sheet(data);
   let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Planificacion Llenada");
-  XLSX.writeFile(wb, "planificacion_llena.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, "Materias PP Consolidado");
+  XLSX.writeFile(wb, "materias_pp_consolidado.xlsx");
 }
 </script>
 </body>
