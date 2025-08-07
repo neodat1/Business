@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Extractor Universal Académico (Excel)</title>
+  <title>Visor de Archivos Académicos (Excel)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial; margin: 30px;}
@@ -13,127 +13,55 @@
     th, td { border: 1px solid #ccc; padding: 6px;}
     th { background: #932432; color: #fff;}
     tr:nth-child(even) { background: #f7f7f7;}
-    .block { margin-top: 32px;}
+    .sheet-title {font-weight:bold; color:#35558a; margin-top:18px;}
+    .block {margin-top: 32px;}
   </style>
 </head>
 <body>
 <div class="container">
-  <h2>Extractor Universal Académico (Mallas, Docentes, Estudiantes, Créditos)</h2>
-  <p>Sube <b>uno o varios archivos Excel</b> de mallas, planificación, docentes o estudiantes. El sistema detecta los datos y los muestra por separado.</p>
+  <h2>Visor de Archivos Académicos (Excel)</h2>
+  <p>Sube uno o varios archivos Excel. El sistema mostrará las hojas y los datos EXACTAMENTE como están en cada archivo.</p>
   <input type="file" id="fileInput" accept=".xlsx" multiple class="btn">
-  <button class="btn" onclick="descargarTodo()">Descargar todo (Excel consolidado)</button>
-  
   <div id="resultados"></div>
 </div>
-
 <script>
-let materias=[], docentes=[], estudiantes=[], creditos=[];
-
 document.getElementById('fileInput').addEventListener('change', function(e){
-  materias=[]; docentes=[]; estudiantes=[]; creditos=[];
   document.getElementById('resultados').innerHTML = "Procesando...";
   const files = e.target.files;
+  let html = "";
   let filesProcessed = 0;
-
   for(let file of files){
     const reader = new FileReader();
     reader.onload = function(evt){
       const data = new Uint8Array(evt.target.result);
       const workbook = XLSX.read(data, {type: 'array'});
+      html += `<div class='block'><h3>${file.name}</h3>`;
       workbook.SheetNames.forEach(sheetName => {
+        html += `<div class="sheet-title">${sheetName}</div>`;
         const sheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-        if(json.length<2) return;
-
-        // Detecta encabezados:
-        let header = json[0].map(col => (col||"").toString().toLowerCase());
-        // Detecta materias
-        if(header.some(h => h.includes('materia') || h.includes('asignatura'))) {
-          let idxMat = header.findIndex(h => h.includes('materia') || h.includes('asignatura'));
-          let idxCod = header.findIndex(h => h.includes('código') || h.includes('codigo'));
-          let idxCred = header.findIndex(h => h.includes('crédito') || h.includes('creditos'));
-          let idxPer = header.findIndex(h => h.includes('periodo') || h.includes('semestre') || h.includes('nivel'));
-          for(let i=1; i<json.length; i++){
-            let row = json[i];
-            if(!row[idxMat]) continue;
-            materias.push({
-              materia: row[idxMat], 
-              codigo: idxCod>=0? row[idxCod]:"", 
-              creditos: idxCred>=0? row[idxCred]:"",
-              periodo: idxPer>=0? row[idxPer]:""
-            });
+        if(json.length>0){
+          html += "<table>";
+          // Encabezados
+          html += "<tr>";
+          json[0].forEach(h => html += `<th>${h!==undefined?h:""}</th>`);
+          html += "</tr>";
+          // Filas
+          for(let i=1;i<json.length;i++){
+            html += "<tr>";
+            json[i].forEach(cell => html += `<td>${cell!==undefined?cell:""}</td>`);
+            html += "</tr>";
           }
-        }
-        // Detecta docentes
-        if(header.some(h => h.includes('docente'))) {
-          let idxDoc = header.findIndex(h => h.includes('docente'));
-          for(let i=1; i<json.length; i++){
-            let row = json[i];
-            if(row[idxDoc]) docentes.push({docente: row[idxDoc]});
-          }
-        }
-        // Detecta estudiantes
-        if(header.some(h => h.includes('estudiante'))) {
-          let idxEst = header.findIndex(h => h.includes('estudiante'));
-          for(let i=1; i<json.length; i++){
-            let row = json[i];
-            if(row[idxEst]) estudiantes.push({estudiante: row[idxEst]});
-          }
-        }
-        // Detecta créditos independientes
-        if(header.some(h => h.includes('crédito') || h.includes('creditos'))) {
-          let idxCred = header.findIndex(h => h.includes('crédito') || h.includes('creditos'));
-          for(let i=1; i<json.length; i++){
-            let row = json[i];
-            if(row[idxCred]) creditos.push({credito: row[idxCred]});
-          }
+          html += "</table>";
         }
       });
+      html += "</div>";
       filesProcessed++;
-      if(filesProcessed === files.length) renderTablas();
+      if(filesProcessed === files.length) document.getElementById('resultados').innerHTML = html;
     };
     reader.readAsArrayBuffer(file);
   }
 });
-
-function renderTablas(){
-  let html = '';
-  if(materias.length){
-    html += '<div class="block"><h3>Materias detectadas</h3><table><tr><th>Materia</th><th>Código</th><th>Créditos</th><th>Periodo</th></tr>';
-    materias.forEach(m=>{ html += `<tr><td>${m.materia||""}</td><td>${m.codigo||""}</td><td>${m.creditos||""}</td><td>${m.periodo||""}</td></tr>`; });
-    html += '</table></div>';
-  }
-  if(docentes.length){
-    html += '<div class="block"><h3>Docentes detectados</h3><table><tr><th>Docente</th></tr>';
-    docentes.forEach(d=>{ html += `<tr><td>${d.docente||""}</td></tr>`; });
-    html += '</table></div>';
-  }
-  if(estudiantes.length){
-    html += '<div class="block"><h3>Estudiantes detectados</h3><table><tr><th>Estudiante</th></tr>';
-    estudiantes.forEach(d=>{ html += `<tr><td>${d.estudiante||""}</td></tr>`; });
-    html += '</table></div>';
-  }
-  if(creditos.length){
-    html += '<div class="block"><h3>Créditos detectados</h3><table><tr><th>Crédito</th></tr>';
-    creditos.forEach(c=>{ html += `<tr><td>${c.credito||""}</td></tr>`; });
-    html += '</table></div>';
-  }
-  if(!materias.length && !docentes.length && !estudiantes.length && !creditos.length)
-    html = "<div style='color:crimson'><b>No se detectaron datos relevantes. ¿Subiste archivos correctos?</b></div>";
-  document.getElementById('resultados').innerHTML = html;
-}
-
-function descargarTodo(){
-  let sheets = {};
-  if(materias.length) sheets['Materias'] = XLSX.utils.json_to_sheet(materias);
-  if(docentes.length) sheets['Docentes'] = XLSX.utils.json_to_sheet(docentes);
-  if(estudiantes.length) sheets['Estudiantes'] = XLSX.utils.json_to_sheet(estudiantes);
-  if(creditos.length) sheets['Creditos'] = XLSX.utils.json_to_sheet(creditos);
-  if(Object.keys(sheets).length === 0) return alert("No hay datos para descargar.");
-  let wb = XLSX.utils.book_new();
-  for(let name in sheets) XLSX.utils.book_append_sheet(wb, sheets[name], name);
-  XLSX.writeFile(wb, "consolidado_academico.xlsx");
-}
 </script>
 </body>
 </html>
