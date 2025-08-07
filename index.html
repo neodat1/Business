@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Malla a Filas sin Créditos, con Prerrequisito</title>
+  <title>Malla a Filas (Ceros, Prerrequisito editable)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9;}
@@ -21,13 +21,12 @@
 </head>
 <body>
   <div class="container">
-    <h2>Malla a Filas (Sin Créditos, Con Prerrequisito editable)</h2>
+    <h2>Malla a Filas (con ceros y prerrequisito editable)</h2>
     <div class="info">
       <b>1.</b> Selecciona <b>Carrera</b> y <b>Año de Malla</b>.<br>
       <b>2.</b> Sube tu malla curricular en Excel.<br>
-      <b>3.</b> El sistema muestra materias reales, con código y horas.<br>
-      <b>4.</b> Descarga y completa PRERREQUISITO según las flechas de tu malla.<br>
-      <b>Nota:</b> Las flechas NO pueden ser leídas automáticamente de Excel. Llena los prerrequisitos con el código de la materia previa según el diagrama.
+      <b>3.</b> El sistema muestra materias reales, con ceros en las horas si no hay valor.<br>
+      <b>4.</b> Descarga y completa PRERREQUISITO según las flechas de tu malla (esto es manual).
     </div>
     <label>Carrera:
       <select id="selectCarrera">
@@ -54,6 +53,7 @@ const CABECERAS = [
 
 function codigoValido(codigo) {
   if(!codigo) return false;
+  // Ejemplo: PP-01-CONT1, CH-01-MAT01, FT-01-ADM1, etc.
   return !!codigo.match(/^[A-Z]{2,3}-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-/) || !!codigo.match(/^[A-Z]{2,3}-\d{2,}/);
 }
 
@@ -85,9 +85,13 @@ document.getElementById('fileInput').addEventListener('change', function(e){
           let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
           let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
           // Horas están a la derecha del código
-          let ht = (json[row+1] && typeof json[row+1][col+1] !== "undefined") ? json[row+1][col+1] : "";
-          let hp = (json[row+1] && typeof json[row+1][col+2] !== "undefined") ? json[row+1][col+2] : "";
-          let ha = (json[row+1] && typeof json[row+1][col+3] !== "undefined") ? json[row+1][col+3] : "";
+          let ht = (json[row+1] && typeof json[row+1][col+1] !== "undefined") ? json[row+1][col+1] : 0;
+          let hp = (json[row+1] && typeof json[row+1][col+2] !== "undefined") ? json[row+1][col+2] : 0;
+          let ha = (json[row+1] && typeof json[row+1][col+3] !== "undefined") ? json[row+1][col+3] : 0;
+          // Si es string vacío, poner cero
+          ht = (ht === "" || ht === undefined) ? 0 : ht;
+          hp = (hp === "" || hp === undefined) ? 0 : hp;
+          ha = (ha === "" || ha === undefined) ? 0 : ha;
           if(materiaValida(nombre, codigo)){
             estructura.push({
               "CARRERA": carrera,
@@ -120,14 +124,4 @@ function renderTabla(){
 
 function descargarExcel(){
   let data = [CABECERAS];
-  estructura.forEach(m=>{
-    data.push(CABECERAS.map(c=>m[c]||""));
-  });
-  let ws = XLSX.utils.aoa_to_sheet(data);
-  let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Malla Sin Creditos");
-  XLSX.writeFile(wb, "malla_sin_creditos.xlsx");
-}
-</script>
-</body>
-</html>
+  estructura.forEach(m=
