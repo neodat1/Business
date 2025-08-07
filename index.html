@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Extrae Malla a Filas + Prerrequisito + Carrera y Año</title>
+  <title>Malla a Filas Limpia</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9;}
@@ -21,12 +21,11 @@
 </head>
 <body>
   <div class="container">
-    <h2>Extrae Malla a Filas (con Carrera, Año y Prerrequisito)</h2>
+    <h2>Extrae SOLO materias reales a filas (sin totales, sin textos vacíos)</h2>
     <div class="info">
       <b>1.</b> Selecciona <b>Carrera</b> y <b>Año de Malla</b>.<br>
       <b>2.</b> Sube tu malla curricular en Excel.<br>
-      <b>3.</b> El sistema genera una fila por materia, incluye carrera, año y columna “PRERREQUISITO” lista para llenar.<br>
-      <b>4.</b> Puedes descargarlo en Excel y completarlo para tu planificación.
+      <b>3.</b> El sistema mostrará solo materias reales, una por fila. Puedes descargarlo como Excel.
     </div>
     <label>Carrera:
       <select id="selectCarrera">
@@ -51,6 +50,19 @@ const CABECERAS = [
   "CARRERA", "AÑO", "CICLO", "MATERIA", "CÓDIGO", "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", "CRÉDITOS", "PRERREQUISITO"
 ];
 
+function codigoValido(codigo) {
+  if(!codigo) return false;
+  // Ejemplo: PP-01-CONT1, CH-01-MAT01, FT-01-ADM1, etc.
+  return !!codigo.match(/^[A-Z]{2,3}-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-/);
+}
+
+function materiaValida(nombre, codigo) {
+  if(!nombre || !codigo) return false;
+  let txt = nombre.toString().toLowerCase();
+  if(txt.includes("total") || txt.includes("componente") || txt.includes("carga horaria") || txt.includes("requisito") || txt.includes("práctica") || txt.includes("num. asignaturas")) return false;
+  return codigoValido(codigo);
+}
+
 document.getElementById('fileInput').addEventListener('change', function(e){
   estructura = [];
   document.getElementById('output').innerHTML = "Procesando...";
@@ -72,10 +84,10 @@ document.getElementById('fileInput').addEventListener('change', function(e){
           let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
           let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
           let ht = (json[row+2] && !isNaN(json[row+2][col])) ? json[row+2][col].toString().trim() : "";
-          let hp = ""; // Puedes mejorar esto si tus mallas tienen horas prácticas en otra fila
-          let ha = ""; // Horas autónomas (ajusta si está en tus mallas)
+          let hp = "";
+          let ha = "";
           let creditos = "";
-          if(codigo.length > 2 && nombre.length > 2 && !nombre.toLowerCase().includes("total")){
+          if(materiaValida(nombre, codigo)){
             estructura.push({
               "CARRERA": carrera,
               "AÑO": anio,
@@ -114,7 +126,7 @@ function descargarExcel(){
   let ws = XLSX.utils.aoa_to_sheet(data);
   let wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Malla Filas");
-  XLSX.writeFile(wb, "malla_filas.xlsx");
+  XLSX.writeFile(wb, "malla_filas_limpia.xlsx");
 }
 </script>
 </body>
