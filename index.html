@@ -25,8 +25,8 @@
     <div class="info">
       <b>1.</b> Selecciona <b>Carrera</b> y <b>Año de Malla</b>.<br>
       <b>2.</b> Sube tu malla curricular en Excel.<br>
-      <b>3.</b> El sistema muestra todas las materias con sus horas (0 si no tiene valor).<br>
-      <b>4.</b> Descarga y completa PRERREQUISITO según las flechas de tu malla.
+      <b>3.</b> El sistema muestra materias reales, con ceros en las horas si no hay valor.<br>
+      <b>4.</b> Descarga y completa PRERREQUISITO según las flechas de tu malla (esto es manual).
     </div>
     <label>Carrera:
       <select id="selectCarrera">
@@ -48,22 +48,20 @@
 <script>
 let estructura = [];
 const CABECERAS = [
-  "CARRERA", "AÑO", "CICLO", "MATERIA", "CÓDIGO", 
-  "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", 
-  "PRERREQUISITO"
+  "CARRERA", "AÑO", "CICLO", "MATERIA", "CÓDIGO", "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", "PRERREQUISITO"
 ];
 
-function esMateria(nombre, codigo) {
+function codigoValido(codigo) {
+  if(!codigo) return false;
+  // Ejemplo: PP-01-CONT1, CH-01-MAT01, FT-01-ADM1, etc.
+  return !!codigo.match(/^[A-Z]{2,3}-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-/) || !!codigo.match(/^[A-Z]{2,3}-\d{2,}/);
+}
+
+function materiaValida(nombre, codigo) {
   if(!nombre || !codigo) return false;
-  const txt = nombre.toString().toLowerCase();
-  const excluir = [
-    "total", "componente", "carga horaria", 
-    "requisito", "práctica", "num. asignaturas",
-    "servicio comunitario", "prácticas laboral",
-    "horas", "créditos", "suma", "malla curricular"
-  ];
-  
-  return !excluir.some(palabra => txt.includes(palabra));
+  let txt = nombre.toString().toLowerCase();
+  if(txt.includes("total") || txt.includes("componente") || txt.includes("carga horaria") || txt.includes("requisito") || txt.includes("práctica") || txt.includes("num. asignaturas") || txt.includes("servicio comunitario") || txt.includes("prácticas laboral")) return false;
+  return codigoValido(codigo);
 }
 
 document.getElementById('fileInput').addEventListener('change', function(e){
@@ -71,38 +69,30 @@ document.getElementById('fileInput').addEventListener('change', function(e){
   document.getElementById('output').innerHTML = "Procesando...";
   const file = e.target.files[0];
   if(!file) return;
-  
   const carrera = document.getElementById('selectCarrera').value;
   const anio = document.getElementById('selectAnio').value;
-  
   const reader = new FileReader();
   reader.onload = function(evt){
     const data = new Uint8Array(evt.target.result);
     const workbook = XLSX.read(data, {type: 'array'});
-    
     workbook.SheetNames.forEach(sheetName => {
       const sheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-      
       let ciclos = json[0] || [];
-      
-      for(let col = 0; col < ciclos.length; col++){
+      for(let col=0; col<ciclos.length; col++){
         let ciclo = (ciclos[col] || "").toString().trim();
-        
-        for(let row = 1; row < json.length; row++){
+        for(let row=1; row<json.length-1; row++){
           let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
           let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
-          
-          // Asegurar que siempre haya 0 si no hay datos en horas
-          let ht = 0, hp = 0, ha = 0;
-          
-          if(json[row+1]) {
-            ht = isNaN(json[row+1][col+1]) ? 0 : Number(json[row+1][col+1]);
-            hp = isNaN(json[row+1][col+2]) ? 0 : Number(json[row+1][col+2]);
-            ha = isNaN(json[row+1][col+3]) ? 0 : Number(json[row+1][col+3]);
-          }
-          
-          if(esMateria(nombre, codigo)) {
+          // Horas están a la derecha del código
+          let ht = (json[row+1] && typeof json[row+1][col+1] !== "undefined") ? json[row+1][col+1] : 0;
+          let hp = (json[row+1] && typeof json[row+1][col+2] !== "undefined") ? json[row+1][col+2] : 0;
+          let ha = (json[row+1] && typeof json[row+1][col+3] !== "undefined") ? json[row+1][col+3] : 0;
+          // Si es string vacío, poner cero
+          ht = (ht === "" || ht === undefined) ? 0 : ht;
+          hp = (hp === "" || hp === undefined) ? 0 : hp;
+          ha = (ha === "" || ha === undefined) ? 0 : ha;
+          if(materiaValida(nombre, codigo)){
             estructura.push({
               "CARRERA": carrera,
               "AÑO": anio,
@@ -118,7 +108,6 @@ document.getElementById('fileInput').addEventListener('change', function(e){
         }
       }
     });
-    
     renderTabla();
   };
   reader.readAsArrayBuffer(file);
@@ -126,38 +115,17 @@ document.getElementById('fileInput').addEventListener('change', function(e){
 
 function renderTabla(){
   let html = `<table><tr>${CABECERAS.map(c=>`<th>${c}</th>`).join('')}</tr>`;
-  
-  estructura.forEach(m => {
-    html += `<tr>${CABECERAS.map(c => {
-      const valor = m[c];
-      // Formatear horas para mostrar 0 en lugar de vacío
-      if(c.includes("HORAS")) {
-        return `<td>${valor !== undefined ? valor : 0}</td>`;
-      }
-      return `<td>${valor || ""}</td>`;
-    }).join('')}</tr>`;
+  estructura.forEach(m=>{
+    html += `<tr>${CABECERAS.map(c=>`<td>${m[c]||""}</td>`).join('')}</tr>`;
   });
-  
   html += `</table>`;
   document.getElementById('output').innerHTML = html;
 }
 
 function descargarExcel(){
-  if(estructura.length === 0) {
-    alert("No hay datos para descargar. Primero sube un archivo Excel.");
-    return;
-  }
-  
   let data = [CABECERAS];
-  
   estructura.forEach(m => {
-    data.push(CABECERAS.map(c => {
-      // Asegurar 0 en horas si no hay valor
-      if(c.includes("HORAS")) {
-        return m[c] !== undefined ? m[c] : 0;
-      }
-      return m[c] || "";
-    }));
+    data.push(CABECERAS.map(c => m[c] || ""));
   });
   
   const ws = XLSX.utils.aoa_to_sheet(data);
