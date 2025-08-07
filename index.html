@@ -1,1 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestor Universitario - Carga de Excel</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #bbb; padding: 8px; }
+    th { background: #e2e2e2; }
+    input[type="file"] { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Sube tu archivo Excel (Materias, Docentes o Estudiantes)</h2>
+  <input type="file" id="input-excel" accept=".xlsx, .xls" />
+  <div id="tabla-contenido"></div>
+
+  <script>
+    document.getElementById('input-excel').addEventListener('change', function(e){
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, {header:1});
+        renderTable(json);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function renderTable(data) {
+      let html = "<table>";
+      data.forEach((row, idx) => {
+        html += "<tr>";
+        row.forEach(cell => {
+          html += idx === 0 ? `<th>${cell}</th>` : `<td>${cell}</td>`;
+        });
+        html += "</tr>";
+      });
+      html += "</table>";
+      document.getElementById('tabla-contenido').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
 
