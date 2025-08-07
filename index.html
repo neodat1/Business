@@ -2,12 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Extrae Malla a Filas + Prerrequisito</title>
+  <title>Extrae Malla a Filas + Prerrequisito + Carrera y Año</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9;}
-    .container { background: white; max-width: 1100px; margin: 32px auto; border-radius: 12px; box-shadow: 0 0 8px #bbb; padding: 32px;}
+    .container { background: white; max-width: 1200px; margin: 32px auto; border-radius: 12px; box-shadow: 0 0 8px #bbb; padding: 32px;}
     h2 { color: #932432; }
+    label { font-weight:bold; margin-right:12px; }
+    select { padding: 5px 12px; margin-right: 30px;}
     table { width: 100%; border-collapse: collapse; margin-top: 18px;}
     th, td { border: 1px solid #ccc; padding: 8px; font-size: 15px;}
     th { background: #932432; color: #fff;}
@@ -19,12 +21,26 @@
 </head>
 <body>
   <div class="container">
-    <h2>Extrae Malla Académica a Filas (con columna Prerrequisito)</h2>
+    <h2>Extrae Malla a Filas (con Carrera, Año y Prerrequisito)</h2>
     <div class="info">
-      1. Sube tu malla curricular en Excel (no imagen).<br>
-      2. El sistema genera una fila por materia, incluye columna “PRERREQUISITO” lista para llenar.<br>
-      3. Puedes descargarlo en Excel, añadir los prerrequisitos y usar para planificación.
+      <b>1.</b> Selecciona <b>Carrera</b> y <b>Año de Malla</b>.<br>
+      <b>2.</b> Sube tu malla curricular en Excel.<br>
+      <b>3.</b> El sistema genera una fila por materia, incluye carrera, año y columna “PRERREQUISITO” lista para llenar.<br>
+      <b>4.</b> Puedes descargarlo en Excel y completarlo para tu planificación.
     </div>
+    <label>Carrera:
+      <select id="selectCarrera">
+        <option value="Administración">Administración</option>
+        <option value="Negocios Internacionales">Negocios Internacionales</option>
+        <option value="Marketing">Marketing</option>
+      </select>
+    </label>
+    <label>Año de malla:
+      <select id="selectAnio">
+        <option value="2019">2019</option>
+        <option value="2023">2023</option>
+      </select>
+    </label>
     <input type="file" id="fileInput" accept=".xlsx" class="btn">
     <button onclick="descargarExcel()" class="btn">Descargar como Excel</button>
     <div id="output"></div>
@@ -32,7 +48,7 @@
 <script>
 let estructura = [];
 const CABECERAS = [
-  "CICLO", "MATERIA", "CÓDIGO", "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", "CRÉDITOS", "PRERREQUISITO"
+  "CARRERA", "AÑO", "CICLO", "MATERIA", "CÓDIGO", "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", "CRÉDITOS", "PRERREQUISITO"
 ];
 
 document.getElementById('fileInput').addEventListener('change', function(e){
@@ -40,6 +56,8 @@ document.getElementById('fileInput').addEventListener('change', function(e){
   document.getElementById('output').innerHTML = "Procesando...";
   const file = e.target.files[0];
   if(!file) return;
+  const carrera = document.getElementById('selectCarrera').value;
+  const anio = document.getElementById('selectAnio').value;
   const reader = new FileReader();
   reader.onload = function(evt){
     const data = new Uint8Array(evt.target.result);
@@ -54,12 +72,13 @@ document.getElementById('fileInput').addEventListener('change', function(e){
           let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
           let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
           let ht = (json[row+2] && !isNaN(json[row+2][col])) ? json[row+2][col].toString().trim() : "";
-          let hp = "";
-          let ha = "";
+          let hp = ""; // Puedes mejorar esto si tus mallas tienen horas prácticas en otra fila
+          let ha = ""; // Horas autónomas (ajusta si está en tus mallas)
           let creditos = "";
-          // Aquí puedes agregar lógica para detectar horas prácticas, autónomas y créditos si tienes filas para eso
           if(codigo.length > 2 && nombre.length > 2 && !nombre.toLowerCase().includes("total")){
             estructura.push({
+              "CARRERA": carrera,
+              "AÑO": anio,
               "CICLO": ciclo,
               "MATERIA": nombre,
               "CÓDIGO": codigo,
