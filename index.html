@@ -2,108 +2,78 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Comparador de Mallas - Planificación</title>
+  <title>Extracción de Materias desde Mallas</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 20px;}
-    .container { background: white; max-width: 700px; margin: auto; border-radius: 15px; box-shadow: 0 0 8px #bbb; padding: 32px;}
-    h1 { color: #932432; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px;}
+    body { font-family: Arial; margin: 30px;}
+    .btn { background: #35558a; color: #fff; padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer;}
+    table { border-collapse: collapse; width: 100%; margin-top: 20px;}
     th, td { border: 1px solid #ccc; padding: 8px;}
-    th { background: #2d3e50; color: white;}
-    tr:nth-child(even) { background: #f0f0f0;}
-    .btn { padding: 8px 18px; margin: 10px 5px 0 0; border: none; border-radius: 7px; background: #35558a; color: white; cursor: pointer;}
-    .btn:hover { background: #25416b;}
-    #output { max-height: 350px; overflow: auto;}
-    .info { background: #e6ecf6; padding: 10px; border-radius: 8px; margin-bottom: 16px;}
+    th { background: #932432; color: #fff;}
+    tr:nth-child(even) { background: #f7f7f7;}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Comparador de Mallas <br> y Formato de Planificación</h1>
-    <div class="info">
-      <b>1.</b> Carga <b>todas las mallas curriculares</b> (archivos Excel)<br>
-      <b>2.</b> Visualiza la lista consolidada de materias<br>
-      <b>3.</b> Descarga el archivo listo para planificación<br>
-    </div>
-    <input type="file" id="fileInput" multiple accept=".xlsx" class="btn">
-    <button onclick="downloadExcel()" class="btn">Descargar Formato Planificación</button>
-    <div id="output"></div>
-  </div>
+  <h2>Sube tu malla curricular (Excel)</h2>
+  <input type="file" id="fileInput" accept=".xlsx" class="btn">
+  <button class="btn" onclick="downloadExcel()">Descargar Lista Materias</button>
+  <div id="output"></div>
 
   <script>
-    let materiasMap = new Map();
+    let materias = [];
 
-    document.getElementById('fileInput').addEventListener('change', handleFiles, false);
-
-    function handleFiles(event) {
-      materiasMap.clear();
-      const files = event.target.files;
-      let filesProcessed = 0;
-
-      for (let file of files) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, {type: 'array'});
-          // Toma la primera hoja
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-
-          // Busca las columnas relevantes por nombre
-          let header = json[0];
-          let idxNombre = header.findIndex(col => col.toLowerCase().includes('materia') || col.toLowerCase().includes('asignatura') || col.toLowerCase().includes('nombre'));
-          let idxCodigo = header.findIndex(col => col.toLowerCase().includes('código') || col.toLowerCase().includes('codigo'));
-          let idxPeriodo = header.findIndex(col => col.toLowerCase().includes('periodo') || col.toLowerCase().includes('semestre') || col.toLowerCase().includes('nivel'));
-          let idxCreditos = header.findIndex(col => col.toLowerCase().includes('crédito') || col.toLowerCase().includes('creditos'));
-
-          // Procesa filas
-          for(let i=1; i<json.length; i++) {
-            let row = json[i];
-            let nombre = row[idxNombre] ? row[idxNombre].toString().trim() : '';
-            if (!nombre) continue;
-            let codigo = idxCodigo>=0 ? (row[idxCodigo] || '').toString().trim() : '';
-            let periodo = idxPeriodo>=0 ? (row[idxPeriodo] || '').toString().trim() : '';
-            let creditos = idxCreditos>=0 ? (row[idxCreditos] || '').toString().trim() : '';
-            let key = (codigo + '|' + nombre).toLowerCase();
-
-            if (!materiasMap.has(key)) {
-              materiasMap.set(key, {codigo, nombre, periodo, creditos});
+    document.getElementById('fileInput').addEventListener('change', function(e){
+      materias = [];
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e){
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, {header:1});
+        // Detecta periodos por encabezado (primera fila)
+        let periodos = json[0];
+        for(let col=0; col<periodos.length; col++){
+          let periodo = (periodos[col] || '').toString().trim();
+          if(!periodo || periodo === '') continue;
+          // Por cada columna (periodo), busca materias hacia abajo
+          for(let row=1; row<json.length; row+=3){ // Salta de 3 en 3 (ajusta según tu malla)
+            let materia = (json[row] && json[row][col]) ? json[row][col].toString().trim() : '';
+            let codigo  = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : '';
+            let creditos= (json[row+2] && json[row+2][col]) ? json[row+2][col].toString().trim() : '';
+            if(materia && materia.toUpperCase() !== "TOTAL" && materia !== "0" && materia !== " ") {
+              materias.push({periodo, materia, codigo, creditos});
             }
           }
-          filesProcessed++;
-          if (filesProcessed === files.length) {
-            renderTable();
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      }
-    }
+        }
+        renderTable();
+      };
+      reader.readAsArrayBuffer(file);
+    });
 
-    function renderTable() {
-      let html = `<table>
-        <tr><th>Código</th><th>Materia</th><th>Período</th><th>Créditos</th></tr>`;
-      for (let {codigo, nombre, periodo, creditos} of materiasMap.values()) {
+    function renderTable(){
+      let html = `<table><tr><th>Periodo</th><th>Materia</th><th>Código</th><th>Créditos</th></tr>`;
+      materias.forEach(m => {
         html += `<tr>
-          <td>${codigo}</td>
-          <td>${nombre}</td>
-          <td>${periodo}</td>
-          <td>${creditos}</td>
+          <td>${m.periodo}</td>
+          <td>${m.materia}</td>
+          <td>${m.codigo}</td>
+          <td>${m.creditos}</td>
         </tr>`;
-      }
-      html += '</table>';
+      });
+      html += "</table>";
       document.getElementById('output').innerHTML = html;
     }
 
-    function downloadExcel() {
-      const ws_data = [["Código", "Materia", "Período", "Créditos", "Docente (llenar)", "Observaciones (opcional)"]];
-      for (let {codigo, nombre, periodo, creditos} of materiasMap.values()) {
-        ws_data.push([codigo, nombre, periodo, creditos, "", ""]);
-      }
+    function downloadExcel(){
+      if(materias.length === 0) return alert("Primero sube una malla curricular.");
+      const ws_data = [["Periodo","Materia","Código","Créditos"]];
+      materias.forEach(m => ws_data.push([m.periodo, m.materia, m.codigo, m.creditos]));
       const ws = XLSX.utils.aoa_to_sheet(ws_data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Planificación");
-      XLSX.writeFile(wb, "planificacion.xlsx");
+      XLSX.utils.book_append_sheet(wb, ws, "Materias");
+      XLSX.writeFile(wb, "lista_materias.xlsx");
     }
   </script>
 </body>
