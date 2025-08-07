@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Malla a Filas Limpia</title>
+  <title>Malla a Filas Limpia (con horas correctas)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9;}
@@ -21,11 +21,11 @@
 </head>
 <body>
   <div class="container">
-    <h2>Extrae SOLO materias reales a filas (sin totales, sin textos vacíos)</h2>
+    <h2>Extrae materias y horas teóricas, prácticas, autónomas</h2>
     <div class="info">
       <b>1.</b> Selecciona <b>Carrera</b> y <b>Año de Malla</b>.<br>
       <b>2.</b> Sube tu malla curricular en Excel.<br>
-      <b>3.</b> El sistema mostrará solo materias reales, una por fila. Puedes descargarlo como Excel.
+      <b>3.</b> El sistema mostrará solo materias reales, una por fila, y las horas teóricas/prácticas/autónomas extraídas correctamente.
     </div>
     <label>Carrera:
       <select id="selectCarrera">
@@ -80,13 +80,19 @@ document.getElementById('fileInput').addEventListener('change', function(e){
       let ciclos = json[0] || [];
       for(let col=0; col<ciclos.length; col++){
         let ciclo = (ciclos[col] || "").toString().trim();
-        for(let row=1; row<json.length-1; row+=3){
+        for(let row=1; row<json.length-1; row+=4){
           let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
           let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
-          let ht = (json[row+2] && !isNaN(json[row+2][col])) ? json[row+2][col].toString().trim() : "";
-          let hp = "";
-          let ha = "";
-          let creditos = "";
+          // Las horas están en la fila siguiente
+          let horas = (json[row+2] && typeof json[row+2][col] !== "undefined") ? json[row+2][col].toString().trim() : "";
+          let ht = "", hp = "", ha = "";
+          if(horas && horas.match(/^\d+ \d+ \d+$/)) {
+            let arr = horas.split(" ");
+            ht = arr[0] || "";
+            hp = arr[1] || "";
+            ha = arr[2] || "";
+          }
+          let creditos = (json[row+3] && !isNaN(json[row+3][col])) ? json[row+3][col].toString().trim() : "";
           if(materiaValida(nombre, codigo)){
             estructura.push({
               "CARRERA": carrera,
@@ -125,7 +131,7 @@ function descargarExcel(){
   });
   let ws = XLSX.utils.aoa_to_sheet(data);
   let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Malla Filas");
+  XLSX.utils.book_append_sheet(wb, ws, "Malla Filas Limpia");
   XLSX.writeFile(wb, "malla_filas_limpia.xlsx");
 }
 </script>
