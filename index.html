@@ -124,4 +124,20 @@ function renderTabla(){
 
 function descargarExcel(){
   let data = [CABECERAS];
-  estructura.forEach(m=
+  estructura.forEach(m => {
+    data.push(CABECERAS.map(c => m[c] || ""));
+  });
+  
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "MallaConvertida");
+  
+  const carrera = document.getElementById('selectCarrera').value;
+  const anio = document.getElementById('selectAnio').value;
+  const fileName = `Malla_${carrera.replace(/\s+/g, '_')}_${anio}.xlsx`;
+  
+  XLSX.writeFile(wb, fileName);
+}
+</script>
+</body>
+</html>
