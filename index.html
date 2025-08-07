@@ -2,66 +2,124 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Visor de Archivos Académicos (Excel)</title>
+  <title>Comparador de Materias por Carrera</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial; margin: 30px;}
-    .btn { background: #35558a; color: #fff; padding: 8px 18px; border: none; border-radius: 8px; cursor: pointer;}
-    .container { background: #fafafa; border-radius: 8px; padding: 18px 28px; box-shadow: 0 0 8px #bbb; max-width: 1100px; margin: auto;}
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 20px;}
+    .container { background: white; max-width: 900px; margin: auto; border-radius: 14px; box-shadow: 0 0 8px #bbb; padding: 32px;}
     h2 { color: #932432; }
-    table { border-collapse: collapse; width: 100%; margin: 22px 0;}
-    th, td { border: 1px solid #ccc; padding: 6px;}
-    th { background: #932432; color: #fff;}
+    table { width: 100%; border-collapse: collapse; margin-top: 20px;}
+    th, td { border: 1px solid #ccc; padding: 8px;}
+    th { background: #932432; color: white;}
     tr:nth-child(even) { background: #f7f7f7;}
-    .sheet-title {font-weight:bold; color:#35558a; margin-top:18px;}
-    .block {margin-top: 32px;}
+    .btn { padding: 8px 18px; margin: 10px 5px 0 0; border: none; border-radius: 7px; background: #35558a; color: white; cursor: pointer;}
+    .btn:hover { background: #25416b;}
+    .info { background: #e6ecf6; padding: 10px; border-radius: 8px; margin-bottom: 16px;}
   </style>
 </head>
 <body>
-<div class="container">
-  <h2>Visor de Archivos Académicos (Excel)</h2>
-  <p>Sube uno o varios archivos Excel. El sistema mostrará las hojas y los datos EXACTAMENTE como están en cada archivo.</p>
-  <input type="file" id="fileInput" accept=".xlsx" multiple class="btn">
-  <div id="resultados"></div>
-</div>
+  <div class="container">
+    <h2>Comparador de Materias por Carrera</h2>
+    <div class="info">
+      <b>1.</b> Sube <b>todas las mallas curriculares</b> (archivos Excel reales, ejemplo: administracion2019.xlsx, marketing2023.xlsx, etc.)<br>
+      <b>2.</b> Se mostrará la lista de materias consolidadas, agrupadas por nombre, mostrando los diferentes códigos y carreras.<br>
+      <b>3.</b> Descarga el archivo listo para tus formatos.<br>
+    </div>
+    <input type="file" id="fileInput" multiple accept=".xlsx" class="btn">
+    <button onclick="descargarExcel()" class="btn">Descargar Consolidado</button>
+    <div id="output"></div>
+  </div>
 <script>
+let consolidadoMaterias = {};
+
+function limpiarTexto(str) {
+  return (str||"").toString()
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 document.getElementById('fileInput').addEventListener('change', function(e){
-  document.getElementById('resultados').innerHTML = "Procesando...";
+  consolidadoMaterias = {};
+  document.getElementById('output').innerHTML = "Procesando...";
   const files = e.target.files;
-  let html = "";
   let filesProcessed = 0;
-  for(let file of files){
+  for (let file of files) {
     const reader = new FileReader();
     reader.onload = function(evt){
       const data = new Uint8Array(evt.target.result);
       const workbook = XLSX.read(data, {type: 'array'});
-      html += `<div class='block'><h3>${file.name}</h3>`;
+      // Detectar carrera por nombre de archivo
+      let carrera = file.name.replace(/\d{4}.*/i,"").replace(/[\W_]+/g," ").trim();
+      if (carrera==="") carrera = file.name.split('.')[0];
+      // Revisa todas las hojas
       workbook.SheetNames.forEach(sheetName => {
-        html += `<div class="sheet-title">${sheetName}</div>`;
         const sheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-        if(json.length>0){
-          html += "<table>";
-          // Encabezados
-          html += "<tr>";
-          json[0].forEach(h => html += `<th>${h!==undefined?h:""}</th>`);
-          html += "</tr>";
-          // Filas
-          for(let i=1;i<json.length;i++){
-            html += "<tr>";
-            json[i].forEach(cell => html += `<td>${cell!==undefined?cell:""}</td>`);
-            html += "</tr>";
-          }
-          html += "</table>";
+        // Busca fila de encabezados (materia, asignatura, código, creditos)
+        let idxNombre = -1, idxCodigo = -1;
+        let encabezadoIdx = 0;
+        for(let i=0; i<Math.min(4,json.length); i++) {
+          let row = json[i].map(x => limpiarTexto(x));
+          idxNombre = row.findIndex(x => x.includes('materia') || x.includes('asignatura'));
+          idxCodigo = row.findIndex(x => x.includes('codigo') || x.includes('código'));
+          if(idxNombre!==-1) { encabezadoIdx = i; break;}
+        }
+        if(idxNombre===-1) return; // No encontró encabezado útil
+        // Lee las filas
+        for(let i=encabezadoIdx+1; i<json.length; i++){
+          let row = json[i];
+          let nombre = row[idxNombre];
+          let codigo = (idxCodigo!==-1) ? row[idxCodigo] : "";
+          if(!nombre || limpiarTexto(nombre).includes("total") || limpiarTexto(nombre).includes("componente")) continue;
+          let key = limpiarTexto(nombre);
+          if(!consolidadoMaterias[key]) consolidadoMaterias[key] = [];
+          consolidadoMaterias[key].push({
+            materia: nombre,
+            codigo: codigo,
+            carrera: carrera
+          });
         }
       });
-      html += "</div>";
       filesProcessed++;
-      if(filesProcessed === files.length) document.getElementById('resultados').innerHTML = html;
+      if(filesProcessed === files.length) renderTabla();
     };
     reader.readAsArrayBuffer(file);
   }
 });
+
+function renderTabla(){
+  let html = `<table>
+    <tr><th>Materia</th><th>Código(s)</th><th>Carrera(s)</th></tr>`;
+  Object.values(consolidadoMaterias).forEach(arr=>{
+    // agrupa por materia, muestra todos los códigos/carreras distintos
+    let materia = arr[0].materia;
+    let codigos = [...new Set(arr.map(x=>x.codigo).filter(x=>x))].join(", ");
+    let carreras = [...new Set(arr.map(x=>x.carrera))].join(", ");
+    html += `<tr>
+      <td>${materia}</td>
+      <td>${codigos}</td>
+      <td>${carreras}</td>
+    </tr>`;
+  });
+  html += `</table>`;
+  document.getElementById('output').innerHTML = html;
+}
+
+function descargarExcel(){
+  let data = [["Materia","Códigos","Carreras"]];
+  Object.values(consolidadoMaterias).forEach(arr=>{
+    let materia = arr[0].materia;
+    let codigos = [...new Set(arr.map(x=>x.codigo).filter(x=>x))].join(", ");
+    let carreras = [...new Set(arr.map(x=>x.carrera))].join(", ");
+    data.push([materia, codigos, carreras]);
+  });
+  let ws = XLSX.utils.aoa_to_sheet(data);
+  let wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Materias Consolidado");
+  XLSX.writeFile(wb, "materias_consolidado.xlsx");
+}
 </script>
 </body>
 </html>
