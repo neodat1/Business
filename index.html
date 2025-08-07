@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Planificación con Formato Personalizado</title>
+  <title>Extrae Malla a Filas + Prerrequisito</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f9f9f9;}
@@ -19,32 +19,20 @@
 </head>
 <body>
   <div class="container">
-    <h2>Estructurador con Formato de Planificación</h2>
+    <h2>Extrae Malla Académica a Filas (con columna Prerrequisito)</h2>
     <div class="info">
-      <b>1.</b> Sube tu malla curricular real (Excel).<br>
-      <b>2.</b> El sistema extrae materias oficiales (PP-) y crea el archivo con los campos EXACTOS que muestras.<br>
-      <b>3.</b> Puedes descargarlo en Excel y llenarlo/completar lo que falte.
+      1. Sube tu malla curricular en Excel (no imagen).<br>
+      2. El sistema genera una fila por materia, incluye columna “PRERREQUISITO” lista para llenar.<br>
+      3. Puedes descargarlo en Excel, añadir los prerrequisitos y usar para planificación.
     </div>
     <input type="file" id="fileInput" accept=".xlsx" class="btn">
-    <button onclick="descargarExcel()" class="btn">Descargar Estructura Exacta</button>
+    <button onclick="descargarExcel()" class="btn">Descargar como Excel</button>
     <div id="output"></div>
   </div>
 <script>
 let estructura = [];
 const CABECERAS = [
-  "MATERIA",
-  "CÓDIGO ANTHOLOGY",
-  "CARRERAS QUE COMPARTEN",
-  "PRE-REQUISITO",
-  "CODIGO",
-  "HORAS TEÓRICAS",
-  "HORAS PRÁCTICAS",
-  "HORAS AUTÓNOMAS",
-  "CREDITOS",
-  "CAMPO DE FORMACIÓN",
-  "CICLO",
-  "MALLA",
-  "Nº ORDEN EN LA MALLA (PARA CODIFICACIÓN SÍLABO)"
+  "CICLO", "MATERIA", "CÓDIGO", "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", "CRÉDITOS", "PRERREQUISITO"
 ];
 
 document.getElementById('fileInput').addEventListener('change', function(e){
@@ -56,39 +44,30 @@ document.getElementById('fileInput').addEventListener('change', function(e){
   reader.onload = function(evt){
     const data = new Uint8Array(evt.target.result);
     const workbook = XLSX.read(data, {type: 'array'});
-    let carrera = file.name.replace(/\d{4}.*/i,"").replace(/[\W_]+/g," ").trim();
-    if (carrera==="") carrera = file.name.split('.')[0];
     workbook.SheetNames.forEach(sheetName => {
       const sheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-      // Extrae periodo/semestre
-      let periodos = json[0] || [];
-      for(let col=0; col<periodos.length; col++){
-        let ciclo = (periodos[col] || "").toString().trim();
-        for(let row=1; row<json.length-5; row++){
-          // Busca materia, código anthology, horas (puedes ajustar la lógica según tu malla real)
-          let materia = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
-          let codAnthology = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
-          let horasTeo = (json[row+2] && !isNaN(json[row+2][col])) ? json[row+2][col].toString().trim() : "";
-          let horasPra = (json[row+3] && !isNaN(json[row+3][col])) ? json[row+3][col].toString().trim() : "";
-          let horasAuto = (json[row+4] && !isNaN(json[row+4][col])) ? json[row+4][col].toString().trim() : "";
-          let creditos = (json[row+5] && !isNaN(json[row+5][col])) ? json[row+5][col].toString().trim() : "";
-          // Solo si es PP-
-          if(codAnthology.startsWith("PP-") && materia.length > 2){
+      let ciclos = json[0] || [];
+      for(let col=0; col<ciclos.length; col++){
+        let ciclo = (ciclos[col] || "").toString().trim();
+        for(let row=1; row<json.length-1; row+=3){
+          let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
+          let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
+          let ht = (json[row+2] && !isNaN(json[row+2][col])) ? json[row+2][col].toString().trim() : "";
+          let hp = "";
+          let ha = "";
+          let creditos = "";
+          // Aquí puedes agregar lógica para detectar horas prácticas, autónomas y créditos si tienes filas para eso
+          if(codigo.length > 2 && nombre.length > 2 && !nombre.toLowerCase().includes("total")){
             estructura.push({
-              "MATERIA": materia,
-              "CÓDIGO ANTHOLOGY": codAnthology,
-              "CARRERAS QUE COMPARTEN": carrera, // Aquí puedes mejorar el cruce si tienes más carreras
-              "PRE-REQUISITO": "",
-              "CODIGO": codAnthology,
-              "HORAS TEÓRICAS": horasTeo,
-              "HORAS PRÁCTICAS": horasPra,
-              "HORAS AUTÓNOMAS": horasAuto,
-              "CREDITOS": creditos,
-              "CAMPO DE FORMACIÓN": "",
               "CICLO": ciclo,
-              "MALLA": file.name,
-              "Nº ORDEN EN LA MALLA (PARA CODIFICACIÓN SÍLABO)": ""
+              "MATERIA": nombre,
+              "CÓDIGO": codigo,
+              "HORAS TEÓRICAS": ht,
+              "HORAS PRÁCTICAS": hp,
+              "HORAS AUTÓNOMAS": ha,
+              "CRÉDITOS": creditos,
+              "PRERREQUISITO": ""
             });
           }
         }
@@ -115,8 +94,8 @@ function descargarExcel(){
   });
   let ws = XLSX.utils.aoa_to_sheet(data);
   let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Planificación Exacta");
-  XLSX.writeFile(wb, "planificacion_exacta.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, "Malla Filas");
+  XLSX.writeFile(wb, "malla_filas.xlsx");
 }
 </script>
 </body>
