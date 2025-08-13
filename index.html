@@ -1,92 +1,39 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Malla a Filas (ceros garantizados + prerrequisito)</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f7f7f9;margin:0}
-    .wrap{max-width:1200px;margin:28px auto;background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:28px}
-    h1{margin:0 0 12px;color:#8a1f2d}
-    .note{background:#e9effa;border-radius:8px;padding:12px 14px;margin:8px 0 18px}
-    label{font-weight:600;margin-right:10px}
-    select{padding:6px 10px;margin-right:18px}
-    .btn{background:#244a8a;color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
-    .btn:hover{background:#173b74}
-    table{width:100%;border-collapse:collapse;margin-top:16px}
-    th,td{border:1px solid #d6d6d6;padding:8px 10px}
-    th{background:#8a1f2d;color:#fff;position:sticky;top:0}
-    tr:nth-child(even){background:#fafafa}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>Malla a Filas (ceros garantizados + prerrequisito)</h1>
-    <div class="note">
-      <b>1.</b> Elige <i>Carrera</i> y <i>Año</i>. <b>2.</b> Sube tu malla Excel (2019/2023).<br/>
-      <b>3.</b> Se extraen materias reales con sus horas (los vacíos se vuelven <b>0</b>).<br/>
-      <b>4.</b> Completa <i>PRERREQUISITO</i> manualmente según flechas, luego descarga.
-    </div>
-
-    <label>Carrera:
-      <select id="carrera">
-        <option>Administración</option>
-        <option>Negocios Internacionales</option>
-        <option>Marketing</option>
-      </select>
-    </label>
-
-    <label>Año de malla:
-      <select id="anio">
-        <option>2019</option>
-        <option>2023</option>
-      </select>
-    </label>
-
-    <input type="file" id="file" accept=".xlsx" class="btn" />
-    <button class="btn" id="btnExcel">Descargar como Excel</button>
-
-    <div id="out"></div>
-  </div>
-
 <script>
 let filas = [];
 const HEADERS = ["CARRERA","AÑO","CICLO","MATERIA","CÓDIGO","HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","PRERREQUISITO"];
 
-// patrón de códigos típicos (PP-, FT-, CH-, CSC-, etc.)
-function codigoValido(c) {
-  if (!c) return false;
-  return (
-    /^[A-Z]{2,4}-\d{2,}-[A-Z0-9]+$/.test(c) ||
-    /^PP-\d{2,}-[A-Z0-9]+$/.test(c) ||
-    /^CH-[A-Z0-9-]+$/.test(c) ||
-    /^FT-[A-Z0-9-]+$/.test(c) ||
-    /^CSC-[A-Z0-9-]+$/.test(c)
-  );
-}
+// Ciclos habituales
+const CYCLE_WORDS = ["PRIMERO","SEGUNDO","TERCERO","CUARTO","QUINTO","SEXTO","SÉPTIMO","SEPTIMO","OCTAVO","NOVENO","DÉCIMO","DECIMO"];
 
-function materiaValida(n, c) {
-  if (!n || !c) return false;
-  const t = String(n).toLowerCase();
-  if (
-    t.includes("total") ||
-    t.includes("componente") ||
-    t.includes("carga horaria") ||
-    t.includes("requisito titulación") ||
-    t.includes("prácticas") ||
-    t.includes("practicas") ||
-    t.includes("servicio comunitario") ||
-    t.includes("num. asignaturas") ||
-    t.includes("nº orden en la malla")
-  ) return false;
-  return codigoValido(c);
-}
+// Patrones de código (flexibles)
+const RE_2019 = /^[A-Z]{2,4}-\d{2,3}-[A-Z0-9]{2,}$/;                 // FT-01-ADM1
+const RE_2023 = /^[A-Z]{2,5}(?:\s|-)?\d{2,3}$/;                      // MKT 397, ECN211, TMC-110
+const RE_FLEX = /^[A-Z0-9][A-Z0-9\s-]{1,}$/;                         // fallback: incluye 3D-0PE-6A, etc.
 
-// devuelve número; si está vacío o es NaN -> 0
-function numOrZero(v) {
-  if (v === undefined || v === null || v === "") return 0;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
+function isNumber(v){
+  if (v === undefined || v === null) return false;
+  if (typeof v === "string" && v.trim() === "") return false;
+  return !isNaN(Number(v));
+}
+function numOrZero(v){ return isNumber(v) ? Number(v) : 0; }
+
+function isCycleText(x){
+  if (!x) return false;
+  const s = String(x).trim().toUpperCase();
+  return CYCLE_WORDS.includes(s);
+}
+function isForbiddenName(x){
+  if (!x) return false;
+  const s = String(x).trim().toUpperCase();
+  return s === "TOTAL" || s === "TITULACIÓN" || s === "TITULACION";
+}
+function codigoPasa(code, ht, hp, ha){
+  if (!code) return false;
+  const s = String(code).trim().toUpperCase();
+  if (s === "TOTAL") return false;
+  const hasHours = isNumber(ht) || isNumber(hp) || isNumber(ha);
+  // Acepta si cumple patrón 2019 o 2023; o si es "flex" pero con horas a la derecha.
+  return RE_2019.test(s) || RE_2023.test(s) || (RE_FLEX.test(s) && hasHours);
 }
 
 document.getElementById('file').addEventListener('change', (e) => {
@@ -104,35 +51,58 @@ document.getElementById('file').addEventListener('change', (e) => {
 
     wb.SheetNames.forEach((name) => {
       const sheet = wb.Sheets[name];
-      const A = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const A = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
 
-      const ciclos = A[0] ?? [];
-      for (let col = 0; col < ciclos.length; col++) {
-        const ciclo = (ciclos[col] ?? "").toString().trim();
+      if (!A || !A.length) return;
 
-        // Recorremos TODAS las filas — estructura flexible 2019/2023
-        for (let row = 1; row < A.length - 1; row++) {
-          const nombre = (A[row] && A[row][col]) ? String(A[row][col]).trim() : "";
-          const codigo = (A[row+1] && A[row+1][col]) ? String(A[row+1][col]).trim() : "";
+      // 1) Detectar fila de ciclos (normalmente fila 0)
+      let cyclesRow = 0;
+      let foundRow = A.findIndex(r => (r||[]).some(c => isCycleText(c)));
+      if (foundRow >= 0) cyclesRow = foundRow;
 
-          if (!materiaValida(nombre, codigo)) continue;
+      // 2) Tomar índices de columnas de ciclo (o fallback cada 5 columnas)
+      let cycleCols = [];
+      const headerRow = A[cyclesRow] || [];
+      for (let j = 0; j < headerRow.length; j++){
+        if (isCycleText(headerRow[j])) cycleCols.push({col:j, ciclo:String(headerRow[j]).trim().toUpperCase()});
+      }
+      if (!cycleCols.length){
+        for (let j = 0; j < (A[0]?.length || 0); j += 5){
+          cycleCols.push({col:j, ciclo:""});
+        }
+      }
 
-          // Horas: en mallas trabajadas están a la DERECHA del código
-          const ht = numOrZero(A[row+1]?.[col+1]);
-          const hp = numOrZero(A[row+1]?.[col+2]);
-          const ha = numOrZero(A[row+1]?.[col+3]);
+      // 3) Recorrer cada ciclo y extraer por bloques
+      for (const {col, ciclo} of cycleCols){
+        let row = cyclesRow + 1;
+        while (row < A.length - 1){
+          const nombre = (A[row]?.[col] ?? "").toString().trim();
+          if (!nombre || isForbiddenName(nombre)){ row++; continue; }
 
-          filas.push({
-            "CARRERA": carrera,
-            "AÑO": anio,
-            "CICLO": ciclo,
-            "MATERIA": nombre,
-            "CÓDIGO": codigo,
-            "HORAS TEÓRICAS": ht,
-            "HORAS PRÁCTICAS": hp,
-            "HORAS AUTÓNOMAS": ha,
-            "PRERREQUISITO": "" // completar manualmente según flechas
-          });
+          const code    = (A[row+1]?.[col] ?? "").toString().trim();
+          const htCell  = A[row+1]?.[col+1];
+          const hpCell  = A[row+1]?.[col+2];
+          const haCell  = A[row+1]?.[col+3];
+
+          // Validación robusta: código + horas a la derecha
+          if (codigoPasa(code, htCell, hpCell, haCell)){
+            filas.push({
+              "CARRERA": carrera,
+              "AÑO": anio,
+              "CICLO": ciclo || String(headerRow[col] ?? "").toUpperCase(),
+              "MATERIA": nombre,
+              "CÓDIGO": code,
+              "HORAS TEÓRICAS": numOrZero(htCell),
+              "HORAS PRÁCTICAS": numOrZero(hpCell),
+              "HORAS AUTÓNOMAS": numOrZero(haCell),
+              "PRERREQUISITO": "" // completar manualmente
+            });
+
+            // Saltar bloque: nombre, código(+horas), posible código interno (sin horas), TOTAL
+            row += 3; // es suficiente en 2019 y 2023; si hay una fila extra de TOTAL, la saltaremos en el siguiente ciclo natural
+          } else {
+            row++;
+          }
         }
       }
     });
@@ -143,39 +113,30 @@ document.getElementById('file').addEventListener('change', (e) => {
 });
 
 function renderTabla() {
+  const out = document.getElementById('out');
   if (!filas.length) {
-    document.getElementById('out').innerHTML = "<p style='color:#c00'><b>No se encontraron materias válidas.</b></p>";
+    out.innerHTML = "<p style='color:#c00'><b>No se encontraron materias válidas.</b></p>";
     return;
   }
   let html = "<table><thead><tr>";
   html += HEADERS.map(h => `<th>${h}</th>`).join("");
   html += "</tr></thead><tbody>";
-
   for (const f of filas) {
     html += "<tr>";
-    for (const h of HEADERS) {
-      // usar nullish coalescing para NO borrar ceros
-      html += `<td>${f[h] ?? ""}</td>`;
-    }
+    for (const h of HEADERS) html += `<td>${f[h] ?? ""}</td>`;
     html += "</tr>";
   }
   html += "</tbody></table>";
-  document.getElementById('out').innerHTML = html;
+  out.innerHTML = html;
 }
 
 document.getElementById('btnExcel').addEventListener('click', () => {
   if (!filas.length) return;
-
   const data = [HEADERS];
-  for (const f of filas) {
-    // No usar "|| ''" para preservar 0
-    data.push(HEADERS.map(h => (f[h] ?? "")));
-  }
+  for (const f of filas) data.push(HEADERS.map(h => (f[h] ?? "")));
   const ws = XLSX.utils.aoa_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Malla");
   XLSX.writeFile(wb, "malla_filas.xlsx");
 });
 </script>
-</body>
-</html>
