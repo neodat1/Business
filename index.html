@@ -85,9 +85,15 @@ document.getElementById('fileInput').addEventListener('change', function(e){
           let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
           let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
           // Horas están a la derecha del código
-          let ht = (json[row+1] && typeof json[row+1][col+1] !== "undefined") ? json[row+1][col+1] : 0;
-          let hp = (json[row+1] && typeof json[row+1][col+2] !== "undefined") ? json[row+1][col+2] : 0;
-          let ha = (json[row+1] && typeof json[row+1][col+3] !== "undefined") ? json[row+1][col+3] : 0;
+let ht = (json[row+1] && json[row+1][col+1] !== undefined && json[row+1][col+1] !== "") 
+           ? json[row+1][col+1] 
+           : 0;
+let hp = (json[row+1] && json[row+1][col+2] !== undefined && json[row+1][col+2] !== "") 
+           ? json[row+1][col+2] 
+           : 0;
+let ha = (json[row+1] && json[row+1][col+3] !== undefined && json[row+1][col+3] !== "") 
+           ? json[row+1][col+3] 
+           : 0;
           // Si es string vacío, poner cero
           ht = (ht === "" || ht === undefined) ? 0 : ht;
           hp = (hp === "" || hp === undefined) ? 0 : hp;
