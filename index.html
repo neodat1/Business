@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Malla a Filas (2019/2023)</title>
+  <title>Malla a Filas (ceros garantizados + prerrequisito)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body{font-family:Arial,Helvetica,sans-serif;background:#f7f7f9;margin:0}
@@ -20,58 +20,69 @@
   </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Malla a Filas (2019 y 2023)</h1>
-  <div class="note">
-    <b>1.</b> Elige Carrera y Año. <b>2.</b> Sube tu malla Excel (2019 o 2023).<br/>
-    <b>3.</b> Se extraen materias reales con sus horas (los vacíos se vuelven <b>0</b>).<br/>
-    <b>4.</b> Completa PRERREQUISITO manualmente según flechas y descarga.
+  <div class="wrap">
+    <h1>Malla a Filas (ceros garantizados + prerrequisito)</h1>
+    <div class="note">
+      <b>1.</b> Elige <i>Carrera</i> y <i>Año</i>. <b>2.</b> Sube tu malla Excel (2019/2023).<br/>
+      <b>3.</b> Se extraen materias reales con sus horas (los vacíos se vuelven <b>0</b>).<br/>
+      <b>4.</b> Completa <i>PRERREQUISITO</i> manualmente según flechas, luego descarga.
+    </div>
+
+    <label>Carrera:
+      <select id="carrera">
+        <option>Administración</option>
+        <option>Negocios Internacionales</option>
+        <option>Marketing</option>
+      </select>
+    </label>
+
+    <label>Año de malla:
+      <select id="anio">
+        <option>2019</option>
+        <option>2023</option>
+      </select>
+    </label>
+
+    <input type="file" id="file" accept=".xlsx" class="btn" />
+    <button class="btn" id="btnExcel">Descargar como Excel</button>
+
+    <div id="out"></div>
   </div>
-
-  <label>Carrera:
-    <select id="carrera">
-      <option>Administración</option>
-      <option>Negocios Internacionales</option>
-      <option>Marketing</option>
-    </select>
-  </label>
-
-  <label>Año de malla:
-    <select id="anio">
-      <option>2019</option>
-      <option>2023</option>
-    </select>
-  </label>
-
-  <input type="file" id="file" accept=".xlsx" class="btn" />
-  <button class="btn" id="btnExcel">Descargar como Excel</button>
-
-  <div id="out"></div>
-</div>
 
 <script>
 let filas = [];
 const HEADERS = ["CARRERA","AÑO","CICLO","MATERIA","CÓDIGO","HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","PRERREQUISITO"];
 
+// patrón de códigos típicos (PP-, FT-, CH-, CSC-, etc.)
 function codigoValido(c) {
   if (!c) return false;
-  return /^[A-Z]{2,4}-\d{2,}-[A-Z0-9]+$/.test(c) ||
-         /^PP-\d{2,}-[A-Z0-9]+$/.test(c) ||
-         /^CH-[A-Z0-9-]+$/.test(c) ||
-         /^FT-[A-Z0-9-]+$/.test(c) ||
-         /^CSC-[A-Z0-9-]+$/.test(c);
+  return (
+    /^[A-Z]{2,4}-\d{2,}-[A-Z0-9]+$/.test(c) ||
+    /^PP-\d{2,}-[A-Z0-9]+$/.test(c) ||
+    /^CH-[A-Z0-9-]+$/.test(c) ||
+    /^FT-[A-Z0-9-]+$/.test(c) ||
+    /^CSC-[A-Z0-9-]+$/.test(c)
+  );
 }
 
-function materiaValida(nombre, codigo) {
-  if (!nombre || !codigo) return false;
-  const t = String(nombre).toLowerCase();
-  return !(
-    t.includes("total") || t.includes("componente") || t.includes("carga horaria") ||
-    t.includes("requisito titulación") || t.includes("prácticas") || t.includes("practicas") ||
-    t.includes("servicio comunitario") || t.includes("num. asignaturas") || t.includes("nº orden")
-  ) && codigoValido(codigo);
+function materiaValida(n, c) {
+  if (!n || !c) return false;
+  const t = String(n).toLowerCase();
+  if (
+    t.includes("total") ||
+    t.includes("componente") ||
+    t.includes("carga horaria") ||
+    t.includes("requisito titulación") ||
+    t.includes("prácticas") ||
+    t.includes("practicas") ||
+    t.includes("servicio comunitario") ||
+    t.includes("num. asignaturas") ||
+    t.includes("nº orden en la malla")
+  ) return false;
+  return codigoValido(c);
 }
 
+// devuelve número; si está vacío o es NaN -> 0
 function numOrZero(v) {
   if (v === undefined || v === null || v === "") return 0;
   const n = Number(v);
@@ -95,20 +106,21 @@ document.getElementById('file').addEventListener('change', (e) => {
       const sheet = wb.Sheets[name];
       const A = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-      const ciclosFila = A.find(row => row.some(cell => typeof cell === 'string' && cell.toLowerCase().includes('ciclo'))) ?? A[0];
-      const ciclos = ciclosFila;
-
+      const ciclos = A[0] ?? [];
       for (let col = 0; col < ciclos.length; col++) {
         const ciclo = (ciclos[col] ?? "").toString().trim();
 
-        for (let row = 0; row < A.length - 4; row++) {
-          const nombre = A[row]?.[col]?.toString().trim() ?? "";
-          const codigo = A[row + 1]?.[col]?.toString().trim() ?? "";
-          const ht = numOrZero(A[row + 2]?.[col]);
-          const hp = numOrZero(A[row + 3]?.[col]);
-          const ha = numOrZero(A[row + 4]?.[col]);
+        // Recorremos TODAS las filas — estructura flexible 2019/2023
+        for (let row = 1; row < A.length - 1; row++) {
+          const nombre = (A[row] && A[row][col]) ? String(A[row][col]).trim() : "";
+          const codigo = (A[row+1] && A[row+1][col]) ? String(A[row+1][col]).trim() : "";
 
           if (!materiaValida(nombre, codigo)) continue;
+
+          // Horas: en mallas trabajadas están a la DERECHA del código
+          const ht = numOrZero(A[row+1]?.[col+1]);
+          const hp = numOrZero(A[row+1]?.[col+2]);
+          const ha = numOrZero(A[row+1]?.[col+3]);
 
           filas.push({
             "CARRERA": carrera,
@@ -119,7 +131,7 @@ document.getElementById('file').addEventListener('change', (e) => {
             "HORAS TEÓRICAS": ht,
             "HORAS PRÁCTICAS": hp,
             "HORAS AUTÓNOMAS": ha,
-            "PRERREQUISITO": ""
+            "PRERREQUISITO": "" // completar manualmente según flechas
           });
         }
       }
@@ -142,6 +154,7 @@ function renderTabla() {
   for (const f of filas) {
     html += "<tr>";
     for (const h of HEADERS) {
+      // usar nullish coalescing para NO borrar ceros
       html += `<td>${f[h] ?? ""}</td>`;
     }
     html += "</tr>";
@@ -155,6 +168,7 @@ document.getElementById('btnExcel').addEventListener('click', () => {
 
   const data = [HEADERS];
   for (const f of filas) {
+    // No usar "|| ''" para preservar 0
     data.push(HEADERS.map(h => (f[h] ?? "")));
   }
   const ws = XLSX.utils.aoa_to_sheet(data);
