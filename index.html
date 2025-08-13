@@ -1,149 +1,181 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Malla a Filas (Ceros, Prerrequisito editable)</title>
+  <meta charset="UTF-8" />
+  <title>Malla a Filas (ceros garantizados + prerrequisito)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9;}
-    .container { background: white; max-width: 1200px; margin: 32px auto; border-radius: 12px; box-shadow: 0 0 8px #bbb; padding: 32px;}
-    h2 { color: #932432; }
-    label { font-weight:bold; margin-right:12px; }
-    select { padding: 5px 12px; margin-right: 30px;}
-    table { width: 100%; border-collapse: collapse; margin-top: 18px;}
-    th, td { border: 1px solid #ccc; padding: 8px; font-size: 15px;}
-    th { background: #932432; color: #fff;}
-    tr:nth-child(even) { background: #f4f4f4;}
-    .btn { padding: 8px 18px; margin: 10px 5px 0 0; border: none; border-radius: 7px; background: #35558a; color: white; cursor: pointer;}
-    .btn:hover { background: #25416b;}
-    .info { background: #e6ecf6; padding: 10px; border-radius: 8px; margin-bottom: 16px;}
+    body{font-family:Arial,Helvetica,sans-serif;background:#f7f7f9;margin:0}
+    .wrap{max-width:1200px;margin:28px auto;background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:28px}
+    h1{margin:0 0 12px;color:#8a1f2d}
+    .note{background:#e9effa;border-radius:8px;padding:12px 14px;margin:8px 0 18px}
+    label{font-weight:600;margin-right:10px}
+    select{padding:6px 10px;margin-right:18px}
+    .btn{background:#244a8a;color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+    .btn:hover{background:#173b74}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th,td{border:1px solid #d6d6d6;padding:8px 10px}
+    th{background:#8a1f2d;color:#fff;position:sticky;top:0}
+    tr:nth-child(even){background:#fafafa}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Malla a Filas (con ceros y prerrequisito editable)</h2>
-    <div class="info">
-      <b>1.</b> Selecciona <b>Carrera</b> y <b>Año de Malla</b>.<br>
-      <b>2.</b> Sube tu malla curricular en Excel.<br>
-      <b>3.</b> El sistema muestra materias reales, con ceros en las horas si no hay valor.<br>
-      <b>4.</b> Descarga y completa PRERREQUISITO según las flechas de tu malla (esto es manual).
+  <div class="wrap">
+    <h1>Malla a Filas (ceros garantizados + prerrequisito)</h1>
+    <div class="note">
+      <b>1.</b> Elige <i>Carrera</i> y <i>Año</i>. <b>2.</b> Sube tu malla Excel (2019/2023).<br/>
+      <b>3.</b> Se extraen materias reales con sus horas (los vacíos se vuelven <b>0</b>).<br/>
+      <b>4.</b> Completa <i>PRERREQUISITO</i> manualmente según flechas, luego descarga.
     </div>
+
     <label>Carrera:
-      <select id="selectCarrera">
-        <option value="Administración">Administración</option>
-        <option value="Negocios Internacionales">Negocios Internacionales</option>
-        <option value="Marketing">Marketing</option>
+      <select id="carrera">
+        <option>Administración</option>
+        <option>Negocios Internacionales</option>
+        <option>Marketing</option>
       </select>
     </label>
+
     <label>Año de malla:
-      <select id="selectAnio">
-        <option value="2019">2019</option>
-        <option value="2023">2023</option>
+      <select id="anio">
+        <option>2019</option>
+        <option>2023</option>
       </select>
     </label>
-    <input type="file" id="fileInput" accept=".xlsx" class="btn">
-    <button onclick="descargarExcel()" class="btn">Descargar como Excel</button>
-    <div id="output"></div>
+
+    <input type="file" id="file" accept=".xlsx" class="btn" />
+    <button class="btn" id="btnExcel">Descargar como Excel</button>
+
+    <div id="out"></div>
   </div>
+
 <script>
-let estructura = [];
-const CABECERAS = [
-  "CARRERA", "AÑO", "CICLO", "MATERIA", "CÓDIGO", "HORAS TEÓRICAS", "HORAS PRÁCTICAS", "HORAS AUTÓNOMAS", "PRERREQUISITO"
-];
+let filas = [];
+const HEADERS = ["CARRERA","AÑO","CICLO","MATERIA","CÓDIGO","HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","PRERREQUISITO"];
 
-function codigoValido(codigo) {
-  if(!codigo) return false;
-  // Ejemplo: PP-01-CONT1, CH-01-MAT01, FT-01-ADM1, etc.
-  return !!codigo.match(/^[A-Z]{2,3}-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-\d{2,}-[A-Z0-9]+$/) || !!codigo.match(/^PP-/) || !!codigo.match(/^[A-Z]{2,3}-\d{2,}/);
+// patrón de códigos típicos (PP-, FT-, CH-, CSC-, etc.)
+function codigoValido(c) {
+  if (!c) return false;
+  return (
+    /^[A-Z]{2,4}-\d{2,}-[A-Z0-9]+$/.test(c) ||
+    /^PP-\d{2,}-[A-Z0-9]+$/.test(c) ||
+    /^CH-[A-Z0-9-]+$/.test(c) ||
+    /^FT-[A-Z0-9-]+$/.test(c) ||
+    /^CSC-[A-Z0-9-]+$/.test(c)
+  );
 }
 
-function materiaValida(nombre, codigo) {
-  if(!nombre || !codigo) return false;
-  let txt = nombre.toString().toLowerCase();
-  if(txt.includes("total") || txt.includes("componente") || txt.includes("carga horaria") || txt.includes("requisito") || txt.includes("práctica") || txt.includes("num. asignaturas") || txt.includes("servicio comunitario") || txt.includes("prácticas laboral")) return false;
-  return codigoValido(codigo);
+function materiaValida(n, c) {
+  if (!n || !c) return false;
+  const t = String(n).toLowerCase();
+  if (
+    t.includes("total") ||
+    t.includes("componente") ||
+    t.includes("carga horaria") ||
+    t.includes("requisito titulación") ||
+    t.includes("prácticas") ||
+    t.includes("practicas") ||
+    t.includes("servicio comunitario") ||
+    t.includes("num. asignaturas") ||
+    t.includes("nº orden en la malla")
+  ) return false;
+  return codigoValido(c);
 }
 
-document.getElementById('fileInput').addEventListener('change', function(e){
-  estructura = [];
-  document.getElementById('output').innerHTML = "Procesando...";
-  const file = e.target.files[0];
-  if(!file) return;
-  const carrera = document.getElementById('selectCarrera').value;
-  const anio = document.getElementById('selectAnio').value;
+// devuelve número; si está vacío o es NaN -> 0
+function numOrZero(v) {
+  if (v === undefined || v === null || v === "") return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+document.getElementById('file').addEventListener('change', (e) => {
+  filas = [];
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const carrera = document.getElementById('carrera').value;
+  const anio = document.getElementById('anio').value;
+
   const reader = new FileReader();
-  reader.onload = function(evt){
+  reader.onload = (evt) => {
     const data = new Uint8Array(evt.target.result);
-    const workbook = XLSX.read(data, {type: 'array'});
-    workbook.SheetNames.forEach(sheetName => {
-      const sheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-      let ciclos = json[0] || [];
-      for(let col=0; col<ciclos.length; col++){
-        let ciclo = (ciclos[col] || "").toString().trim();
-        for(let row=1; row<json.length-1; row++){
-          let nombre = (json[row] && json[row][col]) ? json[row][col].toString().trim() : "";
-          let codigo = (json[row+1] && json[row+1][col]) ? json[row+1][col].toString().trim() : "";
-          // Horas están a la derecha del código
-let ht = (json[row+1] && json[row+1][col+1] !== undefined && json[row+1][col+1] !== "") 
-           ? json[row+1][col+1] 
-           : 0;
-let hp = (json[row+1] && json[row+1][col+2] !== undefined && json[row+1][col+2] !== "") 
-           ? json[row+1][col+2] 
-           : 0;
-let ha = (json[row+1] && json[row+1][col+3] !== undefined && json[row+1][col+3] !== "") 
-           ? json[row+1][col+3] 
-           : 0;
-          // Si es string vacío, poner cero
-          ht = (ht === "" || ht === undefined) ? 0 : ht;
-          hp = (hp === "" || hp === undefined) ? 0 : hp;
-          ha = (ha === "" || ha === undefined) ? 0 : ha;
-          if(materiaValida(nombre, codigo)){
-            estructura.push({
-              "CARRERA": carrera,
-              "AÑO": anio,
-              "CICLO": ciclo,
-              "MATERIA": nombre,
-              "CÓDIGO": codigo,
-              "HORAS TEÓRICAS": ht,
-              "HORAS PRÁCTICAS": hp,
-              "HORAS AUTÓNOMAS": ha,
-              "PRERREQUISITO": ""
-            });
-          }
+    const wb = XLSX.read(data, { type: 'array' });
+
+    wb.SheetNames.forEach((name) => {
+      const sheet = wb.Sheets[name];
+      const A = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      const ciclos = A[0] ?? [];
+      for (let col = 0; col < ciclos.length; col++) {
+        const ciclo = (ciclos[col] ?? "").toString().trim();
+
+        // Recorremos TODAS las filas — estructura flexible 2019/2023
+        for (let row = 1; row < A.length - 1; row++) {
+          const nombre = (A[row] && A[row][col]) ? String(A[row][col]).trim() : "";
+          const codigo = (A[row+1] && A[row+1][col]) ? String(A[row+1][col]).trim() : "";
+
+          if (!materiaValida(nombre, codigo)) continue;
+
+          // Horas: en mallas trabajadas están a la DERECHA del código
+          const ht = numOrZero(A[row+1]?.[col+1]);
+          const hp = numOrZero(A[row+1]?.[col+2]);
+          const ha = numOrZero(A[row+1]?.[col+3]);
+
+          filas.push({
+            "CARRERA": carrera,
+            "AÑO": anio,
+            "CICLO": ciclo,
+            "MATERIA": nombre,
+            "CÓDIGO": codigo,
+            "HORAS TEÓRICAS": ht,
+            "HORAS PRÁCTICAS": hp,
+            "HORAS AUTÓNOMAS": ha,
+            "PRERREQUISITO": "" // completar manualmente según flechas
+          });
         }
       }
     });
+
     renderTabla();
   };
   reader.readAsArrayBuffer(file);
 });
 
-function renderTabla(){
-  let html = `<table><tr>${CABECERAS.map(c=>`<th>${c}</th>`).join('')}</tr>`;
-  estructura.forEach(m=>{
-    html += `<tr>${CABECERAS.map(c=>`<td>${m[c]||""}</td>`).join('')}</tr>`;
-  });
-  html += `</table>`;
-  document.getElementById('output').innerHTML = html;
+function renderTabla() {
+  if (!filas.length) {
+    document.getElementById('out').innerHTML = "<p style='color:#c00'><b>No se encontraron materias válidas.</b></p>";
+    return;
+  }
+  let html = "<table><thead><tr>";
+  html += HEADERS.map(h => `<th>${h}</th>`).join("");
+  html += "</tr></thead><tbody>";
+
+  for (const f of filas) {
+    html += "<tr>";
+    for (const h of HEADERS) {
+      // usar nullish coalescing para NO borrar ceros
+      html += `<td>${f[h] ?? ""}</td>`;
+    }
+    html += "</tr>";
+  }
+  html += "</tbody></table>";
+  document.getElementById('out').innerHTML = html;
 }
 
-function descargarExcel(){
-  let data = [CABECERAS];
-  estructura.forEach(m => {
-    data.push(CABECERAS.map(c => m[c] || ""));
-  });
-  
+document.getElementById('btnExcel').addEventListener('click', () => {
+  if (!filas.length) return;
+
+  const data = [HEADERS];
+  for (const f of filas) {
+    // No usar "|| ''" para preservar 0
+    data.push(HEADERS.map(h => (f[h] ?? "")));
+  }
   const ws = XLSX.utils.aoa_to_sheet(data);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "MallaConvertida");
-  
-  const carrera = document.getElementById('selectCarrera').value;
-  const anio = document.getElementById('selectAnio').value;
-  const fileName = `Malla_${carrera.replace(/\s+/g, '_')}_${anio}.xlsx`;
-  
-  XLSX.writeFile(wb, fileName);
-}
+  XLSX.utils.book_append_sheet(wb, ws, "Malla");
+  XLSX.writeFile(wb, "malla_filas.xlsx");
+});
 </script>
 </body>
 </html>
