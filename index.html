@@ -69,29 +69,47 @@
     </main>
   </div>
 
-  <script>
-    function cargarModulo(id, archivo) {
-      fetch(archivo)
-        .then(res => res.text())
-        .then(html => document.getElementById("contenido-" + id).innerHTML = html)
-        .catch(() => {
-          document.getElementById("contenido-" + id).innerHTML = "<p class='text-red-600'>⚠️ Error al cargar el módulo <strong>" + archivo + "</strong>.</p>";
+ <script>
+  function cargarModulo(id, archivo) {
+    fetch(archivo)
+      .then(res => res.text())
+      .then(html => {
+        const container = document.getElementById("contenido-" + id);
+        container.innerHTML = html;
+
+        // Buscar y ejecutar los <script> del HTML cargado
+        const scripts = container.querySelectorAll("script");
+        scripts.forEach((oldScript) => {
+          const newScript = document.createElement("script");
+          if (oldScript.src) {
+            newScript.src = oldScript.src;
+          } else {
+            newScript.textContent = oldScript.textContent;
+          }
+          document.body.appendChild(newScript);
+          oldScript.remove();
         });
-    }
-
-    function mostrarModulo(modulo) {
-      document.getElementById("bienvenida").style.display = "none";
-      const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
-      modulos.forEach(m => {
-        document.getElementById(m).style.display = (m === modulo) ? "block" : "none";
+      })
+      .catch(() => {
+        document.getElementById("contenido-" + id).innerHTML = "<p class='text-red-600'>⚠️ Error al cargar el módulo <strong>" + archivo + "</strong>.</p>";
       });
-    }
+  }
 
-    cargarModulo("malla", "mallas.html");
-    cargarModulo("docentes", "docentes.html");
-    cargarModulo("asignacion", "asignacion.html");
-    cargarModulo("horarios", "horarios.html");
-    cargarModulo("reportes", "reportes.html");
-  </script>
+  function mostrarModulo(modulo) {
+    document.getElementById("bienvenida").style.display = "none";
+    const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
+    modulos.forEach(m => {
+      document.getElementById(m).style.display = (m === modulo) ? "block" : "none";
+    });
+  }
+
+  // Carga inicial de los módulos
+  cargarModulo("malla", "mallas.html");
+  cargarModulo("docentes", "docentes.html");
+  cargarModulo("asignacion", "asignacion.html");
+  cargarModulo("horarios", "horarios.html");
+  cargarModulo("reportes", "reportes.html");
+</script>
+
 </body>
 </html>
