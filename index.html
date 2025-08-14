@@ -1,356 +1,903 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Sistema moderno de planificación académica">
-  <title>PlanificaU | Gestión Académica</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>PlanificaU | Gestión Académica Integral</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --primary: #04136C;    /* Azul universitario */
-      --secondary: #DE912E;  /* Naranja energético */
-      --accent: #A62939;     /* Rojo vibrante */
-      --light: #F8F9FC;
-      --dark: #1A1D28;
+      --primary: #04136C;
+      --primary-light: #1A2B8F;
+      --secondary: #DE912E;
+      --secondary-light: #F0A23A;
+      --accent: #A62939;
+      --accent-light: #C03548;
+      --light: #F8FAFC;
+      --dark: #0F172A;
+      --gray: #64748B;
+      --light-gray: #E2E8F0;
     }
-    
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     html {
+      font-size: 16px;
       scroll-behavior: smooth;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    
+
     body {
       background-color: var(--light);
+      color: var(--dark);
+      line-height: 1.6;
     }
-    
-    .dashboard-container {
+
+    .dashboard-layout {
       display: grid;
-      grid-template-columns: 240px 1fr;
+      grid-template-columns: 280px 1fr;
       min-height: 100vh;
     }
-    
-    .module-card {
-      transition: all 0.3s ease;
-      border-left: 4px solid transparent;
-    }
-    
-    .module-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-    
-    .active-module {
-      border-left-color: var(--primary);
-      background-color: rgba(4, 19, 108, 0.05);
-    }
-    
-    .btn-primary {
-      background: var(--primary);
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-    
-    .btn-primary:hover {
-      background: #0A1F8F;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(4, 19, 108, 0.25);
-    }
-    
-    .btn-secondary {
-      background: var(--secondary);
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-    
-    .btn-secondary:hover {
-      background: #E89D3A;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(222, 145, 46, 0.25);
-    }
-    
-    .pulse-animation {
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-    
-    .sidebar-link {
-      transition: all 0.3s ease;
+
+    /* Sidebar Premium */
+    .sidebar {
+      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 2rem 1.5rem;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
       position: relative;
+      z-index: 10;
     }
-    
-    .sidebar-link:hover {
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+      padding-left: 0.5rem;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background-color: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 1.1rem;
+    }
+
+    .brand-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .brand-name span {
+      color: var(--secondary);
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .nav-link:hover {
       background-color: rgba(255, 255, 255, 0.1);
+      color: white;
     }
-    
-    .sidebar-link.active {
+
+    .nav-link.active {
       background-color: rgba(255, 255, 255, 0.15);
+      color: white;
     }
-    
-    .sidebar-link.active::after {
+
+    .nav-link.active::before {
       content: '';
       position: absolute;
-      right: 0;
+      left: 0;
       top: 0;
       height: 100%;
-      width: 4px;
+      width: 3px;
+      background-color: var(--secondary);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .nav-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+
+    .nav-item.active .nav-icon {
       background-color: var(--secondary);
     }
-    
-    .content-transition {
-      animation: fadeIn 0.5s ease-out;
+
+    .sidebar-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem;
+      background-color: rgba(0, 0, 0, 0.1);
+      text-align: center;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
     }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+
+    /* Main Content */
+    .main-content {
+      padding: 2rem;
+      overflow-y: auto;
     }
-    
-    .module-icon {
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .page-title p {
+      color: var(--gray);
+      font-size: 0.95rem;
+    }
+
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .notification-btn {
       width: 40px;
       height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 10px;
+      border-radius: 8px;
+      background-color: white;
+      color: var(--gray);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .notification-btn:hover {
+      color: var(--primary);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+    }
+
+    .user-name {
+      font-weight: 600;
+    }
+
+    .user-role {
+      font-size: 0.8rem;
+      color: var(--gray);
+    }
+
+    /* Dashboard Cards */
+    .welcome-card {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 20px rgba(4, 19, 108, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .welcome-card::before {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 200px;
+      height: 200px;
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+    }
+
+    .welcome-card::after {
+      content: '';
+      position: absolute;
+      bottom: -80px;
+      right: -30px;
+      width: 200px;
+      height: 200px;
+      background-color: rgba(255, 255, 255, 0.03);
+      border-radius: 50%;
+    }
+
+    .welcome-content {
+      position: relative;
+      z-index: 2;
+      max-width: 60%;
+    }
+
+    .welcome-content h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      line-height: 1.3;
+    }
+
+    .welcome-content p {
+      opacity: 0.9;
+      margin-bottom: 1.5rem;
+    }
+
+    .welcome-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background-color: white;
+      color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-outline:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-color: white;
+    }
+
+    .welcome-graphic {
+      position: absolute;
+      right: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .graphic-circle {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .graphic-icon {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 2.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Modules Grid */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .module-card {
+      background-color: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border: 1px solid var(--light-gray);
+    }
+
+    .module-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      border-color: rgba(222, 145, 46, 0.3);
+    }
+
+    .module-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .module-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .malla-icon {
+      background-color: rgba(222, 145, 46, 0.1);
+      color: var(--secondary);
+    }
+
+    .docentes-icon {
+      background-color: rgba(166, 41, 57, 0.1);
+      color: var(--accent);
+    }
+
+    .asignacion-icon {
+      background-color: rgba(4, 19, 108, 0.1);
+      color: var(--primary);
+    }
+
+    .horarios-icon {
+      background-color: rgba(222, 145, 46, 0.1);
+      color: var(--secondary);
+    }
+
+    .reportes-icon {
+      background-color: rgba(166, 41, 57, 0.1);
+      color: var(--accent);
+    }
+
+    .module-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--dark);
+    }
+
+    .module-description {
+      color: var(--gray);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .module-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .module-stat {
+      font-size: 0.85rem;
+      color: var(--gray);
+    }
+
+    .module-stat strong {
+      color: var(--dark);
+      font-weight: 600;
+    }
+
+    .module-action {
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      cursor: pointer;
+    }
+
+    .module-action:hover {
+      color: var(--primary-light);
+    }
+
+    /* Module Sections (hidden by default) */
+    .module-section {
+      display: none;
+      background-color: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--light-gray);
+      margin-bottom: 2rem;
+    }
+
+    .module-section.active {
+      display: block;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .module-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .section-title h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: var(--light);
+      border-radius: 8px;
+      color: var(--gray);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .back-btn:hover {
+      background-color: var(--light-gray);
+      color: var(--dark);
+    }
+
+    .section-actions .btn {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.9rem;
+    }
+
+    .btn-accent {
+      background-color: var(--secondary);
+      color: white;
+    }
+
+    .btn-accent:hover {
+      background-color: var(--secondary-light);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(222, 145, 46, 0.25);
+    }
+
+    .module-content {
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .dashboard-layout {
+        grid-template-columns: 240px 1fr;
+      }
+      
+      .welcome-content {
+        max-width: 100%;
+      }
+      
+      .welcome-graphic {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-layout {
+        grid-template-columns: 1fr;
+      }
+      
+      .sidebar {
+        display: none;
+      }
+      
+      .welcome-actions {
+        flex-direction: column;
+      }
+      
+      .modules-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="dashboard-container">
-    <!-- Sidebar moderno -->
-    <aside class="bg-[#04136C] text-white shadow-xl">
-      <div class="p-6 flex items-center space-x-3">
-        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-[#04136C]">
+  <div class="dashboard-layout">
+    <!-- Sidebar Premium -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
           <i class="fas fa-calendar-alt"></i>
         </div>
-        <h1 class="text-xl font-bold">Planifica<span class="text-[#DE912E]">U</span></h1>
+        <div class="brand-name">Planifica<span>U</span></div>
       </div>
       
-      <nav class="mt-8 space-y-1 px-4">
-        <button data-module-btn="malla" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg active">
-          <div class="module-icon bg-[#DE912E]/20 text-[#DE912E]">
-            <i class="fas fa-sitemap"></i>
-          </div>
-          <span>Malla Curricular</span>
-        </button>
+      <nav class="nav-menu">
+        <div class="nav-item active">
+          <a href="#" class="nav-link active" data-module-btn="dashboard">
+            <div class="nav-icon">
+              <i class="fas fa-home"></i>
+            </div>
+            <span>Dashboard</span>
+          </a>
+        </div>
         
-        <button data-module-btn="docentes" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg">
-          <div class="module-icon bg-[#A62939]/20 text-[#A62939]">
-            <i class="fas fa-chalkboard-teacher"></i>
-          </div>
-          <span>Docentes</span>
-        </button>
+        <div class="nav-item">
+          <a href="#" class="nav-link" data-module-btn="malla">
+            <div class="nav-icon">
+              <i class="fas fa-sitemap"></i>
+            </div>
+            <span>Malla Curricular</span>
+          </a>
+        </div>
         
-        <button data-module-btn="asignacion" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg">
-          <div class="module-icon bg-[#04136C]/20 text-[#04136C]">
-            <i class="fas fa-tasks"></i>
-          </div>
-          <span>Asignación</span>
-        </button>
+        <div class="nav-item">
+          <a href="#" class="nav-link" data-module-btn="docentes">
+            <div class="nav-icon">
+              <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <span>Docentes</span>
+          </a>
+        </div>
         
-        <button data-module-btn="horarios" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg">
-          <div class="module-icon bg-[#DE912E]/20 text-[#DE912E]">
-            <i class="fas fa-calendar-day"></i>
-          </div>
-          <span>Horarios</span>
-        </button>
+        <div class="nav-item">
+          <a href="#" class="nav-link" data-module-btn="asignacion">
+            <div class="nav-icon">
+              <i class="fas fa-tasks"></i>
+            </div>
+            <span>Asignación</span>
+          </a>
+        </div>
         
-        <button data-module-btn="reportes" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg">
-          <div class="module-icon bg-[#A62939]/20 text-[#A62939]">
-            <i class="fas fa-chart-bar"></i>
-          </div>
-          <span>Reportes</span>
-        </button>
+        <div class="nav-item">
+          <a href="#" class="nav-link" data-module-btn="horarios">
+            <div class="nav-icon">
+              <i class="fas fa-calendar-day"></i>
+            </div>
+            <span>Horarios</span>
+          </a>
+        </div>
+        
+        <div class="nav-item">
+          <a href="#" class="nav-link" data-module-btn="reportes">
+            <div class="nav-icon">
+              <i class="fas fa-chart-bar"></i>
+            </div>
+            <span>Reportes</span>
+          </a>
+        </div>
       </nav>
       
-      <div class="absolute bottom-0 left-0 right-0 p-4 bg-[#04136C]/90 backdrop-blur-sm text-center">
-        <p class="text-sm text-white/80">v2.0 · Sistema Académico</p>
+      <div class="sidebar-footer">
+        v2.0 · Sistema Académico
       </div>
     </aside>
 
-    <!-- Contenido principal -->
-    <main class="p-8 overflow-y-auto">
-      <!-- Header -->
-      <header class="flex justify-between items-center mb-8">
-        <div>
-          <h2 class="text-2xl font-bold text-gray-800">Panel de Control</h2>
-          <p class="text-gray-500">Bienvenido al sistema de planificación académica</p>
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="header">
+        <div class="page-title">
+          <h1>Panel de Control</h1>
+          <p>Bienvenido al sistema de gestión académica</p>
         </div>
-        <div class="flex space-x-3">
-          <button class="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center space-x-2">
-            <i class="fas fa-bell text-gray-500"></i>
+        
+        <div class="user-actions">
+          <button class="notification-btn">
+            <i class="fas fa-bell"></i>
           </button>
-          <div class="w-10 h-10 rounded-full bg-[#04136C] flex items-center justify-center text-white">
-            <i class="fas fa-user"></i>
+          
+          <div class="user-profile">
+            <div class="user-avatar">AD</div>
+            <div>
+              <div class="user-name">Admin User</div>
+              <div class="user-role">Administrador</div>
+            </div>
           </div>
         </div>
       </header>
 
-      <!-- Sección de bienvenida -->
-      <section id="bienvenida" class="content-transition bg-white rounded-2xl shadow-md p-8 mb-8">
-        <div class="flex flex-col md:flex-row items-center">
-          <div class="md:w-1/2 mb-6 md:mb-0">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">Planificación Académica <span class="text-[#04136C]">Inteligente</span></h2>
-            <p class="text-gray-600 mb-6">Optimiza la gestión educativa con nuestra plataforma todo-en-uno diseñada para instituciones modernas.</p>
-            <div class="flex space-x-4">
-              <button data-module-btn="malla" class="btn-primary px-6 py-3 rounded-lg text-white font-medium flex items-center space-x-2">
-                <i class="fas fa-play"></i>
-                <span>Comenzar</span>
+      <!-- Dashboard Content -->
+      <section id="dashboard" class="module-section active">
+        <div class="welcome-card">
+          <div class="welcome-content">
+            <h2>Optimiza la gestión académica de tu institución</h2>
+            <p>PlanificaU te ofrece las herramientas necesarias para administrar mallas curriculares, docentes, horarios y más, todo en un solo lugar.</p>
+            <div class="welcome-actions">
+              <button class="btn btn-primary">
+                <i class="fas fa-play"></i> Comenzar
               </button>
-              <button class="px-6 py-3 rounded-lg border-2 border-[#DE912E] text-[#DE912E] font-medium hover:bg-[#DE912E]/10 transition flex items-center space-x-2">
-                <i class="fas fa-question-circle"></i>
-                <span>Ayuda</span>
-              </button>
-            </div>
-          </div>
-          <div class="md:w-1/2 flex justify-center">
-            <div class="w-64 h-64 bg-gradient-to-br from-[#04136C] to-[#A62939] rounded-2xl flex items-center justify-center text-white pulse-animation">
-              <i class="fas fa-calendar-check text-5xl"></i>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Módulos (ocultos inicialmente) -->
-      <section id="malla" class="content-transition hidden">
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center space-x-4">
-            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
-              <i class="fas fa-arrow-left"></i>
-              <span>Volver</span>
-            </button>
-            <h2 class="text-2xl font-bold text-gray-800">Malla Curricular</h2>
-          </div>
-          <button class="btn-primary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
-            <i class="fas fa-plus"></i>
-            <span>Nueva Malla</span>
-          </button>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- Tarjeta de ejemplo -->
-          <div class="module-card bg-white rounded-xl shadow-md p-6">
-            <div class="flex items-center space-x-4 mb-4">
-              <div class="module-icon bg-[#DE912E]/10 text-[#DE912E]">
-                <i class="fas fa-graduation-cap"></i>
-              </div>
-              <h3 class="font-bold text-gray-800">Ingeniería en Sistemas</h3>
-            </div>
-            <p class="text-gray-500 text-sm mb-4">Malla curricular actualizada 2023 con 10 semestres académicos.</p>
-            <div class="flex justify-between items-center">
-              <span class="text-xs bg-[#04136C]/10 text-[#04136C] px-2 py-1 rounded">Activa</span>
-              <button class="text-[#04136C] hover:text-[#0A1F8F]">
-                <i class="fas fa-ellipsis-h"></i>
+              <button class="btn btn-outline">
+                <i class="fas fa-book"></i> Ver tutoriales
               </button>
             </div>
           </div>
           
-          <!-- Otras tarjetas de ejemplo... -->
+          <div class="welcome-graphic">
+            <div class="graphic-circle">
+              <div class="graphic-icon">
+                <i class="fas fa-calendar-check"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modules-grid">
+          <!-- Malla Curricular Card -->
+          <div class="module-card" data-module-btn="malla">
+            <div class="module-header">
+              <div class="module-icon malla-icon">
+                <i class="fas fa-sitemap"></i>
+              </div>
+              <div>
+                <div class="module-title">Malla Curricular</div>
+                <div class="module-description">Diseña y administra la estructura académica</div>
+              </div>
+            </div>
+            <div class="module-stats">
+              <div class="module-stat"><strong>12</strong> mallas activas</div>
+              <div class="module-action">
+                Ver más <i class="fas fa-chevron-right"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Docentes Card -->
+          <div class="module-card" data-module-btn="docentes">
+            <div class="module-header">
+              <div class="module-icon docentes-icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+              </div>
+              <div>
+                <div class="module-title">Docentes</div>
+                <div class="module-description">Gestiona el personal académico</div>
+              </div>
+            </div>
+            <div class="module-stats">
+              <div class="module-stat"><strong>85</strong> docentes</div>
+              <div class="module-action">
+                Ver más <i class="fas fa-chevron-right"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Asignación Card -->
+          <div class="module-card" data-module-btn="asignacion">
+            <div class="module-header">
+              <div class="module-icon asignacion-icon">
+                <i class="fas fa-tasks"></i>
+              </div>
+              <div>
+                <div class="module-title">Asignación</div>
+                <div class="module-description">Distribuye la carga académica</div>
+              </div>
+            </div>
+            <div class="module-stats">
+              <div class="module-stat"><strong>420</strong> asignaciones</div>
+              <div class="module-action">
+                Ver más <i class="fas fa-chevron-right"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Horarios Card -->
+          <div class="module-card" data-module-btn="horarios">
+            <div class="module-header">
+              <div class="module-icon horarios-icon">
+                <i class="fas fa-calendar-day"></i>
+              </div>
+              <div>
+                <div class="module-title">Horarios</div>
+                <div class="module-description">Organiza los tiempos académicos</div>
+              </div>
+            </div>
+            <div class="module-stats">
+              <div class="module-stat"><strong>36</strong> horarios</div>
+              <div class="module-action">
+                Ver más <i class="fas fa-chevron-right"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Reportes Card -->
+          <div class="module-card" data-module-btn="reportes">
+            <div class="module-header">
+              <div class="module-icon reportes-icon">
+                <i class="fas fa-chart-bar"></i>
+              </div>
+              <div>
+                <div class="module-title">Reportes</div>
+                <div class="module-description">Genera análisis institucionales</div>
+              </div>
+            </div>
+            <div class="module-stats">
+              <div class="module-stat"><strong>15</strong> modelos</div>
+              <div class="module-action">
+                Ver más <i class="fas fa-chevron-right"></i>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="docentes" class="content-transition hidden">
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center space-x-4">
-            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+      <!-- Malla Curricular Section -->
+      <section id="malla" class="module-section">
+        <div class="module-section-header">
+          <div class="section-title">
+            <button class="back-btn" onclick="showDashboard()">
               <i class="fas fa-arrow-left"></i>
-              <span>Volver</span>
+              Volver
             </button>
-            <h2 class="text-2xl font-bold text-gray-800">Gestión de Docentes</h2>
+            <h2>Malla Curricular</h2>
           </div>
-          <button class="btn-primary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
-            <i class="fas fa-plus"></i>
-            <span>Nuevo Docente</span>
-          </button>
+          <div class="section-actions">
+            <button class="btn btn-accent">
+              <i class="fas fa-plus"></i> Nueva Malla
+            </button>
+          </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-          <div class="p-6">
-            <div class="skeleton w-full h-64 rounded-lg"></div>
-          </div>
+        <div class="module-content">
+          <p>Contenido del módulo de Malla Curricular</p>
         </div>
       </section>
 
-      <section id="asignacion" class="content-transition hidden">
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center space-x-4">
-            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+      <!-- Docentes Section -->
+      <section id="docentes" class="module-section">
+        <div class="module-section-header">
+          <div class="section-title">
+            <button class="back-btn" onclick="showDashboard()">
               <i class="fas fa-arrow-left"></i>
-              <span>Volver</span>
+              Volver
             </button>
-            <h2 class="text-2xl font-bold text-gray-800">Asignación Académica</h2>
+            <h2>Docentes</h2>
           </div>
-          <button class="btn-secondary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
-            <i class="fas fa-random"></i>
-            <span>Distribuir</span>
-          </button>
+          <div class="section-actions">
+            <button class="btn btn-accent">
+              <i class="fas fa-plus"></i> Nuevo Docente
+            </button>
+          </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-          <div class="p-6">
-            <div class="skeleton w-full h-64 rounded-lg"></div>
-          </div>
+        <div class="module-content">
+          <p>Contenido del módulo de Docentes</p>
         </div>
       </section>
 
-      <section id="horarios" class="content-transition hidden">
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center space-x-4">
-            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+      <!-- Asignación Section -->
+      <section id="asignacion" class="module-section">
+        <div class="module-section-header">
+          <div class="section-title">
+            <button class="back-btn" onclick="showDashboard()">
               <i class="fas fa-arrow-left"></i>
-              <span>Volver</span>
+              Volver
             </button>
-            <h2 class="text-2xl font-bold text-gray-800">Gestión de Horarios</h2>
+            <h2>Asignación Académica</h2>
           </div>
-          <button class="btn-primary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
-            <i class="fas fa-plus"></i>
-            <span>Nuevo Horario</span>
-          </button>
+          <div class="section-actions">
+            <button class="btn btn-accent">
+              <i class="fas fa-random"></i> Distribuir
+            </button>
+          </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-          <div class="p-6">
-            <div class="skeleton w-full h-64 rounded-lg"></div>
-          </div>
+        <div class="module-content">
+          <p>Contenido del módulo de Asignación</p>
         </div>
       </section>
 
-      <section id="reportes" class="content-transition hidden">
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center space-x-4">
-            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+      <!-- Horarios Section -->
+      <section id="horarios" class="module-section">
+        <div class="module-section-header">
+          <div class="section-title">
+            <button class="back-btn" onclick="showDashboard()">
               <i class="fas fa-arrow-left"></i>
-              <span>Volver</span>
+              Volver
             </button>
-            <h2 class="text-2xl font-bold text-gray-800">Reportes Académicos</h2>
+            <h2>Horarios Académicos</h2>
           </div>
-          <button class="btn-secondary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
-            <i class="fas fa-file-export"></i>
-            <span>Exportar</span>
-          </button>
+          <div class="section-actions">
+            <button class="btn btn-accent">
+              <i class="fas fa-plus"></i> Nuevo Horario
+            </button>
+          </div>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-white rounded-xl shadow-md p-6">
-            <h3 class="font-bold text-gray-800 mb-4 flex items-center space-x-2">
-              <i class="fas fa-chart-pie text-[#A62939]"></i>
-              <span>Resumen General</span>
-            </h3>
-            <div class="skeleton w-full h-48 rounded-lg"></div>
+        <div class="module-content">
+          <p>Contenido del módulo de Horarios</p>
+        </div>
+      </section>
+
+      <!-- Reportes Section -->
+      <section id="reportes" class="module-section">
+        <div class="module-section-header">
+          <div class="section-title">
+            <button class="back-btn" onclick="showDashboard()">
+              <i class="fas fa-arrow-left"></i>
+              Volver
+            </button>
+            <h2>Reportes Académicos</h2>
           </div>
-          <div class="bg-white rounded-xl shadow-md p-6">
-            <h3 class="font-bold text-gray-800 mb-4 flex items-center space-x-2">
-              <i class="fas fa-chart-line text-[#04136C]"></i>
-              <span>Estadísticas</span>
-            </h3>
-            <div class="skeleton w-full h-48 rounded-lg"></div>
+          <div class="section-actions">
+            <button class="btn btn-accent">
+              <i class="fas fa-file-export"></i> Exportar
+            </button>
           </div>
+        </div>
+        
+        <div class="module-content">
+          <p>Contenido del módulo de Reportes</p>
         </div>
       </section>
     </main>
@@ -358,55 +905,40 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Configuración inicial
-      const modules = ['malla', 'docentes', 'asignacion', 'horarios', 'reportes'];
-      
       // Configurar event listeners para los botones del módulo
       document.querySelectorAll('[data-module-btn]').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
           const moduleId = this.getAttribute('data-module-btn');
-          mostrarModulo(moduleId);
+          showModule(moduleId);
         });
       });
     });
 
-    function mostrarModulo(moduloId) {
+    function showModule(moduleId) {
       // Ocultar todos los módulos
-      document.querySelectorAll('[id="bienvenida"], [data-module-btn]').forEach(el => {
-        if (el.id || el.getAttribute('data-module-btn')) {
-          if (el.id === 'bienvenida') {
-            el.classList.add('hidden');
-          }
-          if (el.getAttribute('data-module-btn')) {
-            el.classList.remove('active');
-          }
-        }
+      document.querySelectorAll('.module-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      
+      // Desactivar todos los items del menú
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
       });
       
       // Mostrar el módulo seleccionado
-      const modulo = document.getElementById(moduloId);
-      if (modulo) {
-        modulo.classList.remove('hidden');
-        modulo.classList.add('content-transition');
-        
-        // Marcar como activo en el sidebar
-        document.querySelector(`[data-module-btn="${moduloId}"]`).classList.add('active');
+      const module = document.getElementById(moduleId);
+      if (module) {
+        module.classList.add('active');
       }
+      
+      // Activar el item del menú correspondiente
+      const navItem = document.querySelector(`.nav-link[data-module-btn="${moduleId}"]`).parentElement;
+      navItem.classList.add('active');
     }
 
-    function volverInicio() {
-      // Ocultar todos los módulos
-      document.querySelectorAll('[data-module]').forEach(mod => {
-        mod.classList.add('hidden');
-      });
-      
-      // Mostrar bienvenida
-      document.getElementById("bienvenida").classList.remove('hidden');
-      
-      // Quitar activo de todos los botones
-      document.querySelectorAll('[data-module-btn]').forEach(btn => {
-        btn.classList.remove('active');
-      });
+    function showDashboard() {
+      showModule('dashboard');
     }
   </script>
 </body>
