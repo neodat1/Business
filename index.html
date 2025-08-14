@@ -3,115 +3,401 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema Integrado de Planificación Académica para instituciones educativas">
   <title>PlanificaU - Planificación Académica</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html {
       scroll-behavior: smooth;
     }
-    section.module-section {
+    [data-module] {
       display: none;
+    }
+    .active-nav-btn {
+      background-color: rgba(23, 59, 116, 0.8);
+      font-weight: 600;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans">
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
   <div class="flex flex-col md:flex-row min-h-screen">
     <!-- Sidebar -->
     <aside class="w-full md:w-64 bg-gradient-to-b from-[#244a8a] to-[#1e3a6d] text-white p-6 shadow-xl">
       <h1 class="text-3xl font-extrabold mb-10 text-center tracking-wide border-b pb-4">
-        <span class="text-2xl font-bold text-white">📘 PlanificaU</span>
-        <span class="text-xs font-light text-blue-100 block">Sistema de Planificación Académica</span>
+        <span class="sr-only">PlanificaU</span>
+        <span aria-hidden="true">PlanificaU – Sistema Institucional</span>
       </h1>
       <nav class="space-y-3">
-        <button onclick="mostrarModulo('malla')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📄 <span>Malla Curricular</span></button>
-        <button onclick="mostrarModulo('docentes')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">👨‍🏫 <span>Docentes</span></button>
-        <button onclick="mostrarModulo('asignacion')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">🧠 <span>Asignación</span></button>
-        <button onclick="mostrarModulo('horarios')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📅 <span>Horarios</span></button>
-        <button onclick="mostrarModulo('reportes')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📊 <span>Reportes</span></button>
+        <button 
+          data-module-btn="malla" 
+          class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          aria-label="Módulo de Malla Curricular"
+        >
+          <span aria-hidden="true">📄</span>
+          <span>Malla Curricular</span>
+        </button>
+        <button 
+          data-module-btn="docentes" 
+          class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          aria-label="Módulo de Docentes"
+        >
+          <span aria-hidden="true">👨‍🏫</span>
+          <span>Docentes</span>
+        </button>
+        <button 
+          data-module-btn="asignacion" 
+          class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          aria-label="Módulo de Asignación"
+        >
+          <span aria-hidden="true">🧠</span>
+          <span>Asignación</span>
+        </button>
+        <button 
+          data-module-btn="horarios" 
+          class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          aria-label="Módulo de Horarios"
+        >
+          <span aria-hidden="true">📅</span>
+          <span>Horarios</span>
+        </button>
+        <button 
+          data-module-btn="reportes" 
+          class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          aria-label="Módulo de Reportes"
+        >
+          <span aria-hidden="true">📊</span>
+          <span>Reportes</span>
+        </button>
       </nav>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto space-y-12">
+    <main class="flex-1 p-6 overflow-y-auto max-w-6xl mx-auto space-y-12">
       <!-- Bienvenida -->
-      <section id="bienvenida" class="bg-gradient-to-br from-white via-gray-50 to-white rounded-xl shadow-xl p-12 text-center border border-gray-200 max-w-4xl mx-auto">
-        <h2 class="text-4xl font-extrabold text-[#244a8a] mb-4 tracking-wide">📌 Bienvenido al Sistema de Planificación Académica</h2>
-        <p class="text-gray-600 text-base leading-relaxed">Utilice el menú lateral para acceder a las herramientas de planificación. Este sistema permite gestionar de manera estructurada la carga docente, malla curricular, horarios y reportes académicos.</p>
+      <section id="bienvenida" class="bg-white rounded-xl shadow-lg p-8 md:p-12 text-center border border-gray-200 max-w-3xl mx-auto fade-in">
+        <h2 class="text-3xl md:text-4xl font-semibold tracking-wide text-[#244a8a] mb-6">Sistema Integrado de Planificación Académica</h2>
+        <p class="text-gray-700 text-base md:text-lg leading-relaxed">
+          Este sistema permite gestionar integralmente los componentes académicos clave de su unidad: 
+          desde la definición curricular y asignación docente, hasta la planificación de horarios y 
+          generación de reportes institucionales.
+        </p>
       </section>
 
       <!-- Secciones de módulos -->
-      <section id="malla" class="module-section bg-white rounded-xl shadow-xl p-10 border border-gray-300">
-        <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[#f0f0f0] to-[#e6e6e6] border border-gray-300 hover:from-[#e0e0e0] hover:to-[#dcdcdc] text-gray-800 rounded-md shadow-md transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+      <section 
+        id="malla" 
+        data-module 
+        class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-gray-200 fade-in"
+        aria-labelledby="malla-title"
+      >
+        <button 
+          onclick="volverInicio()" 
+          class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#244a8a]"
+          aria-label="Volver al panel principal"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
           Volver al panel principal
         </button>
         <div class="flex items-center mb-6">
-          <svg class="w-6 h-6 text-[#8a1f2d] mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M6 2a1 1 0 00-1 1v2h10V3a1 1 0 00-1-1H6zM4 7V5H3a1 1 0 00-1 1v10a1 1 0 001 1h1V7zm2 0v10h8V7H6zm10 10h1a1 1 0 001-1V6a1 1 0 00-1-1h-1v12z" /></svg>
-          <h2 class="text-3xl font-bold text-[#8a1f2d] tracking-wide border-b pb-2 mb-4">Gestión de Malla Curricular</h2>
+          <svg class="w-6 h-6 text-[#8a1f2d] mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M6 2a1 1 0 00-1 1v2h10V3a1 1 0 00-1-1H6zM4 7V5H3a1 1 0 00-1 1v10a1 1 0 001 1h1V7zm2 0v10h8V7H6zm10 10h1a1 1 0 001-1V6a1 1 0 00-1-1h-1v12z" />
+          </svg>
+          <h2 id="malla-title" class="text-2xl font-semibold text-[#8a1f2d] tracking-wide">Gestión de Malla Curricular</h2>
         </div>
-        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto bg-white rounded-lg border border-gray-300 p-6 shadow">Cargando módulo...</div>
+        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto bg-gray-50 rounded-lg border border-gray-300 p-4 md:p-6 shadow-inner">
+          <div class="animate-pulse flex space-x-4">
+            <div class="flex-1 space-y-4 py-1">
+              <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+              <div class="space-y-2">
+                <div class="h-4 bg-gray-300 rounded"></div>
+                <div class="h-4 bg-gray-300 rounded w-5/6"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <footer class="mt-12 p-6 bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 border-yellow-400 text-sm text-gray-700 rounded shadow-md max-w-5xl mx-auto">
-        ℹ️ Esta plataforma se encuentra en fase de desarrollo. Las funcionalidades actuales no conservan los datos al recargar. Se integrarán mecanismos de almacenamiento persistente en versiones futuras.
+      <section 
+        id="docentes" 
+        data-module 
+        class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-gray-200 fade-in"
+        aria-labelledby="docentes-title"
+      >
+        <button 
+          onclick="volverInicio()" 
+          class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#244a8a]"
+          aria-label="Volver al panel principal"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver al panel principal
+        </button>
+        <h2 id="docentes-title" class="text-2xl font-bold text-[#8a1f2d] mb-4 flex items-center gap-2">
+          <span aria-hidden="true">👨‍🏫</span>
+          <span>Docentes</span>
+        </h2>
+        <div id="contenido-docentes" class="text-sm max-w-full overflow-x-auto">
+          <div class="animate-pulse flex space-x-4">
+            <div class="flex-1 space-y-4 py-1">
+              <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+              <div class="space-y-2">
+                <div class="h-4 bg-gray-300 rounded"></div>
+                <div class="h-4 bg-gray-300 rounded w-5/6"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section 
+        id="asignacion" 
+        data-module 
+        class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-gray-200 fade-in"
+        aria-labelledby="asignacion-title"
+      >
+        <button 
+          onclick="volverInicio()" 
+          class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#244a8a]"
+          aria-label="Volver al panel principal"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver al panel principal
+        </button>
+        <h2 id="asignacion-title" class="text-2xl font-bold text-[#8a1f2d] mb-4 flex items-center gap-2">
+          <span aria-hidden="true">🧠</span>
+          <span>Asignación de Carga</span>
+        </h2>
+        <div id="contenido-asignacion" class="text-sm max-w-full overflow-x-auto">
+          <div class="animate-pulse flex space-x-4">
+            <div class="flex-1 space-y-4 py-1">
+              <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+              <div class="space-y-2">
+                <div class="h-4 bg-gray-300 rounded"></div>
+                <div class="h-4 bg-gray-300 rounded w-5/6"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section 
+        id="horarios" 
+        data-module 
+        class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-gray-200 fade-in"
+        aria-labelledby="horarios-title"
+      >
+        <button 
+          onclick="volverInicio()" 
+          class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#244a8a]"
+          aria-label="Volver al panel principal"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver al panel principal
+        </button>
+        <h2 id="horarios-title" class="text-2xl font-bold text-[#8a1f2d] mb-4 flex items-center gap-2">
+          <span aria-hidden="true">📅</span>
+          <span>Horarios Académicos</span>
+        </h2>
+        <div id="contenido-horarios" class="text-sm max-w-full overflow-x-auto">
+          <div class="animate-pulse flex space-x-4">
+            <div class="flex-1 space-y-4 py-1">
+              <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+              <div class="space-y-2">
+                <div class="h-4 bg-gray-300 rounded"></div>
+                <div class="h-4 bg-gray-300 rounded w-5/6"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section 
+        id="reportes" 
+        data-module 
+        class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-gray-200 fade-in"
+        aria-labelledby="reportes-title"
+      >
+        <button 
+          onclick="volverInicio()" 
+          class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#244a8a]"
+          aria-label="Volver al panel principal"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Volver al panel principal
+        </button>
+        <h2 id="reportes-title" class="text-2xl font-bold text-[#8a1f2d] mb-4 flex items-center gap-2">
+          <span aria-hidden="true">📊</span>
+          <span>Reportes</span>
+        </h2>
+        <div id="contenido-reportes" class="text-sm max-w-full overflow-x-auto">
+          <div class="animate-pulse flex space-x-4">
+            <div class="flex-1 space-y-4 py-1">
+              <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+              <div class="space-y-2">
+                <div class="h-4 bg-gray-300 rounded"></div>
+                <div class="h-4 bg-gray-300 rounded w-5/6"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="mt-12 p-6 bg-yellow-50 border-l-4 border-yellow-400 text-sm text-gray-800 rounded shadow max-w-5xl mx-auto">
+        <p>
+          <span aria-hidden="true">ℹ️</span>
+          <span class="sr-only">Información:</span>
+          Esta plataforma se encuentra en fase de desarrollo. Las funcionalidades actuales no conservan los datos al recargar. 
+          Se integrarán mecanismos de almacenamiento persistente en versiones futuras.
+        </p>
       </footer>
     </main>
   </div>
 
   <script>
-    window.onload = function () {
-      function cargarModulo(id, archivo) {
-        fetch(archivo)
-          .then(res => res.text())
-          .then(html => {
-            const container = document.getElementById("contenido-" + id);
-            if (!container) return;
-            container.innerHTML = html;
-            const scripts = container.querySelectorAll("script");
-            scripts.forEach(oldScript => {
-              const newScript = document.createElement("script");
-              if (oldScript.src) {
-                newScript.src = oldScript.src;
-              } else {
-                newScript.textContent = oldScript.textContent;
-              }
-              document.body.appendChild(newScript);
-              oldScript.remove();
+    // Configuración inicial
+    document.addEventListener('DOMContentLoaded', function() {
+      // Cargar todos los módulos al inicio
+      const modules = [
+        { id: 'malla', file: 'mallas.html' },
+        { id: 'docentes', file: 'docentes.html' },
+        { id: 'asignacion', file: 'asignacion.html' },
+        { id: 'horarios', file: 'horarios.html' },
+        { id: 'reportes', file: 'reportes.html' }
+      ];
+      
+      modules.forEach(module => {
+        cargarModulo(module.id, module.file);
+      });
+
+      // Configurar event listeners para los botones del módulo
+      document.querySelectorAll('[data-module-btn]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const moduleId = this.getAttribute('data-module-btn');
+          mostrarModulo(moduleId);
+        });
+      });
+    });
+
+    // Función para cargar módulos con mejor manejo de errores
+    function cargarModulo(id, archivo) {
+      const container = document.getElementById(`contenido-${id}`);
+      
+      // Mostrar estado de carga
+      container.innerHTML = `
+        <div class="animate-pulse flex space-x-4">
+          <div class="flex-1 space-y-4 py-1">
+            <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+            <div class="space-y-2">
+              <div class="h-4 bg-gray-300 rounded"></div>
+              <div class="h-4 bg-gray-300 rounded w-5/6"></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Intentar cargar desde cache primero
+      const cachedContent = sessionStorage.getItem(`module-${id}`);
+      if (cachedContent) {
+        container.innerHTML = cachedContent;
+        return;
+      }
+
+      // Si no hay cache, hacer fetch
+      fetch(archivo)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          return res.text();
+        })
+        .then(html => {
+          container.innerHTML = html;
+          sessionStorage.setItem(`module-${id}`, html);
+          
+          // Procesar scripts
+          const scripts = container.querySelectorAll("script");
+          scripts.forEach(oldScript => {
+            const newScript = document.createElement("script");
+            Array.from(oldScript.attributes).forEach(attr => {
+              newScript.setAttribute(attr.name, attr.value);
             });
-          })
-          .catch(() => {
-            const errorContainer = document.getElementById("contenido-" + id);
-            if (errorContainer) {
-              errorContainer.innerHTML = "<p class='text-red-600'>⚠️ Error al cargar el módulo <strong>" + archivo + "</strong>.</p>";
-            }
+            newScript.textContent = oldScript.textContent;
+            document.body.appendChild(newScript);
+            oldScript.remove();
           });
-      }
-
-      function mostrarModulo(modulo) {
-        document.getElementById("bienvenida").style.display = "none";
-        const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
-        modulos.forEach(m => {
-          document.getElementById(m).style.display = (m === modulo) ? "block" : "none";
+        })
+        .catch(error => {
+          console.error(`Error al cargar el módulo ${id}:`, error);
+          container.innerHTML = `
+            <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+              <p class="font-medium">⚠️ Error al cargar el módulo</p>
+              <p class="text-sm mt-1">No se pudo cargar el recurso: ${archivo}</p>
+              <button onclick="cargarModulo('${id}', '${archivo}')" class="mt-2 text-sm text-red-600 hover:text-red-800 underline">
+                Reintentar
+              </button>
+            </div>
+          `;
         });
+    }
+
+    // Función para mostrar módulos con transición
+    function mostrarModulo(moduloId) {
+      // Actualizar botones activos
+      document.querySelectorAll('[data-module-btn]').forEach(btn => {
+        if (btn.getAttribute('data-module-btn') === moduloId) {
+          btn.classList.add('active-nav-btn');
+        } else {
+          btn.classList.remove('active-nav-btn');
+        }
+      });
+
+      // Ocultar bienvenida y mostrar módulo seleccionado
+      document.getElementById("bienvenida").style.display = "none";
+      
+      // Ocultar todos los módulos primero
+      document.querySelectorAll('[data-module]').forEach(mod => {
+        mod.style.display = "none";
+      });
+      
+      // Mostrar el módulo seleccionado con animación
+      const modulo = document.getElementById(moduloId);
+      if (modulo) {
+        modulo.style.display = "block";
+        modulo.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+    }
 
-      function volverInicio() {
-        const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
-        modulos.forEach(m => {
-          document.getElementById(m).style.display = "none";
-        });
-        document.getElementById("bienvenida").style.display = "block";
-      }
-
-      cargarModulo("malla", "mallas.html");
-      cargarModulo("docentes", "docentes.html");
-      cargarModulo("asignacion", "asignacion.html");
-      cargarModulo("horarios", "horarios.html");
-      cargarModulo("reportes", "reportes.html");
-
-      window.mostrarModulo = mostrarModulo;
-      window.volverInicio = volverInicio;
-    };
+    // Función para volver al inicio
+    function volverInicio() {
+      // Quitar clase activa de todos los botones
+      document.querySelectorAll('[data-module-btn]').forEach(btn => {
+        btn.classList.remove('active-nav-btn');
+      });
+      
+      // Ocultar todos los módulos
+      document.querySelectorAll('[data-module]').forEach(mod => {
+        mod.style.display = "none";
+      });
+      
+      // Mostrar sección de bienvenida
+      const bienvenida = document.getElementById("bienvenida");
+      bienvenida.style.display = "block";
+      bienvenida.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   </script>
 </body>
 </html>
