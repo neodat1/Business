@@ -14,11 +14,11 @@
     }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-900 font-sans">
+<body class="bg-gray-50 text-gray-900 font-sans">
   <div class="flex flex-col md:flex-row min-h-screen">
     <!-- Sidebar -->
-    <aside class="w-full md:w-64 bg-[#244a8a] text-white p-6 shadow-lg flex-shrink-0">
-      <h1 class="text-3xl font-bold mb-8">PlanificaU</h1>
+    <aside class="w-full md:w-64 bg-gradient-to-b from-[#244a8a] to-[#1e3a6d] text-white p-6 shadow-xl">
+      <h1 class="text-3xl font-bold mb-10 text-center tracking-wide">PlanificaU</h1>
       <nav class="space-y-3">
         <button onclick="mostrarModulo('malla')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📄 <span>Malla Curricular</span></button>
         <button onclick="mostrarModulo('docentes')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">👨‍🏫 <span>Docentes</span></button>
@@ -29,87 +29,82 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-6 overflow-y-auto space-y-12">
-
+    <main class="flex-1 p-6 overflow-y-auto max-w-6xl mx-auto space-y-12">
       <!-- Bienvenida -->
-      <section id="bienvenida" class="bg-white rounded-lg shadow-md p-8 text-center">
-        <h2 class="text-3xl font-bold text-[#244a8a] mb-4">Bienvenido a PlanificaU</h2>
-        <p class="text-gray-600">Selecciona una opción del menú lateral para comenzar con la planificación académica.</p>
+      <section id="bienvenida" class="bg-white rounded-xl shadow-lg p-10 text-center border border-gray-200">
+        <h2 class="text-4xl font-bold text-[#244a8a] mb-4">Sistema Integrado de Planificación Académica</h2>
+        <p class="text-gray-700 text-base">Utilice el panel de navegación lateral para acceder a los distintos módulos del sistema. Desde allí podrá gestionar las estructuras curriculares, asignaciones docentes, horarios académicos y reportes institucionales.</p>
       </section>
 
       <!-- Secciones ocultas por defecto -->
-      <section id="malla" class="module-section bg-white rounded-lg shadow-md p-6">
+      <section id="malla" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📄 Malla Curricular</h2>
-        <div id="contenido-malla">Cargando módulo...</div>
+        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
-      <section id="docentes" class="module-section bg-white rounded-lg shadow-md p-6">
+      <section id="docentes" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">👨‍🏫 Docentes</h2>
-        <div id="contenido-docentes">Cargando módulo...</div>
+        <div id="contenido-docentes" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
-      <section id="asignacion" class="module-section bg-white rounded-lg shadow-md p-6">
+      <section id="asignacion" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">🧠 Asignación de Carga</h2>
-        <div id="contenido-asignacion">Cargando módulo...</div>
+        <div id="contenido-asignacion" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
-      <section id="horarios" class="module-section bg-white rounded-lg shadow-md p-6">
+      <section id="horarios" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📅 Horarios Académicos</h2>
-        <div id="contenido-horarios">Cargando módulo...</div>
+        <div id="contenido-horarios" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
-      <section id="reportes" class="module-section bg-white rounded-lg shadow-md p-6">
+      <section id="reportes" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📊 Reportes</h2>
-        <div id="contenido-reportes">Cargando módulo...</div>
+        <div id="contenido-reportes" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
-      <footer class="mt-10 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-sm rounded">
-        ⚠️ Plataforma en desarrollo. Los datos se perderán al recargar. Se integrará almacenamiento persistente en futuras versiones.
-      </footer>
+      <footer class="mt-12 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-sm rounded shadow">
+  ℹ️ Esta plataforma se encuentra en fase de desarrollo. Las funcionalidades actuales no conservan los datos al recargar. Se integrarán mecanismos de almacenamiento persistente en versiones futuras.
+</footer>
     </main>
   </div>
 
- <script>
-  function cargarModulo(id, archivo) {
-    fetch(archivo)
-      .then(res => res.text())
-      .then(html => {
-        const container = document.getElementById("contenido-" + id);
-        container.innerHTML = html;
-
-        // Buscar y ejecutar los <script> del HTML cargado
-        const scripts = container.querySelectorAll("script");
-        scripts.forEach((oldScript) => {
-          const newScript = document.createElement("script");
-          if (oldScript.src) {
-            newScript.src = oldScript.src;
-          } else {
-            newScript.textContent = oldScript.textContent;
-          }
-          document.body.appendChild(newScript);
-          oldScript.remove();
+  <script>
+    function cargarModulo(id, archivo) {
+      fetch(archivo)
+        .then(res => res.text())
+        .then(html => {
+          const container = document.getElementById("contenido-" + id);
+          container.innerHTML = html;
+          const scripts = container.querySelectorAll("script");
+          scripts.forEach(oldScript => {
+            const newScript = document.createElement("script");
+            if (oldScript.src) {
+              newScript.src = oldScript.src;
+            } else {
+              newScript.textContent = oldScript.textContent;
+            }
+            document.body.appendChild(newScript);
+            oldScript.remove();
+          });
+        })
+        .catch(() => {
+          document.getElementById("contenido-" + id).innerHTML = "<p class='text-red-600'>⚠️ Error al cargar el módulo <strong>" + archivo + "</strong>.</p>";
         });
-      })
-      .catch(() => {
-        document.getElementById("contenido-" + id).innerHTML = "<p class='text-red-600'>⚠️ Error al cargar el módulo <strong>" + archivo + "</strong>.</p>";
+    }
+
+    function mostrarModulo(modulo) {
+      document.getElementById("bienvenida").style.display = "none";
+      const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
+      modulos.forEach(m => {
+        document.getElementById(m).style.display = (m === modulo) ? "block" : "none";
       });
-  }
+    }
 
-  function mostrarModulo(modulo) {
-    document.getElementById("bienvenida").style.display = "none";
-    const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
-    modulos.forEach(m => {
-      document.getElementById(m).style.display = (m === modulo) ? "block" : "none";
-    });
-  }
-
-  // Carga inicial de los módulos
-  cargarModulo("malla", "mallas.html");
-  cargarModulo("docentes", "docentes.html");
-  cargarModulo("asignacion", "asignacion.html");
-  cargarModulo("horarios", "horarios.html");
-  cargarModulo("reportes", "reportes.html");
-</script>
-
+    cargarModulo("malla", "mallas.html");
+    cargarModulo("docentes", "docentes.html");
+    cargarModulo("asignacion", "asignacion.html");
+    cargarModulo("horarios", "horarios.html");
+    cargarModulo("reportes", "reportes.html");
+  </script>
 </body>
 </html>
