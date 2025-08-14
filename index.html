@@ -18,7 +18,10 @@
   <div class="flex flex-col md:flex-row min-h-screen">
     <!-- Sidebar -->
     <aside class="w-full md:w-64 bg-gradient-to-b from-[#244a8a] to-[#1e3a6d] text-white p-6 shadow-xl">
-      <h1 class="text-3xl font-extrabold mb-10 text-center tracking-wide border-b pb-4">PlanificaU – Sistema Institucional</h1>
+      <h1 class="text-3xl font-extrabold mb-10 text-center tracking-wide border-b pb-4">
+        <span class="text-2xl font-bold text-white">📘 PlanificaU</span>
+        <span class="text-xs font-light text-blue-100 block">Sistema de Planificación Académica</span>
+      </h1>
       <nav class="space-y-3">
         <button onclick="mostrarModulo('malla')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📄 <span>Malla Curricular</span></button>
         <button onclick="mostrarModulo('docentes')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">👨‍🏫 <span>Docentes</span></button>
@@ -29,113 +32,86 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-6 overflow-y-auto max-w-6xl mx-auto space-y-12">
+    <main class="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto space-y-12">
       <!-- Bienvenida -->
-      <section id="bienvenida" class="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200 max-w-3xl mx-auto">
-        <h2 class="text-4xl font-semibold tracking-wide text-[#244a8a] mb-6">Sistema Integrado de Planificación Académica</h2>
-        <p class="text-gray-700 text-lg leading-relaxed">Este sistema permite gestionar integralmente los componentes académicos clave de su unidad: desde la definición curricular y asignación docente, hasta la planificación de horarios y generación de reportes institucionales.</p>
+      <section id="bienvenida" class="bg-gradient-to-br from-white via-gray-50 to-white rounded-xl shadow-xl p-12 text-center border border-gray-200 max-w-4xl mx-auto">
+        <h2 class="text-4xl font-extrabold text-[#244a8a] mb-4 tracking-wide">📌 Bienvenido al Sistema de Planificación Académica</h2>
+        <p class="text-gray-600 text-base leading-relaxed">Utilice el menú lateral para acceder a las herramientas de planificación. Este sistema permite gestionar de manera estructurada la carga docente, malla curricular, horarios y reportes académicos.</p>
       </section>
 
-      <!-- Secciones ocultas por defecto -->
-      <section id="malla" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
-  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-  Volver al panel principal
-</button>
+      <!-- Secciones de módulos -->
+      <section id="malla" class="module-section bg-white rounded-xl shadow-xl p-10 border border-gray-300">
+        <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[#f0f0f0] to-[#e6e6e6] border border-gray-300 hover:from-[#e0e0e0] hover:to-[#dcdcdc] text-gray-800 rounded-md shadow-md transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          Volver al panel principal
+        </button>
         <div class="flex items-center mb-6">
-  <svg class="w-6 h-6 text-[#8a1f2d] mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M6 2a1 1 0 00-1 1v2h10V3a1 1 0 00-1-1H6zM4 7V5H3a1 1 0 00-1 1v10a1 1 0 001 1h1V7zm2 0v10h8V7H6zm10 10h1a1 1 0 001-1V6a1 1 0 00-1-1h-1v12z" /></svg>
-  <h2 class="text-2xl font-semibold text-[#8a1f2d] tracking-wide">Gestión de Malla Curricular</h2>
-</div>
-        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto bg-gray-50 rounded-lg border border-gray-300 p-6 shadow-inner">Cargando módulo...</div>
+          <svg class="w-6 h-6 text-[#8a1f2d] mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M6 2a1 1 0 00-1 1v2h10V3a1 1 0 00-1-1H6zM4 7V5H3a1 1 0 00-1 1v10a1 1 0 001 1h1V7zm2 0v10h8V7H6zm10 10h1a1 1 0 001-1V6a1 1 0 00-1-1h-1v12z" /></svg>
+          <h2 class="text-3xl font-bold text-[#8a1f2d] tracking-wide border-b pb-2 mb-4">Gestión de Malla Curricular</h2>
+        </div>
+        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto bg-white rounded-lg border border-gray-300 p-6 shadow">Cargando módulo...</div>
       </section>
 
-      <section id="docentes" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-    Volver al panel principal
-  </button>
-        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">👨‍🏫 Docentes</h2>
-        <div id="contenido-docentes" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
-      </section>
-
-      <section id="asignacion" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-    Volver al panel principal
-  </button>
-        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">🧠 Asignación de Carga</h2>
-        <div id="contenido-asignacion" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
-      </section>
-
-      <section id="horarios" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-    Volver al panel principal
-  </button>
-        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📅 Horarios Académicos</h2>
-        <div id="contenido-horarios" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
-      </section>
-
-      <section id="reportes" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-    Volver al panel principal
-  </button>
-        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📊 Reportes</h2>
-        <div id="contenido-reportes" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
-      </section>
-
-      <footer class="mt-12 p-6 bg-yellow-50 border-l-4 border-yellow-400 text-sm text-gray-800 rounded shadow max-w-5xl mx-auto">
-  ℹ️ Esta plataforma se encuentra en fase de desarrollo. Las funcionalidades actuales no conservan los datos al recargar. Se integrarán mecanismos de almacenamiento persistente en versiones futuras.
-</footer>
+      <footer class="mt-12 p-6 bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 border-yellow-400 text-sm text-gray-700 rounded shadow-md max-w-5xl mx-auto">
+        ℹ️ Esta plataforma se encuentra en fase de desarrollo. Las funcionalidades actuales no conservan los datos al recargar. Se integrarán mecanismos de almacenamiento persistente en versiones futuras.
+      </footer>
     </main>
   </div>
 
   <script>
-    function cargarModulo(id, archivo) {
-      fetch(archivo)
-        .then(res => res.text())
-        .then(html => {
-          const container = document.getElementById("contenido-" + id);
-          container.innerHTML = html;
-          const scripts = container.querySelectorAll("script");
-          scripts.forEach(oldScript => {
-            const newScript = document.createElement("script");
-            if (oldScript.src) {
-              newScript.src = oldScript.src;
-            } else {
-              newScript.textContent = oldScript.textContent;
+    window.onload = function () {
+      function cargarModulo(id, archivo) {
+        fetch(archivo)
+          .then(res => res.text())
+          .then(html => {
+            const container = document.getElementById("contenido-" + id);
+            if (!container) return;
+            container.innerHTML = html;
+            const scripts = container.querySelectorAll("script");
+            scripts.forEach(oldScript => {
+              const newScript = document.createElement("script");
+              if (oldScript.src) {
+                newScript.src = oldScript.src;
+              } else {
+                newScript.textContent = oldScript.textContent;
+              }
+              document.body.appendChild(newScript);
+              oldScript.remove();
+            });
+          })
+          .catch(() => {
+            const errorContainer = document.getElementById("contenido-" + id);
+            if (errorContainer) {
+              errorContainer.innerHTML = "<p class='text-red-600'>⚠️ Error al cargar el módulo <strong>" + archivo + "</strong>.</p>";
             }
-            document.body.appendChild(newScript);
-            oldScript.remove();
           });
-        })
-        .catch(() => {
-          document.getElementById("contenido-" + id).innerHTML = "<p class='text-red-600'>⚠️ Error al cargar el módulo <strong>" + archivo + "</strong>.</p>";
+      }
+
+      function mostrarModulo(modulo) {
+        document.getElementById("bienvenida").style.display = "none";
+        const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
+        modulos.forEach(m => {
+          document.getElementById(m).style.display = (m === modulo) ? "block" : "none";
         });
-    }
+      }
 
-    function mostrarModulo(modulo) {
-      document.getElementById("bienvenida").style.display = "none";
-      const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
-      modulos.forEach(m => {
-        document.getElementById(m).style.display = (m === modulo) ? "block" : "none";
-      });
-    }
+      function volverInicio() {
+        const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
+        modulos.forEach(m => {
+          document.getElementById(m).style.display = "none";
+        });
+        document.getElementById("bienvenida").style.display = "block";
+      }
 
-    function volverInicio() {
-      const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
-      modulos.forEach(m => {
-        document.getElementById(m).style.display = "none";
-      });
-      document.getElementById("bienvenida").style.display = "block";
-    }
+      cargarModulo("malla", "mallas.html");
+      cargarModulo("docentes", "docentes.html");
+      cargarModulo("asignacion", "asignacion.html");
+      cargarModulo("horarios", "horarios.html");
+      cargarModulo("reportes", "reportes.html");
 
-    cargarModulo("malla", "mallas.html");
-    cargarModulo("docentes", "docentes.html");
-    cargarModulo("asignacion", "asignacion.html");
-    cargarModulo("horarios", "horarios.html");
-    cargarModulo("reportes", "reportes.html");
-</script>
+      window.mostrarModulo = mostrarModulo;
+      window.volverInicio = volverInicio;
+    };
+  </script>
 </body>
 </html>
