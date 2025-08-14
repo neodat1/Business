@@ -32,14 +32,17 @@
     <main class="flex-1 p-6 overflow-y-auto max-w-6xl mx-auto space-y-12">
       <!-- Bienvenida -->
       <section id="bienvenida" class="bg-white rounded-xl shadow-lg p-10 text-center border border-gray-200">
-        <h2 class="text-4xl font-bold text-[#244a8a] mb-4">Sistema Integrado de Planificación Académica</h2>
+        <h2 class="text-4xl font-semibold tracking-wide text-[#244a8a] mb-6">Sistema Integrado de Planificación Académica</h2>
         <p class="text-gray-700 text-base">Utilice el panel de navegación lateral para acceder a los distintos módulos del sistema. Desde allí podrá gestionar las estructuras curriculares, asignaciones docentes, horarios académicos y reportes institucionales.</p>
       </section>
 
       <!-- Secciones ocultas por defecto -->
       <section id="malla" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📄 Malla Curricular</h2>
-        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
+        <div class="flex items-center mb-6">
+  <svg class="w-6 h-6 text-[#8a1f2d] mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M6 2a1 1 0 00-1 1v2h10V3a1 1 0 00-1-1H6zM4 7V5H3a1 1 0 00-1 1v10a1 1 0 001 1h1V7zm2 0v10h8V7H6zm10 10h1a1 1 0 001-1V6a1 1 0 00-1-1h-1v12z" /></svg>
+  <h2 class="text-2xl font-semibold text-[#8a1f2d]">Malla Curricular</h2>
+</div>
+        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto bg-white rounded-lg border border-gray-200 p-4 shadow-inner">Cargando módulo...</div>
       </section>
 
       <section id="docentes" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
