@@ -34,25 +34,9 @@
       <!-- Docentes -->
       <section id="docentes">
         <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">👨‍🏫 Gestión de Docentes</h2>
-          <div class="grid md:grid-cols-3 gap-4 mb-4">
-            <input id="docenteNombre" placeholder="Nombre" class="border p-2 rounded">
-            <input id="docenteEsp" placeholder="Especialidad" class="border p-2 rounded">
-            <input id="docenteDisp" placeholder="Disponibilidad" class="border p-2 rounded">
-          </div>
-          <button onclick="agregarDocente()" class="bg-[#8a1f2d] text-white px-6 py-2 rounded hover:bg-[#701620] transition">Agregar Docente</button>
-          <div class="mt-6 overflow-x-auto">
-            <table class="w-full border text-sm">
-              <thead class="bg-gray-100">
-                <tr>
-                  <th class="border px-2 py-1">Nombre</th>
-                  <th class="border px-2 py-1">Especialidad</th>
-                  <th class="border px-2 py-1">Disponibilidad</th>
-                </tr>
-              </thead>
-              <tbody id="tablaDocentes"></tbody>
-            </table>
-          </div>
+          <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">👨‍🏫 Carga de Docentes (.xlsx)</h2>
+          <input type="file" id="docenteFile" accept=".xlsx" class="mb-4 p-2 border border-gray-300 rounded w-full max-w-md">
+          <div id="tablaDocentes" class="overflow-x-auto text-sm"></div>
         </div>
       </section>
 
@@ -87,32 +71,6 @@
   </div>
 
   <script>
-    let docentes = [];
-
-    function agregarDocente() {
-      const nombre = document.getElementById("docenteNombre").value.trim();
-      const esp = document.getElementById("docenteEsp").value.trim();
-      const disp = document.getElementById("docenteDisp").value.trim();
-      if (!nombre || !esp || !disp) return;
-      docentes.push({ nombre, esp, disp });
-      renderDocentes();
-      document.getElementById("docenteNombre").value = "";
-      document.getElementById("docenteEsp").value = "";
-      document.getElementById("docenteDisp").value = "";
-    }
-
-    function renderDocentes() {
-      let html = "";
-      docentes.forEach(d => {
-        html += `<tr>
-          <td class='border px-2 py-1'>${d.nombre}</td>
-          <td class='border px-2 py-1'>${d.esp}</td>
-          <td class='border px-2 py-1'>${d.disp}</td>
-        </tr>`;
-      });
-      document.getElementById("tablaDocentes").innerHTML = html;
-    }
-
     document.getElementById('fileInput').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -143,6 +101,37 @@
 
         html += `</tbody></table>`;
         document.getElementById('tablaMaterias').innerHTML = html;
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById('docenteFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        const headers = ["Nombre", "Especialidad", "Disponibilidad"];
+        let html = `<table class='w-full border text-sm bg-white'><thead><tr class='bg-gray-100'>`;
+        headers.forEach(h => html += `<th class='border px-2 py-1'>${h}</th>`);
+        html += `</tr></thead><tbody>`;
+
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r[0]) continue;
+          html += `<tr>
+            <td class='border px-2 py-1'>${r[0]}</td>
+            <td class='border px-2 py-1'>${r[1] || ''}</td>
+            <td class='border px-2 py-1'>${r[2] || ''}</td>
+          </tr>`;
+        }
+
+        html += `</tbody></table>`;
+        document.getElementById('tablaDocentes').innerHTML = html;
       };
       reader.readAsArrayBuffer(file);
     });
