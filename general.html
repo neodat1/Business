@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>PlanificaU - Planificación Académica</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#244a8a] text-white p-6">
+      <h2 class="text-2xl font-bold mb-8">PlanificaU</h2>
+      <nav class="space-y-4">
+        <a href="#malla" class="block hover:bg-[#173b74] px-4 py-2 rounded">📄 Malla Curricular</a>
+        <a href="#docentes" class="block hover:bg-[#173b74] px-4 py-2 rounded">👨‍🏫 Docentes</a>
+        <a href="#asignacion" class="block hover:bg-[#173b74] px-4 py-2 rounded">🧠 Asignación de Carga</a>
+        <a href="#horarios" class="block hover:bg-[#173b74] px-4 py-2 rounded">📅 Horarios</a>
+        <a href="#reportes" class="block hover:bg-[#173b74] px-4 py-2 rounded">📊 Reportes</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-10">
+      <section id="malla" class="mb-10">
+        <h1 class="text-3xl font-bold text-[#8a1f2d] mb-6">📄 Malla Curricular</h1>
+        <p class="mb-4">Carga tu archivo de malla curricular (.xlsx) y se extraerán automáticamente las asignaturas, códigos y horas.</p>
+        <input type="file" id="fileInput" accept=".xlsx" class="mb-6 p-2 border border-gray-300 rounded">
+        <div id="tablaMaterias" class="overflow-x-auto"></div>
+      </section>
+
+      <section id="docentes" class="mb-10">
+        <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">👨‍🏫 Gestión de Docentes</h2>
+        <ul class="list-disc list-inside">
+          <li>Formulario para registrar docentes con especialidad</li>
+          <li>Listado dinámico para planificación por ciclo</li>
+          <li>Preparado para integrarse a asignación de materias</li>
+        </ul>
+      </section>
+
+      <section id="asignacion" class="mb-10">
+        <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">🧠 Asignación de Carga Docente</h2>
+        <ul class="list-disc list-inside">
+          <li>Base estructural lista para asignar materias a docentes</li>
+          <li>Control y validación de carga horaria por semana</li>
+          <li>Visualización por paralelo, ciclo y asignatura</li>
+        </ul>
+      </section>
+
+      <section id="horarios" class="mb-10">
+        <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">📅 Horarios Académicos</h2>
+        <ul class="list-disc list-inside">
+          <li>Visualización semanal por paralelo y por docente</li>
+          <li>Preparado para implementación de drag & drop</li>
+          <li>Capacidad futura de exportar a Excel o PDF</li>
+        </ul>
+      </section>
+
+      <section id="reportes">
+        <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">📊 Reportes y Exportaciones</h2>
+        <ul class="list-disc list-inside">
+          <li>Resumen de carga horaria por docente</li>
+          <li>Horarios completos por paralelo o carrera</li>
+          <li>Exportación en formatos CSV, XLSX y PDF</li>
+        </ul>
+      </section>
+
+      <div class="mt-12 p-6 bg-[#fef7e0] border-l-4 border-yellow-400">
+        <p class="text-sm">⚠️ Esta plataforma está en versión base. Aún no tiene login ni base de datos, pero todos los módulos están organizados y listos para escalar.</p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        const headers = ["Materia", "Código", "HT", "HP", "HA", "Prerrequisito"];
+        let html = `<table class='min-w-full border text-sm'><thead><tr class='bg-gray-200'>`;
+        headers.forEach(h => html += `<th class='border px-2 py-1'>${h}</th>`);
+        html += `</tr></thead><tbody>`;
+
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r[0] || !r[1]) continue; // ignora si falta nombre o código
+          html += `<tr>
+            <td class='border px-2 py-1'>${r[0]}</td>
+            <td class='border px-2 py-1'>${r[1]}</td>
+            <td class='border px-2 py-1'>${r[2] || 0}</td>
+            <td class='border px-2 py-1'>${r[3] || 0}</td>
+            <td class='border px-2 py-1'>${r[4] || 0}</td>
+            <td class='border px-2 py-1'><input class='w-full border px-1 py-0.5 text-sm' placeholder='Ej: MAT 101'></td>
+          </tr>`;
+        }
+
+        html += `</tbody></table>`;
+        document.getElementById('tablaMaterias').innerHTML = html;
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+</body>
+</html>
