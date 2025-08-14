@@ -86,7 +86,7 @@
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased">
   <div class="flex flex-col md:flex-row min-h-screen">
-    <!-- Sidebar - Versión Premium -->
+    <!-- Sidebar - Versión Limpia -->
     <aside class="sidebar w-full md:w-72 text-white p-6 shadow-2xl z-10">
       <div class="flex items-center justify-center mb-10 pt-4 border-b border-white/20 pb-6">
         <div class="bg-white/20 p-3 rounded-xl mr-3 shadow-md">
@@ -157,13 +157,12 @@
       
       <div class="absolute bottom-6 left-6 right-6">
         <div class="bg-white/10 rounded-lg p-4 text-center backdrop-blur-sm">
-          <p class="text-xs text-white/80">Versión 2.0</p>
-          <p class="text-sm font-medium text-white">PlanificaU Premium</p>
+          <p class="text-sm font-medium text-white">Sistema Académico Integral</p>
         </div>
       </div>
     </aside>
 
-    <!-- Main Content - Diseño Premium -->
+    <!-- Main Content - Diseño Limpio -->
     <main class="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto space-y-8">
       <!-- Bienvenida - Tarjeta con efecto vidrio -->
       <section id="bienvenida" class="card rounded-2xl shadow-2xl p-8 md:p-12 text-center max-w-4xl mx-auto relative overflow-hidden">
@@ -180,8 +179,7 @@
           </h2>
           
           <p class="text-gray-700 text-lg leading-relaxed max-w-2xl mx-auto">
-            Gestiona integralmente los componentes académicos de tu institución con nuestra plataforma todo-en-uno. 
-            Desde diseño curricular hasta generación de reportes automatizados.
+            Gestiona integralmente los componentes académicos de tu institución con nuestra plataforma todo-en-uno.
           </p>
           
           <div class="mt-8 flex flex-wrap justify-center gap-4">
@@ -199,7 +197,7 @@
         </div>
       </section>
 
-      <!-- Secciones de módulos - Diseño Premium -->
+      <!-- Secciones de módulos - Diseño Limpio -->
       <section 
         id="malla" 
         data-module 
@@ -220,7 +218,6 @@
           
           <div class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
             <span class="text-blue-600 font-medium">Malla Curricular</span>
-            <span class="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
           </div>
         </div>
         
@@ -260,7 +257,6 @@
           
           <div class="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
             <span class="text-green-600 font-medium">Docentes</span>
-            <span class="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
           </div>
         </div>
         
@@ -300,7 +296,6 @@
           
           <div class="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-lg">
             <span class="text-yellow-600 font-medium">Asignación</span>
-            <span class="w-2 h-2 bg-yellow-600 rounded-full animate-pulse"></span>
           </div>
         </div>
         
@@ -340,7 +335,6 @@
           
           <div class="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">
             <span class="text-purple-600 font-medium">Horarios</span>
-            <span class="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></span>
           </div>
         </div>
         
@@ -380,7 +374,6 @@
           
           <div class="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-lg">
             <span class="text-red-600 font-medium">Reportes</span>
-            <span class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
           </div>
         </div>
         
@@ -407,12 +400,12 @@
               <i class="fas fa-lightbulb text-xl"></i>
             </div>
             <div>
-              <h3 class="font-bold">PlanificaU Premium</h3>
-              <p class="text-sm text-white/90">Esta es una versión mejorada con diseño premium</p>
+              <h3 class="font-bold">Sistema Académico Integral</h3>
+              <p class="text-sm text-white/90">Plataforma de gestión educativa completa</p>
             </div>
           </div>
           <button class="px-6 py-3 bg-white text-blue-600 font-medium rounded-lg hover:bg-gray-100 transition shadow-md whitespace-nowrap">
-            <i class="fas fa-crown mr-2"></i> Actualizar a Pro
+            <i class="fas fa-info-circle mr-2"></i> Más información
           </button>
         </div>
       </footer>
@@ -441,20 +434,8 @@
         btn.addEventListener('click', function() {
           const moduleId = this.getAttribute('data-module-btn');
           mostrarModulo(moduleId);
-          
-          // Agregar efecto de clic
-          this.classList.add('active-nav-btn');
-          this.style.transform = 'scale(0.95)';
-          setTimeout(() => {
-            this.style.transform = '';
-          }, 200);
         });
       });
-      
-      // Efecto de carga inicial
-      setTimeout(() => {
-        document.querySelector('#bienvenida').classList.add('animate__animated', 'animate__fadeInUp');
-      }, 100);
     });
 
     // Precargar módulos con cache
@@ -508,7 +489,7 @@
                 </div>
                 <div>
                   <h3 class="font-medium text-red-800">Error al cargar el módulo</h3>
-                  <p class="text-sm text-red-600 mt-1">No se pudo cargar el recurso: ${archivo}</p>
+                  <p class="text-sm text-red-600 mt-1">No se pudo cargar el recurso solicitado</p>
                 </div>
               </div>
               <button onclick="cargarModulo('${id}', '${archivo}')" 
@@ -548,20 +529,6 @@
           modulo.classList.add('active');
           modulo.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 10);
-        
-        // Forzar recarga del contenido si es necesario
-        const moduleBtn = document.querySelector(`[data-module-btn="${moduloId}"]`);
-        if (moduleBtn.classList.contains('force-reload')) {
-          const moduleInfo = {
-            'malla': 'mallas.html',
-            'docentes': 'docentes.html',
-            'asignacion': 'asignacion.html',
-            'horarios': 'horarios.html',
-            'reportes': 'reportes.html'
-          };
-          precargarModulo(moduloId, moduleInfo[moduloId]);
-          moduleBtn.classList.remove('force-reload');
-        }
       }
     }
 
@@ -583,18 +550,14 @@
       // Mostrar sección de bienvenida
       const bienvenida = document.getElementById("bienvenida");
       bienvenida.style.display = "block";
-      bienvenida.classList.add('animate__animated', 'animate__fadeIn');
       bienvenida.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // Función para recargar módulo
     function cargarModulo(id, archivo) {
-      // Marcar para recarga
-      const moduleBtn = document.querySelector(`[data-module-btn="${id}"]`);
-      moduleBtn.classList.add('force-reload');
-      
       // Mostrar el módulo (lo que disparará la recarga)
       mostrarModulo(id);
+      precargarModulo(id, archivo);
     }
   </script>
 </body>
