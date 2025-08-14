@@ -3,458 +3,364 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Sistema Integrado de Planificación Académica para instituciones educativas">
-  <title>PlanificaU - Planificación Académica</title>
+  <meta name="description" content="Sistema moderno de planificación académica">
+  <title>PlanificaU | Gestión Académica</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --primary: #04136C;    /* Azul oscuro principal */
-      --secondary: #DE912E;  /* Naranja dorado */
-      --accent: #A62939;     /* Rojo vino */
-      --light: #f8f9fa;
-      --dark: #212529;
+      --primary: #04136C;    /* Azul universitario */
+      --secondary: #DE912E;  /* Naranja energético */
+      --accent: #A62939;     /* Rojo vibrante */
+      --light: #F8F9FC;
+      --dark: #1A1D28;
     }
     
     html {
       scroll-behavior: smooth;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Poppins', sans-serif;
     }
     
-    [data-module] {
-      display: none;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    body {
+      background-color: var(--light);
     }
     
-    [data-module].active {
-      opacity: 1;
-      transform: translateY(0);
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
     }
     
-    .active-nav-btn {
-      background-color: rgba(4, 19, 108, 0.15) !important;
-      color: var(--primary) !important;
-      border-left: 4px solid var(--primary);
+    .module-card {
+      transition: all 0.3s ease;
+      border-left: 4px solid transparent;
     }
     
-    .sidebar {
-      background: linear-gradient(135deg, var(--primary) 0%, #0a1f8f 100%);
+    .module-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
     
-    .card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-    
-    .skeleton {
-      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-    }
-    
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+    .active-module {
+      border-left-color: var(--primary);
+      background-color: rgba(4, 19, 108, 0.05);
     }
     
     .btn-primary {
       background: var(--primary);
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     
     .btn-primary:hover {
-      background: #0a1f8f;
+      background: #0A1F8F;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(4, 19, 108, 0.25);
     }
     
     .btn-secondary {
       background: var(--secondary);
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     
     .btn-secondary:hover {
-      background: #e89d3a;
+      background: #E89D3A;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(222, 145, 46, 0.25);
     }
     
-    .pulse {
+    .pulse-animation {
       animation: pulse 2s infinite;
     }
     
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(222, 145, 46, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(222, 145, 46, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(222, 145, 46, 0); }
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
     }
     
-    .badge-primary {
-      background-color: rgba(4, 19, 108, 0.1);
-      color: var(--primary);
+    .sidebar-link {
+      transition: all 0.3s ease;
+      position: relative;
     }
     
-    .badge-secondary {
-      background-color: rgba(222, 145, 46, 0.1);
-      color: var(--secondary);
+    .sidebar-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
     
-    .badge-accent {
-      background-color: rgba(166, 41, 57, 0.1);
-      color: var(--accent);
+    .sidebar-link.active {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    .sidebar-link.active::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: 4px;
+      background-color: var(--secondary);
+    }
+    
+    .content-transition {
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .module-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
     }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-900 antialiased">
-  <div class="flex flex-col md:flex-row min-h-screen">
-    <!-- Sidebar con nuevos colores -->
-    <aside class="sidebar w-full md:w-72 text-white p-6 shadow-2xl z-10">
-      <div class="flex items-center justify-center mb-10 pt-4 border-b border-white/20 pb-6">
-        <div class="bg-white/20 p-3 rounded-xl mr-3 shadow-md">
-          <i class="fas fa-calendar-alt text-2xl text-white"></i>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar moderno -->
+    <aside class="bg-[#04136C] text-white shadow-xl">
+      <div class="p-6 flex items-center space-x-3">
+        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-[#04136C]">
+          <i class="fas fa-calendar-alt"></i>
         </div>
-        <h1 class="text-2xl font-bold tracking-tight">
-          <span class="sr-only">PlanificaU</span>
-          <span aria-hidden="true">PlanificaU</span>
-        </h1>
+        <h1 class="text-xl font-bold">Planifica<span class="text-[#DE912E]">U</span></h1>
       </div>
       
-      <nav class="space-y-2">
-        <button 
-          data-module-btn="malla" 
-          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 active-nav-btn group"
-          aria-label="Módulo de Malla Curricular"
-        >
-          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
-            <i class="fas fa-project-diagram text-sm"></i>
+      <nav class="mt-8 space-y-1 px-4">
+        <button data-module-btn="malla" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg active">
+          <div class="module-icon bg-[#DE912E]/20 text-[#DE912E]">
+            <i class="fas fa-sitemap"></i>
           </div>
-          <span class="font-medium">Malla Curricular</span>
+          <span>Malla Curricular</span>
         </button>
         
-        <button 
-          data-module-btn="docentes" 
-          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 group"
-          aria-label="Módulo de Docentes"
-        >
-          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
-            <i class="fas fa-chalkboard-teacher text-sm"></i>
+        <button data-module-btn="docentes" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg">
+          <div class="module-icon bg-[#A62939]/20 text-[#A62939]">
+            <i class="fas fa-chalkboard-teacher"></i>
           </div>
-          <span class="font-medium">Docentes</span>
+          <span>Docentes</span>
         </button>
         
-        <button 
-          data-module-btn="asignacion" 
-          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 group"
-          aria-label="Módulo de Asignación"
-        >
-          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
-            <i class="fas fa-tasks text-sm"></i>
+        <button data-module-btn="asignacion" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg">
+          <div class="module-icon bg-[#04136C]/20 text-[#04136C]">
+            <i class="fas fa-tasks"></i>
           </div>
-          <span class="font-medium">Asignación</span>
+          <span>Asignación</span>
         </button>
         
-        <button 
-          data-module-btn="horarios" 
-          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 group"
-          aria-label="Módulo de Horarios"
-        >
-          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
-            <i class="fas fa-calendar-day text-sm"></i>
+        <button data-module-btn="horarios" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg">
+          <div class="module-icon bg-[#DE912E]/20 text-[#DE912E]">
+            <i class="fas fa-calendar-day"></i>
           </div>
-          <span class="font-medium">Horarios</span>
+          <span>Horarios</span>
         </button>
         
-        <button 
-          data-module-btn="reportes" 
-          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 group"
-          aria-label="Módulo de Reportes"
-        >
-          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
-            <i class="fas fa-chart-bar text-sm"></i>
+        <button data-module-btn="reportes" class="sidebar-link w-full text-left flex items-center space-x-3 px-4 py-3 rounded-lg">
+          <div class="module-icon bg-[#A62939]/20 text-[#A62939]">
+            <i class="fas fa-chart-bar"></i>
           </div>
-          <span class="font-medium">Reportes</span>
+          <span>Reportes</span>
         </button>
       </nav>
       
-      <div class="absolute bottom-6 left-6 right-6">
-        <div class="bg-white/10 rounded-lg p-4 text-center backdrop-blur-sm">
-          <p class="text-sm font-medium text-white">Sistema Académico Integral</p>
-        </div>
+      <div class="absolute bottom-0 left-0 right-0 p-4 bg-[#04136C]/90 backdrop-blur-sm text-center">
+        <p class="text-sm text-white/80">v2.0 · Sistema Académico</p>
       </div>
     </aside>
 
-    <!-- Main Content con nuevos colores -->
-    <main class="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto space-y-8">
-      <!-- Bienvenida -->
-      <section id="bienvenida" class="card rounded-2xl shadow-2xl p-8 md:p-12 text-center max-w-4xl mx-auto relative overflow-hidden">
-        <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#04136C]/10 rounded-full filter blur-3xl"></div>
-        <div class="absolute -bottom-20 -left-20 w-60 h-60 bg-[#DE912E]/10 rounded-full filter blur-3xl"></div>
-        
-        <div class="relative z-10">
-          <div class="w-20 h-20 bg-gradient-to-r from-[#04136C] to-[#DE912E] rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-6 pulse">
-            <i class="fas fa-calendar-check text-3xl text-white"></i>
-          </div>
-          
-          <h2 class="text-3xl md:text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#04136C] to-[#A62939] mb-6">
-            Sistema Integrado de Planificación Académica
-          </h2>
-          
-          <p class="text-gray-700 text-lg leading-relaxed max-w-2xl mx-auto">
-            Gestiona integralmente los componentes académicos de tu institución con nuestra plataforma todo-en-uno.
-          </p>
-          
-          <div class="mt-8 flex flex-wrap justify-center gap-4">
-            <button 
-              data-module-btn="malla" 
-              class="btn-primary px-6 py-3 rounded-xl text-white font-medium shadow-md flex items-center gap-2"
-            >
-              <i class="fas fa-rocket"></i> Comenzar
-            </button>
-            
-            <button class="px-6 py-3 rounded-xl border-2 border-[#DE912E] text-[#DE912E] font-medium hover:bg-[#DE912E]/10 transition flex items-center gap-2">
-              <i class="fas fa-play-circle"></i> Ver demo
-            </button>
-          </div>
+    <!-- Contenido principal -->
+    <main class="p-8 overflow-y-auto">
+      <!-- Header -->
+      <header class="flex justify-between items-center mb-8">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">Panel de Control</h2>
+          <p class="text-gray-500">Bienvenido al sistema de planificación académica</p>
         </div>
-      </section>
-
-      <!-- Secciones de módulos -->
-      <section 
-        id="malla" 
-        data-module 
-        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
-        aria-labelledby="malla-title"
-      >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#04136C]/10 rounded-full filter blur-3xl"></div>
-        
-        <div class="flex justify-between items-start mb-8">
-          <button 
-            onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
-            aria-label="Volver al panel principal"
-          >
-            <i class="fas fa-arrow-left"></i>
-            Volver
+        <div class="flex space-x-3">
+          <button class="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center space-x-2">
+            <i class="fas fa-bell text-gray-500"></i>
           </button>
-          
-          <div class="flex items-center gap-2 badge-primary px-4 py-2 rounded-lg">
-            <span class="font-medium">Malla Curricular</span>
+          <div class="w-10 h-10 rounded-full bg-[#04136C] flex items-center justify-center text-white">
+            <i class="fas fa-user"></i>
           </div>
         </div>
-        
-        <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-[#04136C]/10 rounded-xl flex items-center justify-center text-[#04136C]">
-            <i class="fas fa-project-diagram text-xl"></i>
-          </div>
-          <div>
-            <h2 id="malla-title" class="text-2xl font-bold text-gray-800">Gestión de Malla Curricular</h2>
-            <p class="text-gray-500">Diseña y administra la estructura académica de tu institución</p>
-          </div>
-        </div>
-        
-        <div id="contenido-malla" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
-          <div class="skeleton w-full h-full rounded-lg"></div>
-        </div>
-      </section>
+      </header>
 
-      <!-- Módulo Docentes -->
-      <section 
-        id="docentes" 
-        data-module 
-        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
-        aria-labelledby="docentes-title"
-      >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#DE912E]/10 rounded-full filter blur-3xl"></div>
-        
-        <div class="flex justify-between items-start mb-8">
-          <button 
-            onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
-            aria-label="Volver al panel principal"
-          >
-            <i class="fas fa-arrow-left"></i>
-            Volver
-          </button>
-          
-          <div class="flex items-center gap-2 badge-secondary px-4 py-2 rounded-lg">
-            <span class="font-medium">Docentes</span>
-          </div>
-        </div>
-        
-        <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-[#DE912E]/10 rounded-xl flex items-center justify-center text-[#DE912E]">
-            <i class="fas fa-chalkboard-teacher text-xl"></i>
-          </div>
-          <div>
-            <h2 id="docentes-title" class="text-2xl font-bold text-gray-800">Gestión de Docentes</h2>
-            <p class="text-gray-500">Administra el personal académico de tu institución</p>
-          </div>
-        </div>
-        
-        <div id="contenido-docentes" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
-          <div class="skeleton w-full h-full rounded-lg"></div>
-        </div>
-      </section>
-
-      <!-- Módulo Asignación -->
-      <section 
-        id="asignacion" 
-        data-module 
-        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
-        aria-labelledby="asignacion-title"
-      >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#A62939]/10 rounded-full filter blur-3xl"></div>
-        
-        <div class="flex justify-between items-start mb-8">
-          <button 
-            onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
-            aria-label="Volver al panel principal"
-          >
-            <i class="fas fa-arrow-left"></i>
-            Volver
-          </button>
-          
-          <div class="flex items-center gap-2 badge-accent px-4 py-2 rounded-lg">
-            <span class="font-medium">Asignación</span>
-          </div>
-        </div>
-        
-        <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-[#A62939]/10 rounded-xl flex items-center justify-center text-[#A62939]">
-            <i class="fas fa-tasks text-xl"></i>
-          </div>
-          <div>
-            <h2 id="asignacion-title" class="text-2xl font-bold text-gray-800">Asignación de Carga Académica</h2>
-            <p class="text-gray-500">Distribuye equitativamente las responsabilidades académicas</p>
-          </div>
-        </div>
-        
-        <div id="contenido-asignacion" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
-          <div class="skeleton w-full h-full rounded-lg"></div>
-        </div>
-      </section>
-
-      <!-- Módulo Horarios -->
-      <section 
-        id="horarios" 
-        data-module 
-        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
-        aria-labelledby="horarios-title"
-      >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#04136C]/10 rounded-full filter blur-3xl"></div>
-        
-        <div class="flex justify-between items-start mb-8">
-          <button 
-            onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
-            aria-label="Volver al panel principal"
-          >
-            <i class="fas fa-arrow-left"></i>
-            Volver
-          </button>
-          
-          <div class="flex items-center gap-2 badge-primary px-4 py-2 rounded-lg">
-            <span class="font-medium">Horarios</span>
-          </div>
-        </div>
-        
-        <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-[#04136C]/10 rounded-xl flex items-center justify-center text-[#04136C]">
-            <i class="fas fa-calendar-day text-xl"></i>
-          </div>
-          <div>
-            <h2 id="horarios-title" class="text-2xl font-bold text-gray-800">Gestión de Horarios</h2>
-            <p class="text-gray-500">Organiza y optimiza los horarios académicos</p>
-          </div>
-        </div>
-        
-        <div id="contenido-horarios" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
-          <div class="skeleton w-full h-full rounded-lg"></div>
-        </div>
-      </section>
-
-      <!-- Módulo Reportes -->
-      <section 
-        id="reportes" 
-        data-module 
-        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
-        aria-labelledby="reportes-title"
-      >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#DE912E]/10 rounded-full filter blur-3xl"></div>
-        
-        <div class="flex justify-between items-start mb-8">
-          <button 
-            onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
-            aria-label="Volver al panel principal"
-          >
-            <i class="fas fa-arrow-left"></i>
-            Volver
-          </button>
-          
-          <div class="flex items-center gap-2 badge-secondary px-4 py-2 rounded-lg">
-            <span class="font-medium">Reportes</span>
-          </div>
-        </div>
-        
-        <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-[#DE912E]/10 rounded-xl flex items-center justify-center text-[#DE912E]">
-            <i class="fas fa-chart-bar text-xl"></i>
-          </div>
-          <div>
-            <h2 id="reportes-title" class="text-2xl font-bold text-gray-800">Reportes Académicos</h2>
-            <p class="text-gray-500">Genera informes y análisis de datos institucionales</p>
-          </div>
-        </div>
-        
-        <div id="contenido-reportes" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
-          <div class="skeleton w-full h-full rounded-lg"></div>
-        </div>
-      </section>
-
-      <!-- Footer con nuevos colores -->
-      <footer class="mt-12 p-6 bg-gradient-to-r from-[#04136C] to-[#A62939] rounded-2xl shadow-lg text-white">
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <div class="bg-white/20 p-3 rounded-xl">
-              <i class="fas fa-lightbulb text-xl"></i>
-            </div>
-            <div>
-              <h3 class="font-bold">Sistema Académico Integral</h3>
-              <p class="text-sm text-white/90">Plataforma de gestión educativa completa</p>
+      <!-- Sección de bienvenida -->
+      <section id="bienvenida" class="content-transition bg-white rounded-2xl shadow-md p-8 mb-8">
+        <div class="flex flex-col md:flex-row items-center">
+          <div class="md:w-1/2 mb-6 md:mb-0">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Planificación Académica <span class="text-[#04136C]">Inteligente</span></h2>
+            <p class="text-gray-600 mb-6">Optimiza la gestión educativa con nuestra plataforma todo-en-uno diseñada para instituciones modernas.</p>
+            <div class="flex space-x-4">
+              <button data-module-btn="malla" class="btn-primary px-6 py-3 rounded-lg text-white font-medium flex items-center space-x-2">
+                <i class="fas fa-play"></i>
+                <span>Comenzar</span>
+              </button>
+              <button class="px-6 py-3 rounded-lg border-2 border-[#DE912E] text-[#DE912E] font-medium hover:bg-[#DE912E]/10 transition flex items-center space-x-2">
+                <i class="fas fa-question-circle"></i>
+                <span>Ayuda</span>
+              </button>
             </div>
           </div>
-          <button class="px-6 py-3 bg-white text-[#04136C] font-medium rounded-lg hover:bg-gray-100 transition shadow-md whitespace-nowrap">
-            <i class="fas fa-info-circle mr-2"></i> Más información
+          <div class="md:w-1/2 flex justify-center">
+            <div class="w-64 h-64 bg-gradient-to-br from-[#04136C] to-[#A62939] rounded-2xl flex items-center justify-center text-white pulse-animation">
+              <i class="fas fa-calendar-check text-5xl"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Módulos (ocultos inicialmente) -->
+      <section id="malla" class="content-transition hidden">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center space-x-4">
+            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+              <i class="fas fa-arrow-left"></i>
+              <span>Volver</span>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800">Malla Curricular</h2>
+          </div>
+          <button class="btn-primary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
+            <i class="fas fa-plus"></i>
+            <span>Nueva Malla</span>
           </button>
         </div>
-      </footer>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Tarjeta de ejemplo -->
+          <div class="module-card bg-white rounded-xl shadow-md p-6">
+            <div class="flex items-center space-x-4 mb-4">
+              <div class="module-icon bg-[#DE912E]/10 text-[#DE912E]">
+                <i class="fas fa-graduation-cap"></i>
+              </div>
+              <h3 class="font-bold text-gray-800">Ingeniería en Sistemas</h3>
+            </div>
+            <p class="text-gray-500 text-sm mb-4">Malla curricular actualizada 2023 con 10 semestres académicos.</p>
+            <div class="flex justify-between items-center">
+              <span class="text-xs bg-[#04136C]/10 text-[#04136C] px-2 py-1 rounded">Activa</span>
+              <button class="text-[#04136C] hover:text-[#0A1F8F]">
+                <i class="fas fa-ellipsis-h"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Otras tarjetas de ejemplo... -->
+        </div>
+      </section>
+
+      <section id="docentes" class="content-transition hidden">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center space-x-4">
+            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+              <i class="fas fa-arrow-left"></i>
+              <span>Volver</span>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800">Gestión de Docentes</h2>
+          </div>
+          <button class="btn-primary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
+            <i class="fas fa-plus"></i>
+            <span>Nuevo Docente</span>
+          </button>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+          <div class="p-6">
+            <div class="skeleton w-full h-64 rounded-lg"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="asignacion" class="content-transition hidden">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center space-x-4">
+            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+              <i class="fas fa-arrow-left"></i>
+              <span>Volver</span>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800">Asignación Académica</h2>
+          </div>
+          <button class="btn-secondary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
+            <i class="fas fa-random"></i>
+            <span>Distribuir</span>
+          </button>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+          <div class="p-6">
+            <div class="skeleton w-full h-64 rounded-lg"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="horarios" class="content-transition hidden">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center space-x-4">
+            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+              <i class="fas fa-arrow-left"></i>
+              <span>Volver</span>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800">Gestión de Horarios</h2>
+          </div>
+          <button class="btn-primary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
+            <i class="fas fa-plus"></i>
+            <span>Nuevo Horario</span>
+          </button>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+          <div class="p-6">
+            <div class="skeleton w-full h-64 rounded-lg"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="reportes" class="content-transition hidden">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center space-x-4">
+            <button onclick="volverInicio()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center space-x-2">
+              <i class="fas fa-arrow-left"></i>
+              <span>Volver</span>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800">Reportes Académicos</h2>
+          </div>
+          <button class="btn-secondary px-4 py-2 rounded-lg text-white flex items-center space-x-2">
+            <i class="fas fa-file-export"></i>
+            <span>Exportar</span>
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center space-x-2">
+              <i class="fas fa-chart-pie text-[#A62939]"></i>
+              <span>Resumen General</span>
+            </h3>
+            <div class="skeleton w-full h-48 rounded-lg"></div>
+          </div>
+          <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center space-x-2">
+              <i class="fas fa-chart-line text-[#04136C]"></i>
+              <span>Estadísticas</span>
+            </h3>
+            <div class="skeleton w-full h-48 rounded-lg"></div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
   <script>
-    // Configuración inicial mejorada
     document.addEventListener('DOMContentLoaded', function() {
-      // Cargar todos los módulos al inicio
-      const modules = [
-        { id: 'malla', file: 'mallas.html', icon: 'project-diagram', color: 'primary' },
-        { id: 'docentes', file: 'docentes.html', icon: 'chalkboard-teacher', color: 'secondary' },
-        { id: 'asignacion', file: 'asignacion.html', icon: 'tasks', color: 'accent' },
-        { id: 'horarios', file: 'horarios.html', icon: 'calendar-day', color: 'primary' },
-        { id: 'reportes', file: 'reportes.html', icon: 'chart-bar', color: 'secondary' }
-      ];
+      // Configuración inicial
+      const modules = ['malla', 'docentes', 'asignacion', 'horarios', 'reportes'];
       
-      // Precargar módulos
-      modules.forEach(module => {
-        precargarModulo(module.id, module.file);
-      });
-
       // Configurar event listeners para los botones del módulo
       document.querySelectorAll('[data-module-btn]').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -464,126 +370,43 @@
       });
     });
 
-    // Precargar módulos con cache
-    function precargarModulo(id, archivo) {
-      const container = document.getElementById(`contenido-${id}`);
-      
-      // Mostrar skeleton loader
-      container.innerHTML = `
-        <div class="skeleton w-full h-full rounded-lg"></div>
-      `;
-
-      // Intentar cargar desde cache primero
-      const cachedContent = sessionStorage.getItem(`module-${id}`);
-      if (cachedContent) {
-        container.innerHTML = cachedContent;
-        return;
-      }
-
-      // Si no hay cache, hacer fetch
-      fetch(archivo)
-        .then(res => {
-          if (!res.ok) throw new Error(`Error HTTP! estado: ${res.status}`);
-          return res.text();
-        })
-        .then(html => {
-          // Simular carga para demostración (remover en producción)
-          setTimeout(() => {
-            container.innerHTML = html;
-            sessionStorage.setItem(`module-${id}`, html);
-            
-            // Procesar scripts
-            const scripts = container.querySelectorAll("script");
-            scripts.forEach(oldScript => {
-              const newScript = document.createElement("script");
-              Array.from(oldScript.attributes).forEach(attr => {
-                newScript.setAttribute(attr.name, attr.value);
-              });
-              newScript.textContent = oldScript.textContent;
-              document.body.appendChild(newScript);
-              oldScript.remove();
-            });
-          }, 800 + Math.random() * 1000); // Retardo aleatorio para simular carga
-        })
-        .catch(error => {
-          console.error(`Error al cargar el módulo ${id}:`, error);
-          container.innerHTML = `
-            <div class="p-6 bg-red-50 border-l-4 border-red-500 rounded-lg">
-              <div class="flex items-center gap-3">
-                <div class="bg-red-100 p-2 rounded-full">
-                  <i class="fas fa-exclamation-circle text-red-600"></i>
-                </div>
-                <div>
-                  <h3 class="font-medium text-red-800">Error al cargar el módulo</h3>
-                  <p class="text-sm text-red-600 mt-1">No se pudo cargar el recurso solicitado</p>
-                </div>
-              </div>
-              <button onclick="cargarModulo('${id}', '${archivo}')" 
-                class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 mx-auto">
-                <i class="fas fa-sync-alt"></i> Reintentar
-              </button>
-            </div>
-          `;
-        });
-    }
-
-    // Mostrar módulo con animación
     function mostrarModulo(moduloId) {
-      // Actualizar botones activos
-      document.querySelectorAll('[data-module-btn]').forEach(btn => {
-        if (btn.getAttribute('data-module-btn') === moduloId) {
-          btn.classList.add('active-nav-btn');
-        } else {
-          btn.classList.remove('active-nav-btn');
+      // Ocultar todos los módulos
+      document.querySelectorAll('[id="bienvenida"], [data-module-btn]').forEach(el => {
+        if (el.id || el.getAttribute('data-module-btn')) {
+          if (el.id === 'bienvenida') {
+            el.classList.add('hidden');
+          }
+          if (el.getAttribute('data-module-btn')) {
+            el.classList.remove('active');
+          }
         }
       });
-
-      // Ocultar bienvenida
-      document.getElementById("bienvenida").style.display = "none";
       
-      // Ocultar todos los módulos primero
-      document.querySelectorAll('[data-module]').forEach(mod => {
-        mod.style.display = "none";
-        mod.classList.remove('active');
-      });
-      
-      // Mostrar el módulo seleccionado con animación
+      // Mostrar el módulo seleccionado
       const modulo = document.getElementById(moduloId);
       if (modulo) {
-        modulo.style.display = "block";
-        setTimeout(() => {
-          modulo.classList.add('active');
-          modulo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 10);
+        modulo.classList.remove('hidden');
+        modulo.classList.add('content-transition');
+        
+        // Marcar como activo en el sidebar
+        document.querySelector(`[data-module-btn="${moduloId}"]`).classList.add('active');
       }
     }
 
-    // Volver al inicio con animación
     function volverInicio() {
-      // Quitar clase activa de todos los botones
+      // Ocultar todos los módulos
+      document.querySelectorAll('[data-module]').forEach(mod => {
+        mod.classList.add('hidden');
+      });
+      
+      // Mostrar bienvenida
+      document.getElementById("bienvenida").classList.remove('hidden');
+      
+      // Quitar activo de todos los botones
       document.querySelectorAll('[data-module-btn]').forEach(btn => {
-        btn.classList.remove('active-nav-btn');
+        btn.classList.remove('active');
       });
-      
-      // Ocultar todos los módulos con animación
-      document.querySelectorAll('[data-module].active').forEach(mod => {
-        mod.classList.remove('active');
-        setTimeout(() => {
-          mod.style.display = "none";
-        }, 400);
-      });
-      
-      // Mostrar sección de bienvenida
-      const bienvenida = document.getElementById("bienvenida");
-      bienvenida.style.display = "block";
-      bienvenida.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    // Función para recargar módulo
-    function cargarModulo(id, archivo) {
-      // Mostrar el módulo (lo que disparará la recarga)
-      mostrarModulo(id);
-      precargarModulo(id, archivo);
     }
   </script>
 </body>
