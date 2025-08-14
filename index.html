@@ -10,9 +10,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --primary: #04136C;
-      --secondary: #DE912E;
-      --accent: #A62939;
+      --primary: #04136C;    /* Azul oscuro principal */
+      --secondary: #DE912E;  /* Naranja dorado */
+      --accent: #A62939;     /* Rojo vino */
       --light: #f8f9fa;
       --dark: #212529;
     }
@@ -35,13 +35,13 @@
     }
     
     .active-nav-btn {
-      background-color: rgba(67, 97, 238, 0.15) !important;
+      background-color: rgba(4, 19, 108, 0.15) !important;
       color: var(--primary) !important;
       border-left: 4px solid var(--primary);
     }
     
     .sidebar {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      background: linear-gradient(135deg, var(--primary) 0%, #0a1f8f 100%);
     }
     
     .card {
@@ -68,9 +68,20 @@
     }
     
     .btn-primary:hover {
-      background: var(--secondary);
+      background: #0a1f8f;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
+      box-shadow: 0 4px 12px rgba(4, 19, 108, 0.25);
+    }
+    
+    .btn-secondary {
+      background: var(--secondary);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+      background: #e89d3a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(222, 145, 46, 0.25);
     }
     
     .pulse {
@@ -78,15 +89,30 @@
     }
     
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(222, 145, 46, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(222, 145, 46, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(222, 145, 46, 0); }
+    }
+    
+    .badge-primary {
+      background-color: rgba(4, 19, 108, 0.1);
+      color: var(--primary);
+    }
+    
+    .badge-secondary {
+      background-color: rgba(222, 145, 46, 0.1);
+      color: var(--secondary);
+    }
+    
+    .badge-accent {
+      background-color: rgba(166, 41, 57, 0.1);
+      color: var(--accent);
     }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased">
   <div class="flex flex-col md:flex-row min-h-screen">
-    <!-- Sidebar - Versión Limpia -->
+    <!-- Sidebar con nuevos colores -->
     <aside class="sidebar w-full md:w-72 text-white p-6 shadow-2xl z-10">
       <div class="flex items-center justify-center mb-10 pt-4 border-b border-white/20 pb-6">
         <div class="bg-white/20 p-3 rounded-xl mr-3 shadow-md">
@@ -94,7 +120,7 @@
         </div>
         <h1 class="text-2xl font-bold tracking-tight">
           <span class="sr-only">PlanificaU</span>
-          <span aria-hidden="true" class="bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">PlanificaU</span>
+          <span aria-hidden="true">PlanificaU</span>
         </h1>
       </div>
       
@@ -162,19 +188,19 @@
       </div>
     </aside>
 
-    <!-- Main Content - Diseño Limpio -->
+    <!-- Main Content con nuevos colores -->
     <main class="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto space-y-8">
-      <!-- Bienvenida - Tarjeta con efecto vidrio -->
+      <!-- Bienvenida -->
       <section id="bienvenida" class="card rounded-2xl shadow-2xl p-8 md:p-12 text-center max-w-4xl mx-auto relative overflow-hidden">
-        <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-400/10 rounded-full filter blur-3xl"></div>
-        <div class="absolute -bottom-20 -left-20 w-60 h-60 bg-purple-400/10 rounded-full filter blur-3xl"></div>
+        <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#04136C]/10 rounded-full filter blur-3xl"></div>
+        <div class="absolute -bottom-20 -left-20 w-60 h-60 bg-[#DE912E]/10 rounded-full filter blur-3xl"></div>
         
         <div class="relative z-10">
-          <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-6 pulse">
+          <div class="w-20 h-20 bg-gradient-to-r from-[#04136C] to-[#DE912E] rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-6 pulse">
             <i class="fas fa-calendar-check text-3xl text-white"></i>
           </div>
           
-          <h2 class="text-3xl md:text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 mb-6">
+          <h2 class="text-3xl md:text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#04136C] to-[#A62939] mb-6">
             Sistema Integrado de Planificación Académica
           </h2>
           
@@ -190,40 +216,40 @@
               <i class="fas fa-rocket"></i> Comenzar
             </button>
             
-            <button class="px-6 py-3 rounded-xl border-2 border-blue-500 text-blue-600 font-medium hover:bg-blue-50 transition flex items-center gap-2">
+            <button class="px-6 py-3 rounded-xl border-2 border-[#DE912E] text-[#DE912E] font-medium hover:bg-[#DE912E]/10 transition flex items-center gap-2">
               <i class="fas fa-play-circle"></i> Ver demo
             </button>
           </div>
         </div>
       </section>
 
-      <!-- Secciones de módulos - Diseño Limpio -->
+      <!-- Secciones de módulos -->
       <section 
         id="malla" 
         data-module 
         class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="malla-title"
       >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/10 rounded-full filter blur-3xl"></div>
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#04136C]/10 rounded-full filter blur-3xl"></div>
         
         <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
             aria-label="Volver al panel principal"
           >
             <i class="fas fa-arrow-left"></i>
             Volver
           </button>
           
-          <div class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
-            <span class="text-blue-600 font-medium">Malla Curricular</span>
+          <div class="flex items-center gap-2 badge-primary px-4 py-2 rounded-lg">
+            <span class="font-medium">Malla Curricular</span>
           </div>
         </div>
         
         <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-            <i class="fas fa-project-diagram text-xl text-blue-600"></i>
+          <div class="w-12 h-12 bg-[#04136C]/10 rounded-xl flex items-center justify-center text-[#04136C]">
+            <i class="fas fa-project-diagram text-xl"></i>
           </div>
           <div>
             <h2 id="malla-title" class="text-2xl font-bold text-gray-800">Gestión de Malla Curricular</h2>
@@ -243,26 +269,26 @@
         class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="docentes-title"
       >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-green-400/10 rounded-full filter blur-3xl"></div>
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#DE912E]/10 rounded-full filter blur-3xl"></div>
         
         <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
             aria-label="Volver al panel principal"
           >
             <i class="fas fa-arrow-left"></i>
             Volver
           </button>
           
-          <div class="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
-            <span class="text-green-600 font-medium">Docentes</span>
+          <div class="flex items-center gap-2 badge-secondary px-4 py-2 rounded-lg">
+            <span class="font-medium">Docentes</span>
           </div>
         </div>
         
         <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-            <i class="fas fa-chalkboard-teacher text-xl text-green-600"></i>
+          <div class="w-12 h-12 bg-[#DE912E]/10 rounded-xl flex items-center justify-center text-[#DE912E]">
+            <i class="fas fa-chalkboard-teacher text-xl"></i>
           </div>
           <div>
             <h2 id="docentes-title" class="text-2xl font-bold text-gray-800">Gestión de Docentes</h2>
@@ -282,26 +308,26 @@
         class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="asignacion-title"
       >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/10 rounded-full filter blur-3xl"></div>
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#A62939]/10 rounded-full filter blur-3xl"></div>
         
         <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
             aria-label="Volver al panel principal"
           >
             <i class="fas fa-arrow-left"></i>
             Volver
           </button>
           
-          <div class="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-lg">
-            <span class="text-yellow-600 font-medium">Asignación</span>
+          <div class="flex items-center gap-2 badge-accent px-4 py-2 rounded-lg">
+            <span class="font-medium">Asignación</span>
           </div>
         </div>
         
         <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-            <i class="fas fa-tasks text-xl text-yellow-600"></i>
+          <div class="w-12 h-12 bg-[#A62939]/10 rounded-xl flex items-center justify-center text-[#A62939]">
+            <i class="fas fa-tasks text-xl"></i>
           </div>
           <div>
             <h2 id="asignacion-title" class="text-2xl font-bold text-gray-800">Asignación de Carga Académica</h2>
@@ -321,26 +347,26 @@
         class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="horarios-title"
       >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-400/10 rounded-full filter blur-3xl"></div>
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#04136C]/10 rounded-full filter blur-3xl"></div>
         
         <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
             aria-label="Volver al panel principal"
           >
             <i class="fas fa-arrow-left"></i>
             Volver
           </button>
           
-          <div class="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">
-            <span class="text-purple-600 font-medium">Horarios</span>
+          <div class="flex items-center gap-2 badge-primary px-4 py-2 rounded-lg">
+            <span class="font-medium">Horarios</span>
           </div>
         </div>
         
         <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-            <i class="fas fa-calendar-day text-xl text-purple-600"></i>
+          <div class="w-12 h-12 bg-[#04136C]/10 rounded-xl flex items-center justify-center text-[#04136C]">
+            <i class="fas fa-calendar-day text-xl"></i>
           </div>
           <div>
             <h2 id="horarios-title" class="text-2xl font-bold text-gray-800">Gestión de Horarios</h2>
@@ -360,26 +386,26 @@
         class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="reportes-title"
       >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-400/10 rounded-full filter blur-3xl"></div>
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#DE912E]/10 rounded-full filter blur-3xl"></div>
         
         <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#04136C]/50"
             aria-label="Volver al panel principal"
           >
             <i class="fas fa-arrow-left"></i>
             Volver
           </button>
           
-          <div class="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-lg">
-            <span class="text-red-600 font-medium">Reportes</span>
+          <div class="flex items-center gap-2 badge-secondary px-4 py-2 rounded-lg">
+            <span class="font-medium">Reportes</span>
           </div>
         </div>
         
         <div class="flex items-center gap-4 mb-8">
-          <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-            <i class="fas fa-chart-bar text-xl text-red-600"></i>
+          <div class="w-12 h-12 bg-[#DE912E]/10 rounded-xl flex items-center justify-center text-[#DE912E]">
+            <i class="fas fa-chart-bar text-xl"></i>
           </div>
           <div>
             <h2 id="reportes-title" class="text-2xl font-bold text-gray-800">Reportes Académicos</h2>
@@ -392,8 +418,8 @@
         </div>
       </section>
 
-      <!-- Footer Notificación -->
-      <footer class="mt-12 p-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg text-white">
+      <!-- Footer con nuevos colores -->
+      <footer class="mt-12 p-6 bg-gradient-to-r from-[#04136C] to-[#A62939] rounded-2xl shadow-lg text-white">
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <div class="bg-white/20 p-3 rounded-xl">
@@ -404,7 +430,7 @@
               <p class="text-sm text-white/90">Plataforma de gestión educativa completa</p>
             </div>
           </div>
-          <button class="px-6 py-3 bg-white text-blue-600 font-medium rounded-lg hover:bg-gray-100 transition shadow-md whitespace-nowrap">
+          <button class="px-6 py-3 bg-white text-[#04136C] font-medium rounded-lg hover:bg-gray-100 transition shadow-md whitespace-nowrap">
             <i class="fas fa-info-circle mr-2"></i> Más información
           </button>
         </div>
@@ -417,11 +443,11 @@
     document.addEventListener('DOMContentLoaded', function() {
       // Cargar todos los módulos al inicio
       const modules = [
-        { id: 'malla', file: 'mallas.html', icon: 'project-diagram', color: 'blue' },
-        { id: 'docentes', file: 'docentes.html', icon: 'chalkboard-teacher', color: 'green' },
-        { id: 'asignacion', file: 'asignacion.html', icon: 'tasks', color: 'yellow' },
-        { id: 'horarios', file: 'horarios.html', icon: 'calendar-day', color: 'purple' },
-        { id: 'reportes', file: 'reportes.html', icon: 'chart-bar', color: 'red' }
+        { id: 'malla', file: 'mallas.html', icon: 'project-diagram', color: 'primary' },
+        { id: 'docentes', file: 'docentes.html', icon: 'chalkboard-teacher', color: 'secondary' },
+        { id: 'asignacion', file: 'asignacion.html', icon: 'tasks', color: 'accent' },
+        { id: 'horarios', file: 'horarios.html', icon: 'calendar-day', color: 'primary' },
+        { id: 'reportes', file: 'reportes.html', icon: 'chart-bar', color: 'secondary' }
       ];
       
       // Precargar módulos
