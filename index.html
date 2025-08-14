@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>PlanificaU - Planificación Académica</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-50 font-sans">
   <div class="flex h-screen overflow-hidden">
@@ -22,45 +21,38 @@
 
     <!-- Main content -->
     <main class="flex-1 p-8 overflow-y-auto space-y-16">
-      <!-- Malla Curricular -->
       <section id="malla">
         <div class="bg-white rounded-lg shadow p-6">
           <h1 class="text-2xl font-bold text-[#8a1f2d] mb-4">📄 Malla Curricular</h1>
-          <input type="file" id="fileInput" accept=".xlsx" class="mb-4 p-2 border border-gray-300 rounded w-full max-w-md">
-          <div id="tablaMaterias" class="overflow-x-auto text-sm"></div>
+          <div id="contenido-malla">Cargando módulo...</div>
         </div>
       </section>
 
-      <!-- Docentes -->
       <section id="docentes">
         <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">👨‍🏫 Carga de Docentes (.xlsx)</h2>
-          <input type="file" id="docenteFile" accept=".xlsx" class="mb-4 p-2 border border-gray-300 rounded w-full max-w-md">
-          <div id="tablaDocentes" class="overflow-x-auto text-sm"></div>
+          <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">👨‍🏫 Carga de Docentes</h2>
+          <div id="contenido-docentes">Cargando módulo...</div>
         </div>
       </section>
 
-      <!-- Asignación -->
       <section id="asignacion">
         <div class="bg-white rounded-lg shadow p-6">
           <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">🧠 Asignación de Carga</h2>
-          <p class="text-gray-600">(Próximamente: se vincularán materias con docentes y disponibilidad horaria)</p>
+          <div id="contenido-asignacion">Cargando módulo...</div>
         </div>
       </section>
 
-      <!-- Horarios -->
       <section id="horarios">
         <div class="bg-white rounded-lg shadow p-6">
           <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">📅 Horarios Académicos</h2>
-          <p class="text-gray-600">(En construcción: se podrá visualizar el horario por paralelo y docente)</p>
+          <div id="contenido-horarios">Cargando módulo...</div>
         </div>
       </section>
 
-      <!-- Reportes -->
       <section id="reportes">
         <div class="bg-white rounded-lg shadow p-6">
           <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">📊 Reportes</h2>
-          <p class="text-gray-600">(Próximamente: exportación de planificación y horarios en formatos PDF/XLSX)</p>
+          <div id="contenido-reportes">Cargando módulo...</div>
         </div>
       </section>
 
@@ -71,70 +63,18 @@
   </div>
 
   <script>
-    document.getElementById('fileInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const data = new Uint8Array(evt.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    function cargarModulo(id, archivo) {
+      fetch(archivo)
+        .then(res => res.text())
+        .then(html => document.getElementById(id).innerHTML = html)
+        .catch(err => document.getElementById(id).innerHTML = "<p class='text-red-500'>Error al cargar el módulo.</p>");
+    }
 
-        const headers = ["Materia", "Código", "HT", "HP", "HA", "Prerrequisito"];
-        let html = `<table class='w-full border text-sm bg-white'><thead><tr class='bg-gray-100'>`;
-        headers.forEach(h => html += `<th class='border px-2 py-1'>${h}</th>`);
-        html += `</tr></thead><tbody>`;
-
-        for (let i = 1; i < rows.length; i++) {
-          const r = rows[i];
-          if (!r[0] || !r[1]) continue;
-          html += `<tr>
-            <td class='border px-2 py-1'>${r[0]}</td>
-            <td class='border px-2 py-1'>${r[1]}</td>
-            <td class='border px-2 py-1'>${r[2] || 0}</td>
-            <td class='border px-2 py-1'>${r[3] || 0}</td>
-            <td class='border px-2 py-1'>${r[4] || 0}</td>
-            <td class='border px-2 py-1'><input class='w-full border px-1 py-0.5 text-sm' placeholder='Ej: MAT 101'></td>
-          </tr>`;
-        }
-
-        html += `</tbody></table>`;
-        document.getElementById('tablaMaterias').innerHTML = html;
-      };
-      reader.readAsArrayBuffer(file);
-    });
-
-    document.getElementById('docenteFile').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const data = new Uint8Array(evt.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-        const headers = ["Nombre", "Especialidad", "Disponibilidad"];
-        let html = `<table class='w-full border text-sm bg-white'><thead><tr class='bg-gray-100'>`;
-        headers.forEach(h => html += `<th class='border px-2 py-1'>${h}</th>`);
-        html += `</tr></thead><tbody>`;
-
-        for (let i = 1; i < rows.length; i++) {
-          const r = rows[i];
-          if (!r[0]) continue;
-          html += `<tr>
-            <td class='border px-2 py-1'>${r[0]}</td>
-            <td class='border px-2 py-1'>${r[1] || ''}</td>
-            <td class='border px-2 py-1'>${r[2] || ''}</td>
-          </tr>`;
-        }
-
-        html += `</tbody></table>`;
-        document.getElementById('tablaDocentes').innerHTML = html;
-      };
-      reader.readAsArrayBuffer(file);
-    });
+    cargarModulo("contenido-malla", "malla.html");
+    cargarModulo("contenido-docentes", "docentes.html");
+    cargarModulo("contenido-asignacion", "asignacion.html");
+    cargarModulo("contenido-horarios", "horarios.html");
+    cargarModulo("contenido-reportes", "reportes.html");
   </script>
 </body>
 </html>
