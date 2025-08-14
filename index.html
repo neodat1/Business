@@ -38,12 +38,15 @@
 
       <!-- Secciones ocultas por defecto -->
       <section id="malla" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-  <button onclick="volverInicio()" class="mb-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded shadow-sm">← Volver al inicio</button>
+  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+  Volver al panel principal
+</button>
         <div class="flex items-center mb-6">
   <svg class="w-6 h-6 text-[#8a1f2d] mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M6 2a1 1 0 00-1 1v2h10V3a1 1 0 00-1-1H6zM4 7V5H3a1 1 0 00-1 1v10a1 1 0 001 1h1V7zm2 0v10h8V7H6zm10 10h1a1 1 0 001-1V6a1 1 0 00-1-1h-1v12z" /></svg>
-  <h2 class="text-2xl font-semibold text-[#8a1f2d]">Malla Curricular</h2>
+  <h2 class="text-2xl font-semibold text-[#8a1f2d] tracking-wide">Gestión de Malla Curricular</h2>
 </div>
-        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto bg-white rounded-lg border border-gray-200 p-4 shadow-inner">Cargando módulo...</div>
+        <div id="contenido-malla" class="text-sm max-w-full overflow-x-auto bg-gray-50 rounded-lg border border-gray-300 p-6 shadow-inner">Cargando módulo...</div>
       </section>
 
       <section id="docentes" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
