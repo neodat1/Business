@@ -18,7 +18,7 @@
   <div class="flex flex-col md:flex-row min-h-screen">
     <!-- Sidebar -->
     <aside class="w-full md:w-64 bg-gradient-to-b from-[#244a8a] to-[#1e3a6d] text-white p-6 shadow-xl">
-      <h1 class="text-3xl font-bold mb-10 text-center tracking-wide">PlanificaU</h1>
+      <h1 class="text-3xl font-extrabold mb-10 text-center tracking-wide border-b pb-4">PlanificaU – Sistema Institucional</h1>
       <nav class="space-y-3">
         <button onclick="mostrarModulo('malla')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📄 <span>Malla Curricular</span></button>
         <button onclick="mostrarModulo('docentes')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">👨‍🏫 <span>Docentes</span></button>
@@ -31,9 +31,9 @@
     <!-- Main Content -->
     <main class="flex-1 p-6 overflow-y-auto max-w-6xl mx-auto space-y-12">
       <!-- Bienvenida -->
-      <section id="bienvenida" class="bg-white rounded-xl shadow-lg p-10 text-center border border-gray-200">
+      <section id="bienvenida" class="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200 max-w-3xl mx-auto">
         <h2 class="text-4xl font-semibold tracking-wide text-[#244a8a] mb-6">Sistema Integrado de Planificación Académica</h2>
-        <p class="text-gray-700 text-base">Utilice el panel de navegación lateral para acceder a los distintos módulos del sistema. Desde allí podrá gestionar las estructuras curriculares, asignaciones docentes, horarios académicos y reportes institucionales.</p>
+        <p class="text-gray-700 text-lg leading-relaxed">Este sistema permite gestionar integralmente los componentes académicos clave de su unidad: desde la definición curricular y asignación docente, hasta la planificación de horarios y generación de reportes institucionales.</p>
       </section>
 
       <!-- Secciones ocultas por defecto -->
@@ -50,26 +50,42 @@
       </section>
 
       <section id="docentes" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+    Volver al panel principal
+  </button>
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">👨‍🏫 Docentes</h2>
         <div id="contenido-docentes" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
       <section id="asignacion" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+    Volver al panel principal
+  </button>
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">🧠 Asignación de Carga</h2>
         <div id="contenido-asignacion" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
       <section id="horarios" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+    Volver al panel principal
+  </button>
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📅 Horarios Académicos</h2>
         <div id="contenido-horarios" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
       <section id="reportes" class="module-section bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+  <button onclick="volverInicio()" class="mb-6 inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-md shadow-sm transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+    Volver al panel principal
+  </button>
         <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📊 Reportes</h2>
         <div id="contenido-reportes" class="text-sm max-w-full overflow-x-auto">Cargando módulo...</div>
       </section>
 
-      <footer class="mt-12 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-sm rounded shadow">
+      <footer class="mt-12 p-6 bg-yellow-50 border-l-4 border-yellow-400 text-sm text-gray-800 rounded shadow max-w-5xl mx-auto">
   ℹ️ Esta plataforma se encuentra en fase de desarrollo. Las funcionalidades actuales no conservan los datos al recargar. Se integrarán mecanismos de almacenamiento persistente en versiones futuras.
 </footer>
     </main>
