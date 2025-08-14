@@ -2,63 +2,70 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PlanificaU - Planificación Académica</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    section.module-section {
+      display: none;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 font-sans">
-  <div class="flex h-screen overflow-hidden">
+<body class="bg-gray-100 text-gray-900 font-sans">
+  <div class="flex flex-col md:flex-row min-h-screen">
     <!-- Sidebar -->
-    <aside class="w-64 bg-[#244a8a] text-white flex flex-col p-6 shadow-lg">
-      <h2 class="text-2xl font-bold mb-8">PlanificaU</h2>
-      <nav class="flex flex-col gap-2">
-        <a href="#malla" class="hover:bg-[#173b74] px-4 py-2 rounded transition">📄 Malla Curricular</a>
-        <a href="#docentes" class="hover:bg-[#173b74] px-4 py-2 rounded transition">👨‍🏫 Docentes</a>
-        <a href="#asignacion" class="hover:bg-[#173b74] px-4 py-2 rounded transition">🧠 Asignación</a>
-        <a href="#horarios" class="hover:bg-[#173b74] px-4 py-2 rounded transition">📅 Horarios</a>
-        <a href="#reportes" class="hover:bg-[#173b74] px-4 py-2 rounded transition">📊 Reportes</a>
+    <aside class="w-full md:w-64 bg-[#244a8a] text-white p-6 shadow-lg flex-shrink-0">
+      <h1 class="text-3xl font-bold mb-8">PlanificaU</h1>
+      <nav class="space-y-3">
+        <button onclick="mostrarModulo('malla')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📄 <span>Malla Curricular</span></button>
+        <button onclick="mostrarModulo('docentes')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">👨‍🏫 <span>Docentes</span></button>
+        <button onclick="mostrarModulo('asignacion')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">🧠 <span>Asignación</span></button>
+        <button onclick="mostrarModulo('horarios')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📅 <span>Horarios</span></button>
+        <button onclick="mostrarModulo('reportes')" class="w-full text-left flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[#173b74] transition">📊 <span>Reportes</span></button>
       </nav>
     </aside>
 
-    <!-- Main content -->
-    <main class="flex-1 p-8 overflow-y-auto space-y-16">
-      <section id="malla">
-        <div class="bg-white rounded-lg shadow p-6">
-          <h1 class="text-2xl font-bold text-[#8a1f2d] mb-4">📄 Malla Curricular</h1>
-          <div id="contenido-malla">Cargando módulo...</div>
-        </div>
+    <!-- Main Content -->
+    <main class="flex-1 p-6 overflow-y-auto space-y-12">
+
+      <!-- Bienvenida -->
+      <section id="bienvenida" class="bg-white rounded-lg shadow-md p-8 text-center">
+        <h2 class="text-3xl font-bold text-[#244a8a] mb-4">Bienvenido a PlanificaU</h2>
+        <p class="text-gray-600">Selecciona una opción del menú lateral para comenzar con la planificación académica.</p>
       </section>
 
-      <section id="docentes">
-        <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">👨‍🏫 Carga de Docentes</h2>
-          <div id="contenido-docentes">Cargando módulo...</div>
-        </div>
+      <!-- Secciones ocultas por defecto -->
+      <section id="malla" class="module-section bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📄 Malla Curricular</h2>
+        <div id="contenido-malla">Cargando módulo...</div>
       </section>
 
-      <section id="asignacion">
-        <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">🧠 Asignación de Carga</h2>
-          <div id="contenido-asignacion">Cargando módulo...</div>
-        </div>
+      <section id="docentes" class="module-section bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">👨‍🏫 Docentes</h2>
+        <div id="contenido-docentes">Cargando módulo...</div>
       </section>
 
-      <section id="horarios">
-        <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">📅 Horarios Académicos</h2>
-          <div id="contenido-horarios">Cargando módulo...</div>
-        </div>
+      <section id="asignacion" class="module-section bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">🧠 Asignación de Carga</h2>
+        <div id="contenido-asignacion">Cargando módulo...</div>
       </section>
 
-      <section id="reportes">
-        <div class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-2xl font-semibold text-[#8a1f2d] mb-4">📊 Reportes</h2>
-          <div id="contenido-reportes">Cargando módulo...</div>
-        </div>
+      <section id="horarios" class="module-section bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📅 Horarios Académicos</h2>
+        <div id="contenido-horarios">Cargando módulo...</div>
       </section>
 
-      <div class="mt-10 p-6 bg-[#fef7e0] border-l-4 border-yellow-400 text-sm rounded shadow">
-        ⚠️ Plataforma en desarrollo. Los datos se pierden al recargar. Se integrará almacenamiento persistente en futuras versiones.
-      </div>
+      <section id="reportes" class="module-section bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-[#8a1f2d] mb-4">📊 Reportes</h2>
+        <div id="contenido-reportes">Cargando módulo...</div>
+      </section>
+
+      <footer class="mt-10 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-sm rounded">
+        ⚠️ Plataforma en desarrollo. Los datos se perderán al recargar. Se integrará almacenamiento persistente en futuras versiones.
+      </footer>
     </main>
   </div>
 
@@ -66,15 +73,25 @@
     function cargarModulo(id, archivo) {
       fetch(archivo)
         .then(res => res.text())
-        .then(html => document.getElementById(id).innerHTML = html)
-        .catch(err => document.getElementById(id).innerHTML = "<p class='text-red-500'>Error al cargar el módulo.</p>");
+        .then(html => document.getElementById("contenido-" + id).innerHTML = html)
+        .catch(() => {
+          document.getElementById("contenido-" + id).innerHTML = "<p class='text-red-600'>⚠️ Error al cargar el módulo <strong>" + archivo + "</strong>.</p>";
+        });
     }
 
-    cargarModulo("contenido-malla", "mallas.html");
-    cargarModulo("contenido-docentes", "docentes.html");
-    cargarModulo("contenido-asignacion", "asignacion.html");
-    cargarModulo("contenido-horarios", "horarios.html");
-    cargarModulo("contenido-reportes", "reportes.html");
+    function mostrarModulo(modulo) {
+      document.getElementById("bienvenida").style.display = "none";
+      const modulos = ["malla", "docentes", "asignacion", "horarios", "reportes"];
+      modulos.forEach(m => {
+        document.getElementById(m).style.display = (m === modulo) ? "block" : "none";
+      });
+    }
+
+    cargarModulo("malla", "mallas.html");
+    cargarModulo("docentes", "docentes.html");
+    cargarModulo("asignacion", "asignacion.html");
+    cargarModulo("horarios", "horarios.html");
+    cargarModulo("reportes", "reportes.html");
   </script>
 </body>
 </html>
