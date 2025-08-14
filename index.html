@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Sistema Integrado de Planificación Académica">
-  <title>PlanificaU - Gestión Académica</title>
+  <meta name="description" content="Sistema Integrado de Planificación Académica para instituciones educativas">
+  <title>PlanificaU - Planificación Académica</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --primary: #3b82f6;
-      --secondary: #2563eb;
-      --accent: #ec4899;
-      --light: #f8fafc;
-      --dark: #1e293b;
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --accent: #f72585;
+      --light: #f8f9fa;
+      --dark: #212529;
     }
     
     html {
@@ -35,24 +35,24 @@
     }
     
     .active-nav-btn {
-      background-color: rgba(59, 130, 246, 0.1) !important;
+      background-color: rgba(67, 97, 238, 0.15) !important;
       color: var(--primary) !important;
-      border-left: 3px solid var(--primary);
+      border-left: 4px solid var(--primary);
     }
     
     .sidebar {
-      background: linear-gradient(160deg, #1e3a8a 0%, #1e40af 100%);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     }
     
     .card {
-      background: white;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      border: 1px solid rgba(241, 245, 249, 0.8);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
     }
     
     .skeleton {
-      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
     }
@@ -69,145 +69,170 @@
     
     .btn-primary:hover {
       background: var(--secondary);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
     }
     
-    .glass-effect {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased">
+<body class="bg-gray-50 text-gray-900 antialiased">
   <div class="flex flex-col md:flex-row min-h-screen">
-    <!-- Barra lateral - Diseño profesional -->
-    <aside class="sidebar w-full md:w-64 text-white p-6 z-10">
-      <div class="flex items-center justify-center mb-10 pt-4 pb-6">
-        <div class="bg-white/10 p-3 rounded-xl mr-3 shadow-sm glass-effect">
-          <i class="fas fa-calendar-alt text-xl text-white"></i>
+    <!-- Sidebar - Versión Limpia -->
+    <aside class="sidebar w-full md:w-72 text-white p-6 shadow-2xl z-10">
+      <div class="flex items-center justify-center mb-10 pt-4 border-b border-white/20 pb-6">
+        <div class="bg-white/20 p-3 rounded-xl mr-3 shadow-md">
+          <i class="fas fa-calendar-alt text-2xl text-white"></i>
         </div>
         <h1 class="text-2xl font-bold tracking-tight">
           <span class="sr-only">PlanificaU</span>
-          <span aria-hidden="true">PlanificaU</span>
+          <span aria-hidden="true" class="bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">PlanificaU</span>
         </h1>
       </div>
       
-      <nav class="space-y-1">
+      <nav class="space-y-2">
         <button 
           data-module-btn="malla" 
-          class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-white/30 group"
+          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 active-nav-btn group"
           aria-label="Módulo de Malla Curricular"
         >
-          <div class="w-7 h-7 flex items-center justify-center rounded-lg group-hover:bg-white/10 transition">
-            <i class="fas fa-sitemap text-sm"></i>
+          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
+            <i class="fas fa-project-diagram text-sm"></i>
           </div>
-          <span class="font-medium text-sm">Malla Curricular</span>
+          <span class="font-medium">Malla Curricular</span>
         </button>
         
         <button 
           data-module-btn="docentes" 
-          class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-white/30 group"
+          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 group"
           aria-label="Módulo de Docentes"
         >
-          <div class="w-7 h-7 flex items-center justify-center rounded-lg group-hover:bg-white/10 transition">
-            <i class="fas fa-users text-sm"></i>
+          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
+            <i class="fas fa-chalkboard-teacher text-sm"></i>
           </div>
-          <span class="font-medium text-sm">Docentes</span>
+          <span class="font-medium">Docentes</span>
         </button>
         
         <button 
           data-module-btn="asignacion" 
-          class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-white/30 group"
+          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 group"
           aria-label="Módulo de Asignación"
         >
-          <div class="w-7 h-7 flex items-center justify-center rounded-lg group-hover:bg-white/10 transition">
+          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
             <i class="fas fa-tasks text-sm"></i>
           </div>
-          <span class="font-medium text-sm">Asignación</span>
+          <span class="font-medium">Asignación</span>
         </button>
         
         <button 
           data-module-btn="horarios" 
-          class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-white/30 group"
+          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 group"
           aria-label="Módulo de Horarios"
         >
-          <div class="w-7 h-7 flex items-center justify-center rounded-lg group-hover:bg-white/10 transition">
+          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
             <i class="fas fa-calendar-day text-sm"></i>
           </div>
-          <span class="font-medium text-sm">Horarios</span>
+          <span class="font-medium">Horarios</span>
         </button>
         
         <button 
           data-module-btn="reportes" 
-          class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-white/30 group"
+          class="w-full text-left flex items-center gap-4 px-5 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50 group"
           aria-label="Módulo de Reportes"
         >
-          <div class="w-7 h-7 flex items-center justify-center rounded-lg group-hover:bg-white/10 transition">
+          <div class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-lg group-hover:bg-white/20 transition">
             <i class="fas fa-chart-bar text-sm"></i>
           </div>
-          <span class="font-medium text-sm">Reportes</span>
+          <span class="font-medium">Reportes</span>
         </button>
       </nav>
+      
+      <div class="absolute bottom-6 left-6 right-6">
+        <div class="bg-white/10 rounded-lg p-4 text-center backdrop-blur-sm">
+          <p class="text-sm font-medium text-white">Sistema Académico Integral</p>
+        </div>
+      </div>
     </aside>
 
-    <!-- Contenido principal -->
-    <main class="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto space-y-6">
-      <!-- Sección de bienvenida -->
-      <section id="bienvenida" class="card rounded-xl p-8 md:p-10 text-center max-w-3xl mx-auto">
-        <div class="w-16 h-16 bg-blue-500 rounded-xl shadow-md flex items-center justify-center mx-auto mb-6">
-          <i class="fas fa-calendar-check text-2xl text-white"></i>
-        </div>
+    <!-- Main Content - Diseño Limpio -->
+    <main class="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto space-y-8">
+      <!-- Bienvenida - Tarjeta con efecto vidrio -->
+      <section id="bienvenida" class="card rounded-2xl shadow-2xl p-8 md:p-12 text-center max-w-4xl mx-auto relative overflow-hidden">
+        <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-400/10 rounded-full filter blur-3xl"></div>
+        <div class="absolute -bottom-20 -left-20 w-60 h-60 bg-purple-400/10 rounded-full filter blur-3xl"></div>
         
-        <h2 class="text-3xl font-bold text-slate-800 mb-4">
-          Sistema de Planificación Académica
-        </h2>
-        
-        <p class="text-slate-600 text-base leading-relaxed max-w-2xl mx-auto mb-6">
-          Gestión integral de los componentes académicos institucionales en una plataforma unificada.
-        </p>
-        
-        <div class="flex flex-wrap justify-center gap-3">
-          <button 
-            data-module-btn="malla" 
-            class="btn-primary px-5 py-2.5 rounded-lg text-white font-medium text-sm shadow-sm flex items-center gap-2"
-          >
-            <i class="fas fa-play"></i> Comenzar
-          </button>
+        <div class="relative z-10">
+          <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-6 pulse">
+            <i class="fas fa-calendar-check text-3xl text-white"></i>
+          </div>
+          
+          <h2 class="text-3xl md:text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 mb-6">
+            Sistema Integrado de Planificación Académica
+          </h2>
+          
+          <p class="text-gray-700 text-lg leading-relaxed max-w-2xl mx-auto">
+            Gestiona integralmente los componentes académicos de tu institución con nuestra plataforma todo-en-uno.
+          </p>
+          
+          <div class="mt-8 flex flex-wrap justify-center gap-4">
+            <button 
+              data-module-btn="malla" 
+              class="btn-primary px-6 py-3 rounded-xl text-white font-medium shadow-md flex items-center gap-2"
+            >
+              <i class="fas fa-rocket"></i> Comenzar
+            </button>
+            
+            <button class="px-6 py-3 rounded-xl border-2 border-blue-500 text-blue-600 font-medium hover:bg-blue-50 transition flex items-center gap-2">
+              <i class="fas fa-play-circle"></i> Ver demo
+            </button>
+          </div>
         </div>
       </section>
 
-      <!-- Secciones de módulos -->
+      <!-- Secciones de módulos - Diseño Limpio -->
       <section 
         id="malla" 
         data-module 
-        class="card rounded-xl p-6"
+        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="malla-title"
       >
-        <div class="flex justify-between items-start mb-6">
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/10 rounded-full filter blur-3xl"></div>
+        
+        <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs text-sm transition-all hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-            aria-label="Volver al inicio"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Volver al panel principal"
           >
-            <i class="fas fa-arrow-left text-xs"></i>
+            <i class="fas fa-arrow-left"></i>
             Volver
           </button>
+          
+          <div class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
+            <span class="text-blue-600 font-medium">Malla Curricular</span>
+          </div>
         </div>
         
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <i class="fas fa-sitemap text-blue-600"></i>
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-project-diagram text-xl text-blue-600"></i>
           </div>
           <div>
-            <h2 id="malla-title" class="text-xl font-bold text-slate-800">Malla Curricular</h2>
-            <p class="text-slate-500 text-sm">Estructura académica institucional</p>
+            <h2 id="malla-title" class="text-2xl font-bold text-gray-800">Gestión de Malla Curricular</h2>
+            <p class="text-gray-500">Diseña y administra la estructura académica de tu institución</p>
           </div>
         </div>
         
-        <div id="contenido-malla" class="rounded-lg border border-slate-200 bg-slate-50 p-4 min-h-[300px]">
-          <div class="skeleton w-full h-full rounded-md"></div>
+        <div id="contenido-malla" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
+          <div class="skeleton w-full h-full rounded-lg"></div>
         </div>
       </section>
 
@@ -215,32 +240,38 @@
       <section 
         id="docentes" 
         data-module 
-        class="card rounded-xl p-6"
+        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="docentes-title"
       >
-        <div class="flex justify-between items-start mb-6">
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-green-400/10 rounded-full filter blur-3xl"></div>
+        
+        <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs text-sm transition-all hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-            aria-label="Volver al inicio"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Volver al panel principal"
           >
-            <i class="fas fa-arrow-left text-xs"></i>
+            <i class="fas fa-arrow-left"></i>
             Volver
           </button>
+          
+          <div class="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
+            <span class="text-green-600 font-medium">Docentes</span>
+          </div>
         </div>
         
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <i class="fas fa-users text-blue-600"></i>
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-chalkboard-teacher text-xl text-green-600"></i>
           </div>
           <div>
-            <h2 id="docentes-title" class="text-xl font-bold text-slate-800">Docentes</h2>
-            <p class="text-slate-500 text-sm">Personal académico institucional</p>
+            <h2 id="docentes-title" class="text-2xl font-bold text-gray-800">Gestión de Docentes</h2>
+            <p class="text-gray-500">Administra el personal académico de tu institución</p>
           </div>
         </div>
         
-        <div id="contenido-docentes" class="rounded-lg border border-slate-200 bg-slate-50 p-4 min-h-[300px]">
-          <div class="skeleton w-full h-full rounded-md"></div>
+        <div id="contenido-docentes" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
+          <div class="skeleton w-full h-full rounded-lg"></div>
         </div>
       </section>
 
@@ -248,32 +279,38 @@
       <section 
         id="asignacion" 
         data-module 
-        class="card rounded-xl p-6"
+        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="asignacion-title"
       >
-        <div class="flex justify-between items-start mb-6">
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/10 rounded-full filter blur-3xl"></div>
+        
+        <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs text-sm transition-all hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-            aria-label="Volver al inicio"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Volver al panel principal"
           >
-            <i class="fas fa-arrow-left text-xs"></i>
+            <i class="fas fa-arrow-left"></i>
             Volver
           </button>
+          
+          <div class="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-lg">
+            <span class="text-yellow-600 font-medium">Asignación</span>
+          </div>
         </div>
         
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <i class="fas fa-tasks text-blue-600"></i>
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-tasks text-xl text-yellow-600"></i>
           </div>
           <div>
-            <h2 id="asignacion-title" class="text-xl font-bold text-slate-800">Asignación Académica</h2>
-            <p class="text-slate-500 text-sm">Distribución de carga docente</p>
+            <h2 id="asignacion-title" class="text-2xl font-bold text-gray-800">Asignación de Carga Académica</h2>
+            <p class="text-gray-500">Distribuye equitativamente las responsabilidades académicas</p>
           </div>
         </div>
         
-        <div id="contenido-asignacion" class="rounded-lg border border-slate-200 bg-slate-50 p-4 min-h-[300px]">
-          <div class="skeleton w-full h-full rounded-md"></div>
+        <div id="contenido-asignacion" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
+          <div class="skeleton w-full h-full rounded-lg"></div>
         </div>
       </section>
 
@@ -281,32 +318,38 @@
       <section 
         id="horarios" 
         data-module 
-        class="card rounded-xl p-6"
+        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="horarios-title"
       >
-        <div class="flex justify-between items-start mb-6">
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-400/10 rounded-full filter blur-3xl"></div>
+        
+        <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs text-sm transition-all hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-            aria-label="Volver al inicio"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Volver al panel principal"
           >
-            <i class="fas fa-arrow-left text-xs"></i>
+            <i class="fas fa-arrow-left"></i>
             Volver
           </button>
+          
+          <div class="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">
+            <span class="text-purple-600 font-medium">Horarios</span>
+          </div>
         </div>
         
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <i class="fas fa-calendar-day text-blue-600"></i>
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-calendar-day text-xl text-purple-600"></i>
           </div>
           <div>
-            <h2 id="horarios-title" class="text-xl font-bold text-slate-800">Horarios</h2>
-            <p class="text-slate-500 text-sm">Programación académica</p>
+            <h2 id="horarios-title" class="text-2xl font-bold text-gray-800">Gestión de Horarios</h2>
+            <p class="text-gray-500">Organiza y optimiza los horarios académicos</p>
           </div>
         </div>
         
-        <div id="contenido-horarios" class="rounded-lg border border-slate-200 bg-slate-50 p-4 min-h-[300px]">
-          <div class="skeleton w-full h-full rounded-md"></div>
+        <div id="contenido-horarios" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
+          <div class="skeleton w-full h-full rounded-lg"></div>
         </div>
       </section>
 
@@ -314,54 +357,79 @@
       <section 
         id="reportes" 
         data-module 
-        class="card rounded-xl p-6"
+        class="card rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden"
         aria-labelledby="reportes-title"
       >
-        <div class="flex justify-between items-start mb-6">
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-400/10 rounded-full filter blur-3xl"></div>
+        
+        <div class="flex justify-between items-start mb-8">
           <button 
             onclick="volverInicio()" 
-            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs text-sm transition-all hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-            aria-label="Volver al inicio"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            aria-label="Volver al panel principal"
           >
-            <i class="fas fa-arrow-left text-xs"></i>
+            <i class="fas fa-arrow-left"></i>
             Volver
           </button>
+          
+          <div class="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-lg">
+            <span class="text-red-600 font-medium">Reportes</span>
+          </div>
         </div>
         
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <i class="fas fa-chart-bar text-blue-600"></i>
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-chart-bar text-xl text-red-600"></i>
           </div>
           <div>
-            <h2 id="reportes-title" class="text-xl font-bold text-slate-800">Reportes</h2>
-            <p class="text-slate-500 text-sm">Análisis institucional</p>
+            <h2 id="reportes-title" class="text-2xl font-bold text-gray-800">Reportes Académicos</h2>
+            <p class="text-gray-500">Genera informes y análisis de datos institucionales</p>
           </div>
         </div>
         
-        <div id="contenido-reportes" class="rounded-lg border border-slate-200 bg-slate-50 p-4 min-h-[300px]">
-          <div class="skeleton w-full h-full rounded-md"></div>
+        <div id="contenido-reportes" class="rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm p-6 shadow-inner min-h-[400px]">
+          <div class="skeleton w-full h-full rounded-lg"></div>
         </div>
       </section>
+
+      <!-- Footer Notificación -->
+      <footer class="mt-12 p-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg text-white">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="bg-white/20 p-3 rounded-xl">
+              <i class="fas fa-lightbulb text-xl"></i>
+            </div>
+            <div>
+              <h3 class="font-bold">Sistema Académico Integral</h3>
+              <p class="text-sm text-white/90">Plataforma de gestión educativa completa</p>
+            </div>
+          </div>
+          <button class="px-6 py-3 bg-white text-blue-600 font-medium rounded-lg hover:bg-gray-100 transition shadow-md whitespace-nowrap">
+            <i class="fas fa-info-circle mr-2"></i> Más información
+          </button>
+        </div>
+      </footer>
     </main>
   </div>
 
   <script>
+    // Configuración inicial mejorada
     document.addEventListener('DOMContentLoaded', function() {
-      // Configuración de módulos
+      // Cargar todos los módulos al inicio
       const modules = [
-        { id: 'malla', file: 'mallas.html' },
-        { id: 'docentes', file: 'docentes.html' },
-        { id: 'asignacion', file: 'asignacion.html' },
-        { id: 'horarios', file: 'horarios.html' },
-        { id: 'reportes', file: 'reportes.html' }
+        { id: 'malla', file: 'mallas.html', icon: 'project-diagram', color: 'blue' },
+        { id: 'docentes', file: 'docentes.html', icon: 'chalkboard-teacher', color: 'green' },
+        { id: 'asignacion', file: 'asignacion.html', icon: 'tasks', color: 'yellow' },
+        { id: 'horarios', file: 'horarios.html', icon: 'calendar-day', color: 'purple' },
+        { id: 'reportes', file: 'reportes.html', icon: 'chart-bar', color: 'red' }
       ];
       
       // Precargar módulos
       modules.forEach(module => {
-        cargarModulo(module.id, module.file);
+        precargarModulo(module.id, module.file);
       });
 
-      // Event listeners para botones de módulos
+      // Configurar event listeners para los botones del módulo
       document.querySelectorAll('[data-module-btn]').forEach(btn => {
         btn.addEventListener('click', function() {
           const moduleId = this.getAttribute('data-module-btn');
@@ -370,23 +438,70 @@
       });
     });
 
-    function cargarModulo(id, archivo) {
+    // Precargar módulos con cache
+    function precargarModulo(id, archivo) {
       const container = document.getElementById(`contenido-${id}`);
       
       // Mostrar skeleton loader
-      container.innerHTML = `<div class="skeleton w-full h-full rounded-md"></div>`;
+      container.innerHTML = `
+        <div class="skeleton w-full h-full rounded-lg"></div>
+      `;
 
-      // Simular carga (en producción usar fetch real)
-      setTimeout(() => {
-        container.innerHTML = `
-          <div class="p-6 text-center text-slate-500">
-            <i class="fas fa-cog fa-spin text-2xl mb-3 text-blue-500"></i>
-            <p>Contenido del módulo ${id} cargado</p>
-          </div>
-        `;
-      }, 800);
+      // Intentar cargar desde cache primero
+      const cachedContent = sessionStorage.getItem(`module-${id}`);
+      if (cachedContent) {
+        container.innerHTML = cachedContent;
+        return;
+      }
+
+      // Si no hay cache, hacer fetch
+      fetch(archivo)
+        .then(res => {
+          if (!res.ok) throw new Error(`Error HTTP! estado: ${res.status}`);
+          return res.text();
+        })
+        .then(html => {
+          // Simular carga para demostración (remover en producción)
+          setTimeout(() => {
+            container.innerHTML = html;
+            sessionStorage.setItem(`module-${id}`, html);
+            
+            // Procesar scripts
+            const scripts = container.querySelectorAll("script");
+            scripts.forEach(oldScript => {
+              const newScript = document.createElement("script");
+              Array.from(oldScript.attributes).forEach(attr => {
+                newScript.setAttribute(attr.name, attr.value);
+              });
+              newScript.textContent = oldScript.textContent;
+              document.body.appendChild(newScript);
+              oldScript.remove();
+            });
+          }, 800 + Math.random() * 1000); // Retardo aleatorio para simular carga
+        })
+        .catch(error => {
+          console.error(`Error al cargar el módulo ${id}:`, error);
+          container.innerHTML = `
+            <div class="p-6 bg-red-50 border-l-4 border-red-500 rounded-lg">
+              <div class="flex items-center gap-3">
+                <div class="bg-red-100 p-2 rounded-full">
+                  <i class="fas fa-exclamation-circle text-red-600"></i>
+                </div>
+                <div>
+                  <h3 class="font-medium text-red-800">Error al cargar el módulo</h3>
+                  <p class="text-sm text-red-600 mt-1">No se pudo cargar el recurso solicitado</p>
+                </div>
+              </div>
+              <button onclick="cargarModulo('${id}', '${archivo}')" 
+                class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 mx-auto">
+                <i class="fas fa-sync-alt"></i> Reintentar
+              </button>
+            </div>
+          `;
+        });
     }
 
+    // Mostrar módulo con animación
     function mostrarModulo(moduloId) {
       // Actualizar botones activos
       document.querySelectorAll('[data-module-btn]').forEach(btn => {
@@ -406,7 +521,7 @@
         mod.classList.remove('active');
       });
       
-      // Mostrar el módulo seleccionado
+      // Mostrar el módulo seleccionado con animación
       const modulo = document.getElementById(moduloId);
       if (modulo) {
         modulo.style.display = "block";
@@ -417,13 +532,14 @@
       }
     }
 
+    // Volver al inicio con animación
     function volverInicio() {
       // Quitar clase activa de todos los botones
       document.querySelectorAll('[data-module-btn]').forEach(btn => {
         btn.classList.remove('active-nav-btn');
       });
       
-      // Ocultar todos los módulos
+      // Ocultar todos los módulos con animación
       document.querySelectorAll('[data-module].active').forEach(mod => {
         mod.classList.remove('active');
         setTimeout(() => {
@@ -435,6 +551,13 @@
       const bienvenida = document.getElementById("bienvenida");
       bienvenida.style.display = "block";
       bienvenida.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Función para recargar módulo
+    function cargarModulo(id, archivo) {
+      // Mostrar el módulo (lo que disparará la recarga)
+      mostrarModulo(id);
+      precargarModulo(id, archivo);
     }
   </script>
 </body>
