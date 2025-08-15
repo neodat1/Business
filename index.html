@@ -595,7 +595,7 @@
         </div>
         
         <div class="nav-item">
-          <a href="#" class="nav-link" data-module-btn="mallas.html">
+          <a href="mallas.html" class="nav-link">
             <div class="nav-icon">
               <i class="fas fa-sitemap"></i>
             </div>
@@ -661,8 +661,8 @@
           <div class="user-profile">
             <div class="user-avatar">AD</div>
             <div>
-              <div class="user-name">Admin User</div>
-              <div class="user-role">Administrador</div>
+              <div class="user-name">Administrador</div>
+              <div class="user-role">Administrador del sistema</div>
             </div>
           </div>
         </div>
@@ -672,14 +672,14 @@
       <section id="dashboard" class="module-section active">
         <div class="welcome-card">
           <div class="welcome-content">
-            <h2>Optimiza la gestión académica de tu institución</h2>
-            <p>PlanificaU te ofrece las herramientas necesarias para administrar mallas curriculares, docentes, horarios y más, todo en un solo lugar.</p>
+            <h2>Optimización de la gestión académica institucional</h2>
+            <p>PlanificaU le ofrece las herramientas necesarias para administrar mallas curriculares, docentes, horarios y más, todo en un solo lugar.</p>
             <div class="welcome-actions">
               <button class="btn btn-primary">
                 <i class="fas fa-play"></i> Comenzar
               </button>
               <button class="btn btn-outline">
-                <i class="fas fa-book"></i> Ver tutoriales
+                <i class="fas fa-book"></i> Tutoriales
               </button>
             </div>
           </div>
@@ -702,7 +702,7 @@
               </div>
               <div>
                 <div class="module-title">Malla Curricular</div>
-                <div class="module-description">Diseña y administra la estructura académica</div>
+                <div class="module-description">Diseñe y administre la estructura académica</div>
               </div>
             </div>
             <div class="module-stats">
@@ -721,7 +721,7 @@
               </div>
               <div>
                 <div class="module-title">Docentes</div>
-                <div class="module-description">Gestiona el personal académico</div>
+                <div class="module-description">Gestione el personal académico</div>
               </div>
             </div>
             <div class="module-stats">
@@ -740,7 +740,7 @@
               </div>
               <div>
                 <div class="module-title">Asignación</div>
-                <div class="module-description">Distribuye la carga académica</div>
+                <div class="module-description">Distribuya la carga académica</div>
               </div>
             </div>
             <div class="module-stats">
@@ -759,7 +759,7 @@
               </div>
               <div>
                 <div class="module-title">Horarios</div>
-                <div class="module-description">Organiza los tiempos académicos</div>
+                <div class="module-description">Organice los tiempos académicos</div>
               </div>
             </div>
             <div class="module-stats">
@@ -778,7 +778,7 @@
               </div>
               <div>
                 <div class="module-title">Reportes</div>
-                <div class="module-description">Genera análisis institucionales</div>
+                <div class="module-description">Genere análisis institucionales</div>
               </div>
             </div>
             <div class="module-stats">
@@ -934,7 +934,9 @@
       
       // Activar el item del menú correspondiente
       const navItem = document.querySelector(`.nav-link[data-module-btn="${moduleId}"]`).parentElement;
-      navItem.classList.add('active');
+      if (navItem) {
+        navItem.classList.add('active');
+      }
     }
 
     function showDashboard() {
