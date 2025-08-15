@@ -6,6 +6,7 @@
   <title>PlanificaU | Gestión Académica Integral</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
       --primary: #04136C;
@@ -539,6 +540,80 @@
       color: var(--gray);
     }
 
+    /* Malla a Filas Styles */
+    .malla-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.08);
+      padding: 28px;
+    }
+
+    .malla-title {
+      margin: 0 0 12px;
+      color: var(--primary);
+    }
+
+    .malla-note {
+      background: #e9effa;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 8px 0 18px;
+    }
+
+    .malla-label {
+      font-weight: 600;
+      margin-right: 10px;
+    }
+
+    .malla-select {
+      padding: 6px 10px;
+      margin-right: 18px;
+      border-radius: 6px;
+      border: 1px solid var(--light-gray);
+    }
+
+    .malla-btn {
+      background: var(--primary);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .malla-btn:hover {
+      background: var(--primary-light);
+    }
+
+    .malla-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .malla-th, .malla-td {
+      border: 1px solid #d6d6d6;
+      padding: 8px 10px;
+    }
+
+    .malla-th {
+      background: var(--primary);
+      color: #fff;
+      position: sticky;
+      top: 0;
+    }
+
+    .malla-tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .malla-td[contenteditable="true"] {
+      background: #fffbe6;
+    }
+
     /* Responsive Design */
     @media (max-width: 1024px) {
       .dashboard-layout {
@@ -595,7 +670,7 @@
         </div>
         
         <div class="nav-item">
-          <a href="#" class="nav-link" data-module-btn="mallas.html">
+          <a href="mallas.html" class="nav-link">
             <div class="nav-icon">
               <i class="fas fa-sitemap"></i>
             </div>
@@ -661,8 +736,8 @@
           <div class="user-profile">
             <div class="user-avatar">AD</div>
             <div>
-              <div class="user-name">Admin User</div>
-              <div class="user-role">Administrador</div>
+              <div class="user-name">Administrador</div>
+              <div class="user-role">Administrador del sistema</div>
             </div>
           </div>
         </div>
@@ -672,14 +747,14 @@
       <section id="dashboard" class="module-section active">
         <div class="welcome-card">
           <div class="welcome-content">
-            <h2>Optimiza la gestión académica de tu institución</h2>
-            <p>PlanificaU te ofrece las herramientas necesarias para administrar mallas curriculares, docentes, horarios y más, todo en un solo lugar.</p>
+            <h2>Optimización de la gestión académica institucional</h2>
+            <p>PlanificaU le ofrece las herramientas necesarias para administrar mallas curriculares, docentes, horarios y más, todo en un solo lugar.</p>
             <div class="welcome-actions">
               <button class="btn btn-primary">
                 <i class="fas fa-play"></i> Comenzar
               </button>
               <button class="btn btn-outline">
-                <i class="fas fa-book"></i> Ver tutoriales
+                <i class="fas fa-book"></i> Tutoriales
               </button>
             </div>
           </div>
@@ -702,7 +777,7 @@
               </div>
               <div>
                 <div class="module-title">Malla Curricular</div>
-                <div class="module-description">Diseña y administra la estructura académica</div>
+                <div class="module-description">Diseñe y administre la estructura académica</div>
               </div>
             </div>
             <div class="module-stats">
@@ -721,7 +796,7 @@
               </div>
               <div>
                 <div class="module-title">Docentes</div>
-                <div class="module-description">Gestiona el personal académico</div>
+                <div class="module-description">Gestione el personal académico</div>
               </div>
             </div>
             <div class="module-stats">
@@ -740,7 +815,7 @@
               </div>
               <div>
                 <div class="module-title">Asignación</div>
-                <div class="module-description">Distribuye la carga académica</div>
+                <div class="module-description">Distribuya la carga académica</div>
               </div>
             </div>
             <div class="module-stats">
@@ -759,7 +834,7 @@
               </div>
               <div>
                 <div class="module-title">Horarios</div>
-                <div class="module-description">Organiza los tiempos académicos</div>
+                <div class="module-description">Organice los tiempos académicos</div>
               </div>
             </div>
             <div class="module-stats">
@@ -778,7 +853,7 @@
               </div>
               <div>
                 <div class="module-title">Reportes</div>
-                <div class="module-description">Genera análisis institucionales</div>
+                <div class="module-description">Genere análisis institucionales</div>
               </div>
             </div>
             <div class="module-stats">
@@ -809,7 +884,34 @@
         </div>
         
         <div class="module-content">
-          <p>Contenido del módulo de Malla Curricular</p>
+          <div class="malla-wrap">
+            <h1 class="malla-title">Malla a Filas (2019 y 2023 — códigos verificados)</h1>
+            <div class="malla-note">
+              <b>1.</b> Elija Carrera y Año. <b>2.</b> Suba su malla Excel (2019 o 2023).<br/>
+              <b>3.</b> Se extraen materias reales con sus horas (vacíos → <b>0</b>).<br/>
+              <b>4.</b> Complete <i>PRERREQUISITO</i> (editable) y descargue.
+            </div>
+
+            <label class="malla-label">Carrera:
+              <select id="carrera" class="malla-select">
+                <option>Administración</option>
+                <option>Negocios Internacionales</option>
+                <option>Marketing</option>
+              </select>
+            </label>
+
+            <label class="malla-label">Año de malla:
+              <select id="anio" class="malla-select">
+                <option>2019</option>
+                <option>2023</option>
+              </select>
+            </label>
+
+            <input type="file" id="file" accept=".xlsx" class="malla-btn" />
+            <button class="malla-btn" id="btnExcel">Descargar como Excel</button>
+
+            <div id="out"></div>
+          </div>
         </div>
       </section>
 
@@ -908,7 +1010,9 @@
       // Configurar event listeners para los botones del módulo
       document.querySelectorAll('[data-module-btn]').forEach(btn => {
         btn.addEventListener('click', function(e) {
-          e.preventDefault();
+          if (this.getAttribute('data-module-btn') !== 'mallas.html') {
+            e.preventDefault();
+          }
           const moduleId = this.getAttribute('data-module-btn');
           showModule(moduleId);
         });
@@ -933,13 +1037,180 @@
       }
       
       // Activar el item del menú correspondiente
-      const navItem = document.querySelector(`.nav-link[data-module-btn="${moduleId}"]`).parentElement;
-      navItem.classList.add('active');
+      const navItem = document.querySelector(`.nav-link[data-module-btn="${moduleId}"]`)?.parentElement;
+      if (navItem) {
+        navItem.classList.add('active');
+      }
     }
 
     function showDashboard() {
       showModule('dashboard');
     }
+
+    // === Malla a Filas Script ===
+    let filas = [];
+    const HEADERS = ["CARRERA","AÑO","CICLO","MATERIA","CÓDIGO","HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","PRERREQUISITO"];
+
+    // === Utilidades ===
+    const CYCLE_WORDS = ["PRIMERO","SEGUNDO","TERCERO","CUARTO","QUINTO","SEXTO","SÉPTIMO","SEPTIMO","OCTAVO","NOVENO","DÉCIMO","DECIMO"];
+
+    function up(s){ return String(s ?? "").trim().toUpperCase(); }
+    function hasNum(v){ return v!==undefined && v!==null && String(v).trim()!=="" && !isNaN(Number(String(v).replace(/[^0-9.-]/g,""))); }
+    function n0(v){ return hasNum(v) ? Number(String(v).replace(/[^0-9.-]/g,"")) : 0; }
+    function isCycleText(x){ return CYCLE_WORDS.includes(up(x)); }
+    function forbiddenName(x){ const s = up(x); return s==="TOTAL" || s==="TITULACIÓN" || s==="TITULACION"; }
+
+    // Patrones de código:
+    // 2019: FT-02-MATFIN, PP-03-FINCOR, CH-01-MAT01 ...
+    const RE_2019 = /^[A-Z]{2,4}-\d{2,3}-[A-Z0-9]{2,}$/;
+    // 2023 oficiales: MKT397, MKT 397, TMC-110, ECN211, MAT 210, STP226, MEO 300, CIS105 ...
+    const RE_2023_A = /^[A-Z]{3}\s?\d{3}$/;     // MKT397 | MKT 397 | ECN211 | MAT210
+    const RE_2023_B = /^[A-Z]{3}-\d{3}$/;       // TMC-110
+    const RE_2023_C = /^[A-Z]{2,4}\s?\d{3}$/;   // DIR400 | DIR 400
+    // Internos a excluir: FCA_..., NI_..., BS_..., etc.
+    const RE_INTERNAL = /^[A-Z]{1,5}_[A-Z0-9_]{2,}$/;
+    // Fallback seguro: letras/números/espacios/guiones, SIN guión bajo, y con al menos un dígito
+    const RE_FALLBACK = /^(?=.*\d)[A-Z0-9 -]{3,}$/;
+
+    function isOfficialCode(code){
+      const s = up(code);
+      if (!s || s==="TOTAL") return false;
+      if (RE_INTERNAL.test(s)) return false; // descarta FCA_..., NI_..., etc.
+      return RE_2019.test(s) || RE_2023_A.test(s) || RE_2023_B.test(s) || RE_2023_C.test(s) || RE_FALLBACK.test(s);
+    }
+
+    function findCyclesRow(A){
+      // busca una fila con ≥2 celdas que sean nombres de ciclo
+      for (let r=0; r<Math.min(10, A.length); r++){
+        const row = A[r] || [];
+        let matches = 0;
+        for (const c of row) if (isCycleText(c)) matches++;
+        if (matches >= 2) return r;
+      }
+      // fallback: 0
+      return 0;
+    }
+
+    function collectCycleCols(A, cyclesRow){
+      const header = A[cyclesRow] || [];
+      const cols = [];
+      for (let j=0; j<header.length; j++){
+        if (isCycleText(header[j])) cols.push({ col:j, ciclo: up(header[j]) });
+      }
+      // fallback si no detecta explícito: bloques cada 5 columnas
+      if (!cols.length){
+        for (let j=0; j<(A[0]?.length||0); j+=5) cols.push({ col:j, ciclo: "" });
+      }
+      return cols;
+    }
+
+    // === Proceso principal ===
+    document.getElementById('file').addEventListener('change', (e) => {
+      filas = [];
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const carrera = document.getElementById('carrera').value;
+      const anio = document.getElementById('anio').value;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+
+        wb.SheetNames.forEach((name) => {
+          const A = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true });
+          if (!A?.length) return;
+
+          const cyclesRow = findCyclesRow(A);
+          const cycleCols = collectCycleCols(A, cyclesRow);
+          const header = A[cyclesRow] || [];
+
+          // Recorre cada columna de ciclo
+          for (const {col, ciclo} of cycleCols){
+            let r = cyclesRow + 1;
+            while (r < A.length){
+              const nombre = up(A[r]?.[col]);
+              if (!nombre || forbiddenName(nombre)){ r++; continue; }
+
+              // Busca fila de código dentro de las 1–3 filas siguientes (tolera línea interna extra)
+              let picked = false;
+              for (let k=1; k<=3 && (r+k)<A.length; k++){
+                const code    = up(A[r+k]?.[col]);
+                const htCell  = A[r+k]?.[col+1];
+                const hpCell  = A[r+k]?.[col+2];
+                const haCell  = A[r+k]?.[col+3];
+
+                const hasHours = hasNum(htCell) || hasNum(hpCell) || hasNum(haCell);
+
+                // Reglas: código oficial (sin '_') + al menos una hora a la derecha
+                if (isOfficialCode(code) && hasHours){
+                  filas.push({
+                    "CARRERA": carrera,
+                    "AÑO": anio,
+                    "CICLO": ciclo || up(header[col] ?? ""),
+                    "MATERIA": nombre,
+                    "CÓDIGO": code,
+                    "HORAS TEÓRICAS": n0(htCell),
+                    "HORAS PRÁCTICAS": n0(hpCell),
+                    "HORAS AUTÓNOMAS": n0(haCell),
+                    "PRERREQUISITO": "" // editable
+                  });
+                  // Salta: nombre + (código con horas) + posible línea interna + TOTAL
+                  r = r + k + 2;
+                  picked = true;
+                  break;
+                }
+                // Si la "fila de código" es interna (FCA_/NI_/BS_), la ignoramos y seguimos probando k+1
+                if (RE_INTERNAL.test(code)) continue;
+              }
+              if (!picked) r++; // si no encontró un código válido, avanza 1
+            }
+          }
+        });
+
+        renderTabla();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function renderTabla(){
+      const out = document.getElementById('out');
+      if (!filas.length){ out.innerHTML = "<p style='color:#c00'><b>No se encontraron materias válidas.</b></p>"; return; }
+
+      let html = "<table class='malla-table'><thead><tr>"+HEADERS.map(h=>`<th class='malla-th'>${h}</th>`).join("")+"</tr></thead><tbody>";
+      for (let i=0;i<filas.length;i++){
+        html += "<tr class='malla-tr'>";
+        for (const h of HEADERS){
+          if (h==="PRERREQUISITO"){
+            html += `<td class='malla-td' contenteditable="true" data-row="${i}" data-key="${h}">${filas[i][h]??""}</td>`;
+          }else{
+            html += `<td class='malla-td'>${filas[i][h]??""}</td>`;
+          }
+        }
+        html += "</tr>";
+      }
+      html += "</tbody></table>";
+      out.innerHTML = html;
+    }
+
+    // Lee lo que editaste en la columna PRERREQUISITO antes de exportar
+    function syncPrereqsFromDOM(){
+      const tds = document.querySelectorAll('td[contenteditable="true"][data-key="PRERREQUISITO"]');
+      tds.forEach(td=>{
+        const idx = Number(td.getAttribute('data-row'));
+        filas[idx]["PRERREQUISITO"] = td.innerText.trim();
+      });
+    }
+
+    document.getElementById('btnExcel').addEventListener('click', () => {
+      if (!filas.length) return;
+      syncPrereqsFromDOM();
+      const data = [HEADERS, ...filas.map(f => HEADERS.map(h => (f[h] ?? "")))];
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Malla");
+      XLSX.writeFile(wb, "malla_filas.xlsx");
+    });
   </script>
 </body>
 </html>
