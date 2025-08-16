@@ -1,945 +1,1054 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PlanificaU | Gestión Académica Integral</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --primary: #04136C;
-      --primary-light: #1A2B8F;
-      --secondary: #DE912E;
-      --secondary-light: #F0A23A;
-      --accent: #A62939;
-      --accent-light: #C03548;
-      --light: #F8FAFC;
-      --dark: #0F172A;
-      --gray: #64748B;
-      --light-gray: #E2E8F0;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html {
-      font-size: 16px;
-      scroll-behavior: smooth;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-
-    body {
-      background-color: var(--light);
-      color: var(--dark);
-      line-height: 1.6;
-    }
-
-    .dashboard-layout {
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      min-height: 100vh;
-    }
-
-    /* Sidebar Premium */
-    .sidebar {
-      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
-      color: white;
-      padding: 2rem 1.5rem;
-      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
-      position: relative;
-      z-index: 10;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 2.5rem;
-      padding-left: 0.5rem;
-    }
-
-    .brand-icon {
-      width: 36px;
-      height: 36px;
-      background-color: white;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-      font-size: 1.1rem;
-    }
-
-    .brand-name {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-
-    .brand-name span {
-      color: var(--secondary);
-    }
-
-    .nav-menu {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .nav-item {
-      position: relative;
-      transition: all 0.3s ease;
-    }
-
-    .nav-link {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      color: rgba(255, 255, 255, 0.9);
-      text-decoration: none;
-      font-weight: 500;
-      transition: all 0.3s ease;
-    }
-
-    .nav-link:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: white;
-    }
-
-    .nav-link.active {
-      background-color: rgba(255, 255, 255, 0.15);
-      color: white;
-    }
-
-    .nav-link.active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: 3px;
-      background-color: var(--secondary);
-      border-radius: 0 3px 3px 0;
-    }
-
-    .nav-icon {
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-    }
-
-    .nav-item.active .nav-icon {
-      background-color: var(--secondary);
-    }
-
-    .sidebar-footer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 1.5rem;
-      background-color: rgba(0, 0, 0, 0.1);
-      text-align: center;
-      font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    /* Main Content */
-    .main-content {
-      padding: 2rem;
-      overflow-y: auto;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-
-    .page-title h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--dark);
-    }
-
-    .page-title p {
-      color: var(--gray);
-      font-size: 0.95rem;
-    }
-
-    .user-actions {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .notification-btn {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      background-color: white;
-      color: var(--gray);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
-    }
-
-    .notification-btn:hover {
-      color: var(--primary);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background-color: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-    }
-
-    .user-name {
-      font-weight: 600;
-    }
-
-    .user-role {
-      font-size: 0.8rem;
-      color: var(--gray);
-    }
-
-    /* Dashboard Cards */
-    .welcome-card {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      color: white;
-      border-radius: 16px;
-      padding: 2.5rem;
-      margin-bottom: 2rem;
-      box-shadow: 0 10px 20px rgba(4, 19, 108, 0.15);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .welcome-card::before {
-      content: '';
-      position: absolute;
-      top: -50px;
-      right: -50px;
-      width: 200px;
-      height: 200px;
-      background-color: rgba(255, 255, 255, 0.05);
-      border-radius: 50%;
-    }
-
-    .welcome-card::after {
-      content: '';
-      position: absolute;
-      bottom: -80px;
-      right: -30px;
-      width: 200px;
-      height: 200px;
-      background-color: rgba(255, 255, 255, 0.03);
-      border-radius: 50%;
-    }
-
-    .welcome-content {
-      position: relative;
-      z-index: 2;
-      max-width: 60%;
-    }
-
-    .welcome-content h2 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      line-height: 1.3;
-    }
-
-    .welcome-content p {
-      opacity: 0.9;
-      margin-bottom: 1.5rem;
-    }
-
-    .welcome-actions {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: 8px;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: none;
-    }
-
-    .btn-primary {
-      background-color: white;
-      color: var(--primary);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-outline {
-      background-color: transparent;
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .btn-outline:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      border-color: white;
-    }
-
-    .welcome-graphic {
-      position: absolute;
-      right: 2rem;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 1;
-    }
-
-    .graphic-circle {
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      background-color: rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .graphic-icon {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background-color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-      font-size: 2.5rem;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Modules Grid */
-    .modules-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .module-card {
-      background-color: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
-      border: 1px solid var(--light-gray);
-    }
-
-    .module-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      border-color: rgba(222, 145, 46, 0.3);
-    }
-
-    .module-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .module-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-    }
-
-    .malla-icon {
-      background-color: rgba(222, 145, 46, 0.1);
-      color: var(--secondary);
-    }
-
-    .docentes-icon {
-      background-color: rgba(166, 41, 57, 0.1);
-      color: var(--accent);
-    }
-
-    .asignacion-icon {
-      background-color: rgba(4, 19, 108, 0.1);
-      color: var(--primary);
-    }
-
-    .horarios-icon {
-      background-color: rgba(222, 145, 46, 0.1);
-      color: var(--secondary);
-    }
-
-    .reportes-icon {
-      background-color: rgba(166, 41, 57, 0.1);
-      color: var(--accent);
-    }
-
-    .module-title {
-      font-weight: 600;
-      font-size: 1.1rem;
-      color: var(--dark);
-    }
-
-    .module-description {
-      color: var(--gray);
-      font-size: 0.9rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .module-stats {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .module-stat {
-      font-size: 0.85rem;
-      color: var(--gray);
-    }
-
-    .module-stat strong {
-      color: var(--dark);
-      font-weight: 600;
-    }
-
-    .module-action {
-      color: var(--primary);
-      font-weight: 600;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      cursor: pointer;
-    }
-
-    .module-action:hover {
-      color: var(--primary-light);
-    }
-
-    /* Module Sections (hidden by default) */
-    .module-section {
-      display: none;
-      background-color: white;
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      border: 1px solid var(--light-gray);
-      margin-bottom: 2rem;
-    }
-
-    .module-section.active {
-      display: block;
-      animation: fadeIn 0.5s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .module-section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .section-title h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--dark);
-    }
-
-    .back-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background-color: var(--light);
-      border-radius: 8px;
-      color: var(--gray);
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: none;
-    }
-
-    .back-btn:hover {
-      background-color: var(--light-gray);
-      color: var(--dark);
-    }
-
-    .section-actions .btn {
-      padding: 0.625rem 1.25rem;
-      font-size: 0.9rem;
-    }
-
-    .btn-accent {
-      background-color: var(--secondary);
-      color: white;
-    }
-
-    .btn-accent:hover {
-      background-color: var(--secondary-light);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(222, 145, 46, 0.25);
-    }
-
-    .module-content {
-      min-height: 400px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--gray);
-    }
-
-    /* Responsive Design */
-    @media (max-width: 1024px) {
-      .dashboard-layout {
-        grid-template-columns: 240px 1fr;
-      }
-      
-      .welcome-content {
-        max-width: 100%;
-      }
-      
-      .welcome-graphic {
-        display: none;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .dashboard-layout {
-        grid-template-columns: 1fr;
-      }
-      
-      .sidebar {
-        display: none;
-      }
-      
-      .welcome-actions {
-        flex-direction: column;
-      }
-      
-      .modules-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanificaU | Gestión Académica Integral</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Variables CSS para una gestión de colores centralizada */
+        :root {
+            --primary: #04136C;
+            --primary-light: #1A2B8F;
+            --secondary: #DE912E;
+            --secondary-light: #F0A23A;
+            --accent: #A62939;
+            --accent-light: #C03548;
+            --light: #F8FAFC;
+            --dark: #0F172A;
+            --gray: #64748B;
+            --light-gray: #E2E8F0;
+        }
+
+        /* Reseteo básico y estilos globales */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden; /* Evita desbordamiento horizontal */
+        }
+
+        /* Estructura principal del dashboard */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar: Menú de navegación lateral */
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 2rem 1.5rem;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .brand-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .brand-name span {
+            color: var(--secondary);
+        }
+
+        .nav-menu {
+            flex-grow: 1; /* Permite que el menú ocupe el espacio disponible */
+        }
+
+        .nav-menu ul {
+            list-style: none; /* Elimina los puntos de la lista */
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-item.active .nav-link {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .nav-item.active .nav-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background-color: var(--secondary);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .nav-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-item.active .nav-icon {
+            background-color: var(--secondary);
+        }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            background-color: rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: auto; /* Empuja el footer hacia abajo */
+            border-radius: 0 0 8px 8px; /* Pequeño redondeo en la parte inferior */
+        }
+
+        /* Contenido principal */
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+            gap: 1rem; /* Espacio entre elementos del header en responsive */
+        }
+
+        .page-title h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .page-title p {
+            color: var(--gray);
+            font-size: 0.95rem;
+            margin-top: 0.25rem;
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .notification-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background-color: white;
+            color: var(--gray);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .notification-btn:hover {
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        /* Tarjeta de bienvenida del Dashboard */
+        .welcome-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 20px rgba(4, 19, 108, 0.15);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .welcome-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+        }
+
+        .welcome-card::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            right: -30px;
+            width: 200px;
+            height: 200px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 50%;
+        }
+
+        .welcome-content {
+            position: relative;
+            z-index: 2;
+            max-width: 60%;
+        }
+
+        .welcome-content h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            line-height: 1.3;
+        }
+
+        .welcome-content p {
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+
+        .welcome-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Botones generales */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            text-decoration: none; /* Asegura que los enlaces con clase btn no tengan subrayado */
+        }
+
+        .btn-primary {
+            background-color: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        .btn-accent {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background-color: var(--secondary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(222, 145, 46, 0.25);
+        }
+
+        .welcome-graphic {
+            position: absolute;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .graphic-circle {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .graphic-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Rejilla de módulos del Dashboard */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .module-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid var(--light-gray);
+            text-decoration: none; /* Elimina el subrayado de los enlaces */
+            color: inherit; /* Hereda el color del texto de su padre */
+            display: block; /* Para que el enlace ocupe todo el espacio de la tarjeta */
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-color: rgba(222, 145, 46, 0.3);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .module-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .malla-icon {
+            background-color: rgba(222, 145, 46, 0.1);
+            color: var(--secondary);
+        }
+
+        .docentes-icon {
+            background-color: rgba(166, 41, 57, 0.1);
+            color: var(--accent);
+        }
+
+        .asignacion-icon {
+            background-color: rgba(4, 19, 108, 0.1);
+            color: var(--primary);
+        }
+
+        .horarios-icon {
+            background-color: rgba(222, 145, 46, 0.1);
+            color: var(--secondary);
+        }
+
+        .reportes-icon {
+            background-color: rgba(166, 41, 57, 0.1);
+            color: var(--accent);
+        }
+
+        .module-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+
+        .module-description {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .module-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .module-stat {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        .module-stat strong {
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .module-action {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .module-action:hover {
+            color: var(--primary-light);
+        }
+
+        /* Secciones de módulos (ocultas por defecto) */
+        .module-section {
+            display: none;
+            background-color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--light-gray);
+            margin-bottom: 2rem;
+        }
+
+        .module-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .module-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-title h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--light);
+            border-radius: 8px;
+            color: var(--gray);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .back-btn:hover {
+            background-color: var(--light-gray);
+            color: var(--dark);
+        }
+
+        .section-actions .btn {
+            padding: 0.625rem 1.25rem;
+            font-size: 0.9rem;
+        }
+
+        .module-content {
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+            border: 1px dashed var(--light-gray); /* Para visualizar el área de contenido */
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        /* Diseño Responsivo */
+        @media (max-width: 1024px) {
+            .dashboard-layout {
+                grid-template-columns: 240px 1fr;
+            }
+            
+            .welcome-content {
+                max-width: 100%;
+            }
+            
+            .welcome-graphic {
+                display: none; /* Oculta la gráfica en pantallas medianas */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr; /* Una sola columna para el layout */
+            }
+            
+            .sidebar {
+                display: none; /* Oculta el sidebar en móviles por defecto */
+                position: fixed;
+                top: 0;
+                left: -280px; /* Oculto fuera de la pantalla */
+                height: 100%;
+                width: 280px;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            }
+
+            .sidebar.active {
+                left: 0; /* Muestra el sidebar */
+                display: flex; /* Asegura que se muestre cuando está activo */
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .user-actions {
+                margin-top: 1rem;
+                width: 100%;
+                justify-content: flex-end; /* Alinea los elementos a la derecha */
+            }
+            
+            .welcome-actions {
+                flex-direction: column;
+                width: 100%; /* Ocupa todo el ancho disponible */
+            }
+
+            .welcome-actions .btn {
+                width: 100%;
+                justify-content: center; /* Centra el texto del botón */
+            }
+            
+            .modules-grid {
+                grid-template-columns: 1fr; /* Una columna para las tarjetas de módulo */
+            }
+
+            .module-section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .section-actions {
+                width: 100%;
+                margin-top: 1rem;
+            }
+
+            .section-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="dashboard-layout">
-    <!-- Sidebar Premium -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">
-          <i class="fas fa-calendar-alt"></i>
-        </div>
-        <div class="brand-name">Planifica<span>U</span></div>
-      </div>
-      
-      <nav class="nav-menu">
-        <div class="nav-item active">
-          <a href="#" class="nav-link active" data-module-btn="dashboard">
-            <div class="nav-icon">
-              <i class="fas fa-home"></i>
-            </div>
-            <span>Dashboard</span>
-          </a>
-        </div>
-        
-        <div class="nav-item">
-          <a href="#" class="nav-link" data-module-btn="mallas.html">
-            <div class="nav-icon">
-              <i class="fas fa-sitemap"></i>
-            </div>
-            <span>Malla Curricular</span>
-          </a>
-        </div>
-        
-        <div class="nav-item">
-          <a href="#" class="nav-link" data-module-btn="docentes">
-            <div class="nav-icon">
-              <i class="fas fa-chalkboard-teacher"></i>
-            </div>
-            <span>Docentes</span>
-          </a>
-        </div>
-        
-        <div class="nav-item">
-          <a href="#" class="nav-link" data-module-btn="asignacion">
-            <div class="nav-icon">
-              <i class="fas fa-tasks"></i>
-            </div>
-            <span>Asignación</span>
-          </a>
-        </div>
-        
-        <div class="nav-item">
-          <a href="#" class="nav-link" data-module-btn="horarios">
-            <div class="nav-icon">
-              <i class="fas fa-calendar-day"></i>
-            </div>
-            <span>Horarios</span>
-          </a>
-        </div>
-        
-        <div class="nav-item">
-          <a href="#" class="nav-link" data-module-btn="reportes">
-            <div class="nav-icon">
-              <i class="fas fa-chart-bar"></i>
-            </div>
-            <span>Reportes</span>
-          </a>
-        </div>
-      </nav>
-      
-      <div class="sidebar-footer">
-        v2.0 · Sistema Académico
-      </div>
-    </aside>
+    <div class="dashboard-layout">
+        <aside class="sidebar" id="sidebar">
+            <header class="brand">
+                <div class="brand-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h1 class="brand-name">Planifica<span>U</span></h1>
+            </header>
+            
+            <nav class="nav-menu">
+                <ul>
+                    <li class="nav-item active">
+                        <a href="#" class="nav-link" data-module-id="dashboard" aria-current="page">
+                            <div class="nav-icon"><i class="fas fa-home"></i></div>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-module-id="malla">
+                            <div class="nav-icon"><i class="fas fa-sitemap"></i></div>
+                            <span>Malla Curricular</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-module-id="docentes">
+                            <div class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                            <span>Docentes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-module-id="asignacion">
+                            <div class="nav-icon"><i class="fas fa-tasks"></i></div>
+                            <span>Asignación</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-module-id="horarios">
+                            <div class="nav-icon"><i class="fas fa-calendar-day"></i></div>
+                            <span>Horarios</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-module-id="reportes">
+                            <div class="nav-icon"><i class="fas fa-chart-bar"></i></div>
+                            <span>Reportes</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <footer class="sidebar-footer">
+                v2.0 · Sistema Académico
+            </footer>
+        </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <header class="header">
-        <div class="page-title">
-          <h1>Panel de Control</h1>
-          <p>Bienvenido al sistema de gestión académica</p>
-        </div>
-        
-        <div class="user-actions">
-          <button class="notification-btn">
-            <i class="fas fa-bell"></i>
-          </button>
-          
-          <div class="user-profile">
-            <div class="user-avatar">AD</div>
-            <div>
-              <div class="user-name">Admin User</div>
-              <div class="user-role">Administrador</div>
-            </div>
-          </div>
-        </div>
-      </header>
+        <main class="main-content">
+            <header class="header">
+                <div class="page-title">
+                    <h2 id="page-main-title">Panel de Control</h2>
+                    <p id="page-main-description">Bienvenido al sistema de gestión académica</p>
+                </div>
+                
+                <div class="user-actions">
+                    <button class="notification-btn" aria-label="Notificaciones">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    
+                    <div class="user-profile">
+                        <div class="user-avatar">AD</div>
+                        <div>
+                            <div class="user-name">Admin User</div>
+                            <div class="user-role">Administrador</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
 
-      <!-- Dashboard Content -->
-      <section id="dashboard" class="module-section active">
-        <div class="welcome-card">
-          <div class="welcome-content">
-            <h2>Optimiza la gestión académica de tu institución</h2>
-            <p>PlanificaU te ofrece las herramientas necesarias para administrar mallas curriculares, docentes, horarios y más, todo en un solo lugar.</p>
-            <div class="welcome-actions">
-              <button class="btn btn-primary">
-                <i class="fas fa-play"></i> Comenzar
-              </button>
-              <button class="btn btn-outline">
-                <i class="fas fa-book"></i> Ver tutoriales
-              </button>
-            </div>
-          </div>
-          
-          <div class="welcome-graphic">
-            <div class="graphic-circle">
-              <div class="graphic-icon">
-                <i class="fas fa-calendar-check"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+            <section id="dashboard" class="module-section active" data-title="Panel de Control" data-description="Bienvenido al sistema de gestión académica">
+                <div class="welcome-card">
+                    <div class="welcome-content">
+                        <h3>Optimiza la gestión académica de tu institución</h3>
+                        <p>PlanificaU te ofrece las herramientas necesarias para administrar mallas curriculares, docentes, horarios y más, todo en un solo lugar.</p>
+                        <div class="welcome-actions">
+                            <button class="btn btn-primary">
+                                <i class="fas fa-play"></i> Comenzar
+                            </button>
+                            <button class="btn btn-outline">
+                                <i class="fas fa-book"></i> Ver tutoriales
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="welcome-graphic">
+                        <div class="graphic-circle">
+                            <div class="graphic-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="modules-grid">
-          <!-- Malla Curricular Card -->
-          <div class="module-card" data-module-btn="malla">
-            <div class="module-header">
-              <div class="module-icon malla-icon">
-                <i class="fas fa-sitemap"></i>
-              </div>
-              <div>
-                <div class="module-title">Malla Curricular</div>
-                <div class="module-description">Diseña y administra la estructura académica</div>
-              </div>
-            </div>
-            <div class="module-stats">
-              <div class="module-stat"><strong>12</strong> mallas activas</div>
-              <div class="module-action">
-                Ver más <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Docentes Card -->
-          <div class="module-card" data-module-btn="docentes">
-            <div class="module-header">
-              <div class="module-icon docentes-icon">
-                <i class="fas fa-chalkboard-teacher"></i>
-              </div>
-              <div>
-                <div class="module-title">Docentes</div>
-                <div class="module-description">Gestiona el personal académico</div>
-              </div>
-            </div>
-            <div class="module-stats">
-              <div class="module-stat"><strong>85</strong> docentes</div>
-              <div class="module-action">
-                Ver más <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Asignación Card -->
-          <div class="module-card" data-module-btn="asignacion">
-            <div class="module-header">
-              <div class="module-icon asignacion-icon">
-                <i class="fas fa-tasks"></i>
-              </div>
-              <div>
-                <div class="module-title">Asignación</div>
-                <div class="module-description">Distribuye la carga académica</div>
-              </div>
-            </div>
-            <div class="module-stats">
-              <div class="module-stat"><strong>420</strong> asignaciones</div>
-              <div class="module-action">
-                Ver más <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Horarios Card -->
-          <div class="module-card" data-module-btn="horarios">
-            <div class="module-header">
-              <div class="module-icon horarios-icon">
-                <i class="fas fa-calendar-day"></i>
-              </div>
-              <div>
-                <div class="module-title">Horarios</div>
-                <div class="module-description">Organiza los tiempos académicos</div>
-              </div>
-            </div>
-            <div class="module-stats">
-              <div class="module-stat"><strong>36</strong> horarios</div>
-              <div class="module-action">
-                Ver más <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Reportes Card -->
-          <div class="module-card" data-module-btn="reportes">
-            <div class="module-header">
-              <div class="module-icon reportes-icon">
-                <i class="fas fa-chart-bar"></i>
-              </div>
-              <div>
-                <div class="module-title">Reportes</div>
-                <div class="module-description">Genera análisis institucionales</div>
-              </div>
-            </div>
-            <div class="module-stats">
-              <div class="module-stat"><strong>15</strong> modelos</div>
-              <div class="module-action">
-                Ver más <i class="fas fa-chevron-right"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+                <div class="modules-grid">
+                    <a href="#" class="module-card" data-module-id="malla">
+                        <div class="module-header">
+                            <div class="module-icon malla-icon"><i class="fas fa-sitemap"></i></div>
+                            <div>
+                                <h4 class="module-title">Malla Curricular</h4>
+                                <div class="module-description">Diseña y administra la estructura académica</div>
+                            </div>
+                        </div>
+                        <div class="module-stats">
+                            <div class="module-stat"><strong>12</strong> mallas activas</div>
+                            <div class="module-action">Ver más <i class="fas fa-chevron-right"></i></div>
+                        </div>
+                    </a>
+                    <a href="#" class="module-card" data-module-id="docentes">
+                        <div class="module-header">
+                            <div class="module-icon docentes-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                            <div>
+                                <h4 class="module-title">Docentes</h4>
+                                <div class="module-description">Gestiona el personal académico</div>
+                            </div>
+                        </div>
+                        <div class="module-stats">
+                            <div class="module-stat"><strong>85</strong> docentes</div>
+                            <div class="module-action">Ver más <i class="fas fa-chevron-right"></i></div>
+                        </div>
+                    </a>
+                    <a href="#" class="module-card" data-module-id="asignacion">
+                        <div class="module-header">
+                            <div class="module-icon asignacion-icon"><i class="fas fa-tasks"></i></div>
+                            <div>
+                                <h4 class="module-title">Asignación</h4>
+                                <div class="module-description">Distribuye la carga académica</div>
+                            </div>
+                        </div>
+                        <div class="module-stats">
+                            <div class="module-stat"><strong>420</strong> asignaciones</div>
+                            <div class="module-action">Ver más <i class="fas fa-chevron-right"></i></div>
+                        </div>
+                    </a>
+                    <a href="#" class="module-card" data-module-id="horarios">
+                        <div class="module-header">
+                            <div class="module-icon horarios-icon"><i class="fas fa-calendar-day"></i></div>
+                            <div>
+                                <h4 class="module-title">Horarios</h4>
+                                <div class="module-description">Organiza los tiempos académicos</div>
+                            </div>
+                        </div>
+                        <div class="module-stats">
+                            <div class="module-stat"><strong>36</strong> horarios</div>
+                            <div class="module-action">Ver más <i class="fas fa-chevron-right"></i></div>
+                        </div>
+                    </a>
+                    <a href="#" class="module-card" data-module-id="reportes">
+                        <div class="module-header">
+                            <div class="module-icon reportes-icon"><i class="fas fa-chart-bar"></i></div>
+                            <div>
+                                <h4 class="module-title">Reportes</h4>
+                                <div class="module-description">Genera análisis institucionales</div>
+                            </div>
+                        </div>
+                        <div class="module-stats">
+                            <div class="module-stat"><strong>15</strong> modelos</div>
+                            <div class="module-action">Ver más <i class="fas fa-chevron-right"></i></div>
+                        </div>
+                    </a>
+                </div>
+            </section>
 
-      <!-- Malla Curricular Section -->
-      <section id="malla" class="module-section">
-        <div class="module-section-header">
-          <div class="section-title">
-            <button class="back-btn" onclick="showDashboard()">
-              <i class="fas fa-arrow-left"></i>
-              Volver
-            </button>
-            <h2>Malla Curricular</h2>
-          </div>
-          <div class="section-actions">
-            <button class="btn btn-accent">
-              <i class="fas fa-plus"></i> Nueva Malla
-            </button>
-          </div>
-        </div>
-        
-        <div class="module-content">
-          <p>Contenido del módulo de Malla Curricular</p>
-        </div>
-      </section>
+            <section id="malla" class="module-section" data-title="Malla Curricular" data-description="Gestiona la estructura académica de tu institución.">
+                <header class="module-section-header">
+                    <div class="section-title">
+                        <button class="back-btn" aria-label="Volver al Panel de Control">
+                            <i class="fas fa-arrow-left"></i>
+                            Volver
+                        </button>
+                        <h2>Malla Curricular</h2>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-accent">
+                            <i class="fas fa-plus"></i> Nueva Malla
+                        </button>
+                    </div>
+                </header>
+                <div class="module-content">
+                    <p>Aquí puedes administrar las diferentes mallas curriculares, añadir, editar o eliminar cursos y programas de estudio.</p>
+                </div>
+            </section>
 
-      <!-- Docentes Section -->
-      <section id="docentes" class="module-section">
-        <div class="module-section-header">
-          <div class="section-title">
-            <button class="back-btn" onclick="showDashboard()">
-              <i class="fas fa-arrow-left"></i>
-              Volver
-            </button>
-            <h2>Docentes</h2>
-          </div>
-          <div class="section-actions">
-            <button class="btn btn-accent">
-              <i class="fas fa-plus"></i> Nuevo Docente
-            </button>
-          </div>
-        </div>
-        
-        <div class="module-content">
-          <p>Contenido del módulo de Docentes</p>
-        </div>
-      </section>
+            <section id="docentes" class="module-section" data-title="Docentes" data-description="Administra el personal académico de tu institución.">
+                <header class="module-section-header">
+                    <div class="section-title">
+                        <button class="back-btn" aria-label="Volver al Panel de Control">
+                            <i class="fas fa-arrow-left"></i>
+                            Volver
+                        </button>
+                        <h2>Docentes</h2>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-accent">
+                            <i class="fas fa-plus"></i> Nuevo Docente
+                        </button>
+                    </div>
+                </header>
+                <div class="module-content">
+                    <p>Gestión de la información de los docentes, sus datos personales, asignaturas que imparten y historial.</p>
+                </div>
+            </section>
 
-      <!-- Asignación Section -->
-      <section id="asignacion" class="module-section">
-        <div class="module-section-header">
-          <div class="section-title">
-            <button class="back-btn" onclick="showDashboard()">
-              <i class="fas fa-arrow-left"></i>
-              Volver
-            </button>
-            <h2>Asignación Académica</h2>
-          </div>
-          <div class="section-actions">
-            <button class="btn btn-accent">
-              <i class="fas fa-random"></i> Distribuir
-            </button>
-          </div>
-        </div>
-        
-        <div class="module-content">
-          <p>Contenido del módulo de Asignación</p>
-        </div>
-      </section>
+            <section id="asignacion" class="module-section" data-title="Asignación Académica" data-description="Optimiza la distribución de la carga académica a los docentes.">
+                <header class="module-section-header">
+                    <div class="section-title">
+                        <button class="back-btn" aria-label="Volver al Panel de Control">
+                            <i class="fas fa-arrow-left"></i>
+                            Volver
+                        </button>
+                        <h2>Asignación Académica</h2>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-accent">
+                            <i class="fas fa-random"></i> Distribuir
+                        </button>
+                    </div>
+                </header>
+                <div class="module-content">
+                    <p>Aquí puedes asignar cursos a docentes y gestionar la carga académica de manera eficiente.</p>
+                </div>
+            </section>
 
-      <!-- Horarios Section -->
-      <section id="horarios" class="module-section">
-        <div class="module-section-header">
-          <div class="section-title">
-            <button class="back-btn" onclick="showDashboard()">
-              <i class="fas fa-arrow-left"></i>
-              Volver
-            </button>
-            <h2>Horarios Académicos</h2>
-          </div>
-          <div class="section-actions">
-            <button class="btn btn-accent">
-              <i class="fas fa-plus"></i> Nuevo Horario
-            </button>
-          </div>
-        </div>
-        
-        <div class="module-content">
-          <p>Contenido del módulo de Horarios</p>
-        </div>
-      </section>
+            <section id="horarios" class="module-section" data-title="Horarios Académicos" data-description="Crea y gestiona los horarios de clases y actividades.">
+                <header class="module-section-header">
+                    <div class="section-title">
+                        <button class="back-btn" aria-label="Volver al Panel de Control">
+                            <i class="fas fa-arrow-left"></i>
+                            Volver
+                        </button>
+                        <h2>Horarios Académicos</h2>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-accent">
+                            <i class="fas fa-plus"></i> Nuevo Horario
+                        </button>
+                    </div>
+                </header>
+                <div class="module-content">
+                    <p>Organiza los tiempos de clases, laboratorios y otras actividades académicas.</p>
+                </div>
+            </section>
 
-      <!-- Reportes Section -->
-      <section id="reportes" class="module-section">
-        <div class="module-section-header">
-          <div class="section-title">
-            <button class="back-btn" onclick="showDashboard()">
-              <i class="fas fa-arrow-left"></i>
-              Volver
-            </button>
-            <h2>Reportes Académicos</h2>
-          </div>
-          <div class="section-actions">
-            <button class="btn btn-accent">
-              <i class="fas fa-file-export"></i> Exportar
-            </button>
-          </div>
-        </div>
-        
-        <div class="module-content">
-          <p>Contenido del módulo de Reportes</p>
-        </div>
-      </section>
-    </main>
-  </div>
+            <section id="reportes" class="module-section" data-title="Reportes Académicos" data-description="Genera informes detallados para análisis institucional.">
+                <header class="module-section-header">
+                    <div class="section-title">
+                        <button class="back-btn" aria-label="Volver al Panel de Control">
+                            <i class="fas fa-arrow-left"></i>
+                            Volver
+                        </button>
+                        <h2>Reportes Académicos</h2>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-accent">
+                            <i class="fas fa-file-export"></i> Exportar
+                        </button>
+                    </div>
+                </header>
+                <div class="module-content">
+                    <p>Accede a diversos reportes y análisis para una mejor toma de decisiones.</p>
+                </div>
+            </section>
+        </main>
+    </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Configurar event listeners para los botones del módulo
-      document.querySelectorAll('[data-module-btn]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          const moduleId = this.getAttribute('data-module-btn');
-          showModule(moduleId);
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Escucha clics en todos los elementos con el atributo data-module-id (tanto enlaces de menú como tarjetas)
+            document.querySelectorAll('[data-module-id]').forEach(element => {
+                element.addEventListener('click', (e) => {
+                    e.preventDefault(); // Evita el comportamiento por defecto del enlace
+                    const moduleId = element.getAttribute('data-module-id');
+                    showModule(moduleId);
+                });
+            });
+
+            // Escucha clics en el botón de "Volver"
+            document.querySelectorAll('.back-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    showModule('dashboard'); // Siempre vuelve al dashboard
+                });
+            });
+
+            // Lógica para el botón de menú móvil
+            const menuToggleBtn = document.createElement('button');
+            menuToggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            menuToggleBtn.classList.add('mobile-menu-toggle');
+            menuToggleBtn.setAttribute('aria-label', 'Abrir/cerrar menú');
+            
+            // Añadir estilos para el botón de menú móvil
+            const style = document.createElement('style');
+            style.textContent = `
+                .mobile-menu-toggle {
+                    display: none; /* Oculto por defecto */
+                    position: fixed;
+                    top: 1rem;
+                    left: 1rem;
+                    background-color: var(--primary);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 0.75rem 1rem;
+                    font-size: 1.2rem;
+                    cursor: pointer;
+                    z-index: 1000; /* Asegura que esté por encima de todo */
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    transition: background-color 0.3s ease;
+                }
+                .mobile-menu-toggle:hover {
+                    background-color: var(--primary-light);
+                }
+                @media (max-width: 768px) {
+                    .mobile-menu-toggle {
+                        display: block; /* Muestra el botón en móviles */
+                    }
+                    .main-content {
+                        padding-top: 5rem; /* Espacio para el botón de menú */
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            document.body.appendChild(menuToggleBtn);
+
+            menuToggleBtn.addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('active');
+            });
         });
-      });
-    });
 
-    function showModule(moduleId) {
-      // Ocultar todos los módulos
-      document.querySelectorAll('.module-section').forEach(section => {
-        section.classList.remove('active');
-      });
-      
-      // Desactivar todos los items del menú
-      document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-      });
-      
-      // Mostrar el módulo seleccionado
-      const module = document.getElementById(moduleId);
-      if (module) {
-        module.classList.add('active');
-      }
-      
-      // Activar el item del menú correspondiente
-      const navItem = document.querySelector(`.nav-link[data-module-btn="${moduleId}"]`).parentElement;
-      navItem.classList.add('active');
-    }
+        /**
+         * Muestra el módulo de contenido especificado y actualiza el menú de navegación.
+         * @param {string} moduleId - El ID del módulo a mostrar.
+         */
+        const showModule = (moduleId) => {
+            // Oculta todos los módulos de contenido
+            document.querySelectorAll('.module-section').forEach(section => {
+                section.classList.remove('active');
+            });
 
-    function showDashboard() {
-      showModule('dashboard');
-    }
-  </script>
+            // Desactiva la clase 'active' en todos los elementos del menú
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                const navLink = item.querySelector('.nav-link');
+                if (navLink) {
+                    navLink.removeAttribute('aria-current');
+                }
+            });
+
+            // Muestra el módulo seleccionado
+            const moduleToShow = document.getElementById(moduleId);
+            if (moduleToShow) {
+                moduleToShow.classList.add('active');
+                updatePageInfo(moduleId); // Actualiza el título y la descripción del header
+            }
+            
+            // Activa la clase 'active' y el atributo aria-current para el enlace de navegación correspondiente
+            const navLink = document.querySelector(`.nav-link[data-module-id="${moduleId}"]`);
+            if (navLink) {
+                navLink.parentElement.classList.add('active');
+                navLink.setAttribute('aria-current', 'page');
+            }
+
+            // Oculta el sidebar en móviles después de seleccionar un módulo
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
+        };
+
+        /**
+         * Actualiza el título y la descripción de la página en el encabezado principal.
+         * Obtiene la información de los atributos `data-title` y `data-description` del módulo activo.
+         * @param {string} moduleId - El ID del módulo activo.
+         */
+        const updatePageInfo = (moduleId) => {
+            const pageTitleElement = document.getElementById('page-main-title');
+            const pageDescriptionElement = document.getElementById('page-main-description');
+            const activeModule = document.getElementById(moduleId);
+
+            if (activeModule && pageTitleElement && pageDescriptionElement) {
+                const newTitle = activeModule.getAttribute('data-title') || 'Panel de Control';
+                const newDescription = activeModule.getAttribute('data-description') || 'Bienvenido al sistema de gestión académica';
+
+                pageTitleElement.textContent = newTitle;
+                pageDescriptionElement.textContent = newDescription;
+                pageDescriptionElement.style.display = newDescription ? 'block' : 'none'; // Oculta si no hay descripción
+            }
+        };
+
+        // Muestra el dashboard al cargar la página por primera vez
+        window.addEventListener('load', () => {
+            showModule('dashboard');
+        });
+    </script>
 </body>
 </html>
