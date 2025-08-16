@@ -648,6 +648,36 @@
                 justify-content: center;
             }
         }
+
+        /* ===================== */
+        /* MEJORAS NO DESTRUCTIVAS */
+        /* ===================== */
+
+        /* 1) Accesibilidad: estados de foco visibles */
+        :where(a, button, .btn, .nav-link, .back-btn, .module-card):focus-visible {
+            outline: 3px solid var(--secondary);
+            outline-offset: 2px;
+        }
+
+        /* 2) Accesibilidad: clase utilitaria de oculto solo visual */
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+        }
+
+        /* 3) Reduce motion para usuarios que lo prefieren */
+        @media (prefers-reduced-motion: reduce) {
+            * { scroll-behavior: auto !important; }
+            .module-section.active { animation: none !important; }
+            .module-card:hover, .btn-primary:hover, .btn-accent:hover { transform: none !important; }
+        }
+
+        /* 4) Pequeña mejora de contraste para texto gris en fondo blanco */
+        .module-description, .module-stat, .user-role, .page-title p { color: #475569; }
+
+    
+        /* ===== Embebido de mallas.html sin perder formato ===== */
+        #malla .module-content { padding: 0; border: none; }
+        .embed-frame { width: 100%; min-height: 70vh; border: 0; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -821,24 +851,9 @@
                 </div>
             </section>
 
-            <section id="malla" class="module-section" data-title="Malla Curricular" data-description="Gestiona la estructura académica de tu institución.">
-                <header class="module-section-header">
-                    <div class="section-title">
-                        <button class="back-btn" aria-label="Volver al Panel de Control">
-                            <i class="fas fa-arrow-left"></i>
-                            Volver
-                        </button>
-                        <h2>Malla Curricular</h2>
-                    </div>
-                    <div class="section-actions">
-                        <button class="btn btn-accent">
-                            <i class="fas fa-plus"></i> Nueva Malla
-                        </button>
-                    </div>
-                </header>
-                <div class="module-content">
-                    <p>Aquí puedes administrar las diferentes mallas curriculares, añadir, editar o eliminar cursos y programas de estudio.</p>
-                </div>
+            $1
+                    <iframe src="mallas.html" class="embed-frame" title="Malla Curricular - PlanificaU" loading="lazy"></iframe>
+                $2
             </section>
 
             <section id="docentes" class="module-section" data-title="Docentes" data-description="Administra el personal académico de tu institución.">
@@ -943,9 +958,11 @@
 
             // Lógica para el botón de menú móvil
             const menuToggleBtn = document.createElement('button');
-            menuToggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            menuToggleBtn.innerHTML = '<i class="fas fa-bars" aria-hidden="true"></i>';
             menuToggleBtn.classList.add('mobile-menu-toggle');
             menuToggleBtn.setAttribute('aria-label', 'Abrir/cerrar menú');
+            menuToggleBtn.setAttribute('type', 'button');
+            menuToggleBtn.setAttribute('aria-expanded', 'false');
             
             // Añadir estilos para el botón de menú móvil
             const style = document.createElement('style');
@@ -966,23 +983,49 @@
                     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                     transition: background-color 0.3s ease;
                 }
-                .mobile-menu-toggle:hover {
-                    background-color: var(--primary-light);
-                }
+                .mobile-menu-toggle:hover { background-color: var(--primary-light); }
                 @media (max-width: 768px) {
-                    .mobile-menu-toggle {
-                        display: block; /* Muestra el botón en móviles */
-                    }
-                    .main-content {
-                        padding-top: 5rem; /* Espacio para el botón de menú */
-                    }
+                    .mobile-menu-toggle { display: block; /* Muestra el botón en móviles */ }
+                    .main-content { padding-top: 5rem; /* Espacio para el botón de menú */ }
                 }
             `;
             document.head.appendChild(style);
             document.body.appendChild(menuToggleBtn);
 
             menuToggleBtn.addEventListener('click', () => {
-                document.getElementById('sidebar').classList.toggle('active');
+                const sidebar = document.getElementById('sidebar');
+                const isActive = sidebar.classList.toggle('active');
+                menuToggleBtn.setAttribute('aria-expanded', String(isActive));
+            });
+
+            // ===== MEJORAS JS NO DESTRUCTIVAS =====
+            // 1) Enlace "Saltar al contenido" para accesibilidad
+            const skipLink = document.createElement('a');
+            skipLink.href = '#page-main-title';
+            skipLink.className = 'sr-only focusable-skip';
+            skipLink.textContent = 'Saltar al contenido principal';
+            document.body.prepend(skipLink);
+            const skipLinkStyle = document.createElement('style');
+            skipLinkStyle.textContent = `
+                .focusable-skip:focus { position: fixed; left: 1rem; top: 1rem; padding: .5rem .75rem; background: #fff; color: #000; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.2); z-index: 1100; }
+            `;
+            document.head.appendChild(skipLinkStyle);
+
+            // 2) Persistir el último módulo visto
+            const savedModule = localStorage.getItem('planificau:lastModuleId');
+            if (savedModule) {
+                showModule(savedModule);
+            }
+
+            // 3) Cerrar sidebar con Escape y volver al dashboard con Alt+←
+            document.addEventListener('keydown', (ev) => {
+                const sidebar = document.getElementById('sidebar');
+                if (ev.key === 'Escape' && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                }
+                if ((ev.altKey && ev.key === 'ArrowLeft')) {
+                    showModule('dashboard');
+                }
             });
         });
 
@@ -1000,16 +1043,19 @@
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
                 const navLink = item.querySelector('.nav-link');
-                if (navLink) {
-                    navLink.removeAttribute('aria-current');
-                }
+                if (navLink) { navLink.removeAttribute('aria-current'); }
             });
 
             // Muestra el módulo seleccionado
             const moduleToShow = document.getElementById(moduleId);
             if (moduleToShow) {
                 moduleToShow.classList.add('active');
-                updatePageInfo(moduleId); // Actualiza el título y la descripción del header
+                // Enfocar el título principal para lectores de pantalla/navegación por teclado
+                const titleEl = document.getElementById('page-main-title');
+                updatePageInfo(moduleId);
+                titleEl && titleEl.focus && titleEl.focus();
+                // Persistir
+                try { localStorage.setItem('planificau:lastModuleId', moduleId); } catch(e) {}
             }
             
             // Activa la clase 'active' y el atributo aria-current para el enlace de navegación correspondiente
@@ -1022,6 +1068,13 @@
             // Oculta el sidebar en móviles después de seleccionar un módulo
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').classList.remove('active');
+            }
+
+            // Actualiza el título de la pestaña (document.title)
+            const activeModule = document.getElementById(moduleId);
+            if (activeModule) {
+                const newTitle = activeModule.getAttribute('data-title') || 'Panel de Control';
+                document.title = `PlanificaU | ${newTitle}`;
             }
         };
 
