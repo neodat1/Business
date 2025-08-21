@@ -2,18 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>Extraer Docentes (añadir NOMBRE_DOCENTE y quitar Unnamed: 9)</title>
+  <title>Extraer Docentes (separa días/horas + descarga .xlsx)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;padding:20px;background:#f7fafc;color:#0f172a}
-    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);padding:16px;max-width:1100px;margin:auto}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);padding:16px;max-width:1200px;margin:auto}
     h1{font-size:20px;margin:0 0 12px}
     .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-    input[type="file"]{padding:8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
+    input[type="file"],button{padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer}
+    button{background:#2563eb;color:#fff;border:none}
     .badge{display:inline-block;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;padding:4px 8px;border-radius:999px;font-size:12px}
     table{border-collapse:collapse;width:100%;margin-top:12px}
-    th,td{border:1px solid #e2e8f0;padding:8px;font-size:14px}
+    th,td{border:1px solid #e2e8f0;padding:8px;font-size:14px;vertical-align:top}
     th{background:#f1f5f9;text-align:left}
     .muted{color:#64748b;font-size:12px;margin-top:6px}
     .hidden{display:none}
@@ -24,126 +25,194 @@
     <h1>Procesar Docentes.xlsx</h1>
     <div class="row">
       <input id="file" type="file" accept=".xlsx,.xls" />
+      <button id="download" class="hidden">Descargar resultado (.xlsx)</button>
       <span id="sheetName" class="badge hidden"></span>
     </div>
-    <div class="muted">
-      Reglas aplicadas exactamente como indicaste:
-      <ul>
-        <li>Añadir columna <b>NOMBRE_DOCENTE</b> tomando del primer campo disponible entre: <code>DOCENTE</code>, <code>Docente</code>, <code>docente</code>, <code>NOMBRE</code>, <code>Nombre</code>, <code>nombre</code>, <code>PROFESOR</code>, <code>Profesor</code>, <code>profesor</code>.</li>
-        <li>Eliminar la columna <b>Unnamed: 9</b> si existe.</li>
-        <li>Todo lo demás se mantiene intacto.</li>
-      </ul>
-    </div>
+    <div class="muted">Salida con exactamente 7 columnas (NOMBRE_DOCENTE, MATERIA, CANTIDAD DE ALUMNOS ESPERADOS, DIA, HORA, Modalidad, Paralelo). Convierte celdas con múltiples <b>DIA</b> y <b>HORA</b> en <b>filas separadas</b> (MIÉRCOLES → 10:00-12:00, 14:00-16:00, etc.).</div>
     <div id="tableWrap"></div>
+    <div id="warnings" class="muted"></div>
   </div>
 
   <script>
-    const PREFERRED_NAME_COLS = ["DOCENTE","Docente","docente","NOMBRE","Nombre","nombre","PROFESOR","Profesor","profesor"];
+    // ===== Configuración =====
+    const TARGET_HEADERS = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
+    const DAY_ORDER = {"LUNES":1,"MARTES":2,"MIERCOLES":3,"JUEVES":4,"VIERNES":5,"SABADO":6,"DOMINGO":7};
 
-    document.getElementById('file').addEventListener('change', async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const arrayBuf = await file.arrayBuffer();
+    // Map de sinónimos/abreviaturas de día -> forma canónica en MAYÚSCULAS
+    const DAY_CANON = new Map(Object.entries({
+      "lun":"LUNES","lunes":"LUNES","lun.":"LUNES",
+      "mar":"MARTES","martes":"MARTES","mar.":"MARTES",
+      "mie":"MIERCOLES","mié":"MIERCOLES","miercoles":"MIERCOLES","miércoles":"MIERCOLES","mie.":"MIERCOLES","mié.":"MIERCOLES",
+      "jue":"JUEVES","jueves":"JUEVES","jue.":"JUEVES",
+      "vie":"VIERNES","viernes":"VIERNES","vie.":"VIERNES",
+      "sab":"SABADO","sáb":"SABADO","sabado":"SABADO","sábado":"SABADO","sab.":"SABADO",
+      "dom":"DOMINGO","domingo":"DOMINGO","dom.":"DOMINGO"
+    }));
 
-      const wb = XLSX.read(arrayBuf, { type: 'array' });
-      const firstSheet = wb.SheetNames[0];
-      const ws = wb.Sheets[firstSheet];
+    let lastData = [];
 
-      // Convertir a JSON conservando vacíos
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    // ===== Utilidades =====
+    const escapeHtml = (str)=> String(str)
+      .replaceAll('&','&amp;').replaceAll('<','&lt;')
+      .replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");
 
-      // Si la hoja viene vacía, solo mostrar mensaje
-      if (!rows.length) {
-        renderTable([], firstSheet);
-        return;
+    const numberToLetter = (n)=> String.fromCharCode(65 + ((n-1) % 26)); // 1->A
+
+    function splitSmart(str){
+      if(str==null) return [];
+      // Normaliza separadores: nueva línea, '/', ',', ';', ' y ', ' e '
+      return String(str)
+        .replace(/\s*\n\s*/g,'\n')
+        .split(/\n|\/|,|;|\s+y\s+|\s+e\s+/i)
+        .map(s=>s.trim()).filter(Boolean);
+    }
+
+    function canonDay(token){
+      const t = String(token||'').toLowerCase();
+      // Busca clave exacta o incluida ("Miérc" → "MIERCOLES")
+      if (DAY_CANON.has(t)) return DAY_CANON.get(t);
+      for (const [k,v] of DAY_CANON.entries()){
+        if (t.includes(k)) return v;
       }
+      return token ? String(token).toUpperCase().trim() : '';
+    }
 
-      // 1) Determinar la columna de nombre de docente existente
-      const headers = Object.keys(rows[0]);
-      let nameCol = PREFERRED_NAME_COLS.find(col => headers.includes(col));
-      if (!nameCol) {
-        // fallback: buscar columna que contenga las palabras clave
-        nameCol = headers.find(h =>
-          ["docente","nombre","profesor"].some(k => String(h).toLowerCase().includes(k))
-        );
+    function parseDays(value){
+      const parts = splitSmart(value);
+      const days = [];
+      for (const p of parts){
+        const d = canonDay(p);
+        if (DAY_ORDER[d] && !days.includes(d)) days.push(d);
       }
+      return days;
+    }
 
-      // 2) Construir nueva matriz sin modificar el resto
-      const processed = rows.map(r => {
-        const clone = { ...r };
-        // 2.a) Eliminar "Unnamed: 9" si existe EXACTAMENTE con ese título
-        if (Object.prototype.hasOwnProperty.call(clone, "Unnamed: 9")) {
-          delete clone["Unnamed: 9"];
-        }
-        // 2.b) Añadir NOMBRE_DOCENTE (si no existe ya)
-        if (!Object.prototype.hasOwnProperty.call(clone, "NOMBRE_DOCENTE")) {
-          clone["NOMBRE_DOCENTE"] = nameCol ? clone[nameCol] : "";
-        }
-        return clone;
-      });
+    function parseTimes(value){
+      if(value==null) return [];
+      const s = String(value);
+      const lines = s.replace(/\s*\n\s*/g,'\n').split('\n').filter(Boolean);
+      const byLine = lines.map(line=>{
+        const m = line.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+        return m ? `${m[1]}-${m[2]}` : (/(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/.test(line) ? line.trim() : '');
+      }).filter(Boolean);
+      if (byLine.length) return byLine;
+      // Fallback: buscar todos los rangos en todo el texto
+      const re = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/g;
+      const all = [];
+      let m; while ((m = re.exec(s))) all.push(`${m[1]}-${m[2]}`);
+      return all;
+    }
 
-      // Render
-      renderTable(processed, firstSheet);
-    });
+    function parseParallels(value, needed){
+      const out = [];
+      const tokens = splitSmart(value).map(t=>t.toUpperCase());
+      for(const t of tokens){
+        if (/^[A-Z]$/.test(t)) out.push(t);
+        else if (/^\d+$/.test(t)) out.push(numberToLetter(parseInt(t,10)));
+      }
+      if (!out.length && needed>1){
+        for (let i=1;i<=needed;i++) out.push(numberToLetter(i));
+      }
+      if (out.length<needed && out.length>0){
+        for (let i=out.length+1;i<=needed;i++) out.push(numberToLetter(i));
+      }
+      return out;
+    }
 
-    function renderTable(data, sheetName) {
+    function timeToMinutes(t){
+      const m = /^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/.exec(t||'');
+      if(!m) return 0;
+      return parseInt(m[1])*60+parseInt(m[2]);
+    }
+
+    // ===== Render =====
+    function renderExactTable(data, headersWanted, sheetName){
+      lastData = data;
       const tableWrap = document.getElementById('tableWrap');
       const badge = document.getElementById('sheetName');
-
-      // Mostrar nombre de hoja
-      if (sheetName) {
-        badge.textContent = `Hoja: ${sheetName}`;
-        badge.classList.remove('hidden');
-      }
-
-      // Si no hay datos
-      if (!data || !data.length) {
-        tableWrap.innerHTML = "<p class='muted'>No hay filas en la primera hoja.</p>";
-        return;
-      }
-
-      // Construcción de tabla
-      const allHeaders = Array.from(
-        data.reduce((set, row) => {
-          Object.keys(row).forEach(k => set.add(k));
-          return set;
-        }, new Set())
-      );
-
-      // Asegurar que NOMBRE_DOCENTE aparezca al inicio si existe
-      const nameIdx = allHeaders.indexOf("NOMBRE_DOCENTE");
-      if (nameIdx > 0) {
-        allHeaders.splice(nameIdx, 1);
-        allHeaders.unshift("NOMBRE_DOCENTE");
-      }
-
+      if(sheetName){ badge.textContent = `Hoja: ${sheetName}`; badge.classList.remove('hidden'); }
+      if(!data || !data.length){ tableWrap.innerHTML = "<p class='muted'>No hay filas en la primera hoja.</p>"; return; }
+      document.getElementById('download').classList.remove('hidden');
       let html = "<table><thead><tr>";
-      allHeaders.forEach(h => {
-        html += `<th>${escapeHtml(h)}</th>`;
-      });
+      headersWanted.forEach(h=>{ html+=`<th>${escapeHtml(h)}</th>`; });
       html += "</tr></thead><tbody>";
-
-      data.forEach(row => {
-        html += "<tr>";
-        allHeaders.forEach(h => {
-          const val = row[h] ?? "";
-          html += `<td>${escapeHtml(String(val))}</td>`;
-        });
-        html += "</tr>";
-      });
-
+      data.forEach(r=>{ html+="<tr>"; headersWanted.forEach(h=>{ html+=`<td>${escapeHtml(String(r[h]??""))}</td>`; }); html+="</tr>"; });
       html += "</tbody></table>";
       tableWrap.innerHTML = html;
     }
 
-    function escapeHtml(str) {
-      return str
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
+    // ===== Export =====
+    document.getElementById('download').addEventListener('click',()=>{
+      if(!lastData.length) return;
+      const ws = XLSX.utils.json_to_sheet(lastData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Docentes");
+      XLSX.writeFile(wb, "Docentes_Procesados.xlsx");
+    });
+
+    // ===== Proceso principal =====
+    document.getElementById('file').addEventListener('change',(e)=>{
+      const file=e.target.files[0];
+      if(!file) return;
+      const reader=new FileReader();
+      reader.onload=(evt)=>{
+        const data=new Uint8Array(evt.target.result);
+        const wb=XLSX.read(data,{type:'array'});
+        const sheet=wb.Sheets[wb.SheetNames[0]];
+        let rows=XLSX.utils.sheet_to_json(sheet,{defval:""});
+
+        // 1) Normalizar columnas base
+        const normalized = rows.map(r=>({
+          "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"]||r["DOCENTE"]||r["Docente"]||r["docente"]||"",
+          "MATERIA": r["MATERIA"]||r["Materia"]||r["ASIGNATURA"]||r["Asignatura"]||"",
+          "CANTIDAD DE ALUMNOS ESPERADOS": r["CANTIDAD DE ALUMNOS ESPERADOS"]||r["CANTIDAD DE ALUMNOS"]||r["ALUMNOS ESPERADOS"]||r["NRO ALUMNOS"]||r["NRO ESTUDIANTES"]||"",
+          "DIA": r["DIA"]||r["Dia"]||r["Día"]||"",
+          "HORA": r["HORA"]||r["Horario"]||r["HORARIO"]||"",
+          "Modalidad": r["Modalidad"]||r["MODALIDAD"]||"",
+          "Paralelo": r["Paralelo"]||r["PARALELO"]||r["GRUPO"]||""
+        }));
+
+        // 2) Explosión inteligente por días/horas
+        const exploded = [];
+        for (const row of normalized){
+          const days = parseDays(row.DIA);          // e.g., ["MIERCOLES","JUEVES","VIERNES"]
+          const times = parseTimes(row.HORA);       // e.g., ["10:00-12:00","14:00-16:00","10:00-12:00","12:00-14:00"]
+
+          // Estrategia de emparejamiento:
+          // - si longitudes iguales -> emparejar por índice
+          // - si solo días o solo horas -> duplicar el otro
+          // - si longitudes diferentes y >1 -> emparejar por índice circular
+          const n = Math.max(days.length||1, times.length||1);
+          const parList = parseParallels(row.Paralelo, n);
+
+          for (let i=0;i<n;i++){
+            const d = (days.length? days[i % days.length] : (row.DIA||''));
+            const h = (times.length? times[i % times.length] : (row.HORA||''));
+            exploded.push({
+              "NOMBRE_DOCENTE": row["NOMBRE_DOCENTE"],
+              "MATERIA": row["MATERIA"],
+              "CANTIDAD DE ALUMNOS ESPERADOS": row["CANTIDAD DE ALUMNOS ESPERADOS"],
+              "DIA": d,
+              "HORA": h,
+              "Modalidad": row["Modalidad"],
+              "Paralelo": parList[i] || parList[parList.length-1] || row["Paralelo"] || ""
+            });
+          }
+        }
+
+        // 3) Orden por Docente -> Día -> Hora
+        exploded.sort((a,b)=>{
+          const dn = (a["NOMBRE_DOCENTE"]||"").localeCompare(b["NOMBRE_DOCENTE"]||"");
+          if(dn!==0) return dn;
+          const da = (DAY_ORDER[a["DIA"]]||99) - (DAY_ORDER[b["DIA"]]||99);
+          if(da!==0) return da;
+          return timeToMinutes(a["HORA"]) - timeToMinutes(b["HORA"]);
+        });
+
+        renderExactTable(exploded, TARGET_HEADERS, wb.SheetNames[0]);
+      };
+      reader.readAsArrayBuffer(file);
+    });
   </script>
 </body>
 </html>
