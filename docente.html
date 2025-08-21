@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Extraer Docentes (añadir NOMBRE_DOCENTE y quitar Unnamed: 9)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;padding:20px;background:#f7fafc;color:#0f172a}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);padding:16px;max-width:1100px;margin:auto}
+    h1{font-size:20px;margin:0 0 12px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+    input[type="file"]{padding:8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
+    .badge{display:inline-block;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;padding:4px 8px;border-radius:999px;font-size:12px}
+    table{border-collapse:collapse;width:100%;margin-top:12px}
+    th,td{border:1px solid #e2e8f0;padding:8px;font-size:14px}
+    th{background:#f1f5f9;text-align:left}
+    .muted{color:#64748b;font-size:12px;margin-top:6px}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Procesar Docentes.xlsx</h1>
+    <div class="row">
+      <input id="file" type="file" accept=".xlsx,.xls" />
+      <span id="sheetName" class="badge hidden"></span>
+    </div>
+    <div class="muted">
+      Reglas aplicadas exactamente como indicaste:
+      <ul>
+        <li>Añadir columna <b>NOMBRE_DOCENTE</b> tomando del primer campo disponible entre: <code>DOCENTE</code>, <code>Docente</code>, <code>docente</code>, <code>NOMBRE</code>, <code>Nombre</code>, <code>nombre</code>, <code>PROFESOR</code>, <code>Profesor</code>, <code>profesor</code>.</li>
+        <li>Eliminar la columna <b>Unnamed: 9</b> si existe.</li>
+        <li>Todo lo demás se mantiene intacto.</li>
+      </ul>
+    </div>
+    <div id="tableWrap"></div>
+  </div>
+
+  <script>
+    const PREFERRED_NAME_COLS = ["DOCENTE","Docente","docente","NOMBRE","Nombre","nombre","PROFESOR","Profesor","profesor"];
+
+    document.getElementById('file').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const arrayBuf = await file.arrayBuffer();
+
+      const wb = XLSX.read(arrayBuf, { type: 'array' });
+      const firstSheet = wb.SheetNames[0];
+      const ws = wb.Sheets[firstSheet];
+
+      // Convertir a JSON conservando vacíos
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+      // Si la hoja viene vacía, solo mostrar mensaje
+      if (!rows.length) {
+        renderTable([], firstSheet);
+        return;
+      }
+
+      // 1) Determinar la columna de nombre de docente existente
+      const headers = Object.keys(rows[0]);
+      let nameCol = PREFERRED_NAME_COLS.find(col => headers.includes(col));
+      if (!nameCol) {
+        // fallback: buscar columna que contenga las palabras clave
+        nameCol = headers.find(h =>
+          ["docente","nombre","profesor"].some(k => String(h).toLowerCase().includes(k))
+        );
+      }
+
+      // 2) Construir nueva matriz sin modificar el resto
+      const processed = rows.map(r => {
+        const clone = { ...r };
+        // 2.a) Eliminar "Unnamed: 9" si existe EXACTAMENTE con ese título
+        if (Object.prototype.hasOwnProperty.call(clone, "Unnamed: 9")) {
+          delete clone["Unnamed: 9"];
+        }
+        // 2.b) Añadir NOMBRE_DOCENTE (si no existe ya)
+        if (!Object.prototype.hasOwnProperty.call(clone, "NOMBRE_DOCENTE")) {
+          clone["NOMBRE_DOCENTE"] = nameCol ? clone[nameCol] : "";
+        }
+        return clone;
+      });
+
+      // Render
+      renderTable(processed, firstSheet);
+    });
+
+    function renderTable(data, sheetName) {
+      const tableWrap = document.getElementById('tableWrap');
+      const badge = document.getElementById('sheetName');
+
+      // Mostrar nombre de hoja
+      if (sheetName) {
+        badge.textContent = `Hoja: ${sheetName}`;
+        badge.classList.remove('hidden');
+      }
+
+      // Si no hay datos
+      if (!data || !data.length) {
+        tableWrap.innerHTML = "<p class='muted'>No hay filas en la primera hoja.</p>";
+        return;
+      }
+
+      // Construcción de tabla
+      const allHeaders = Array.from(
+        data.reduce((set, row) => {
+          Object.keys(row).forEach(k => set.add(k));
+          return set;
+        }, new Set())
+      );
+
+      // Asegurar que NOMBRE_DOCENTE aparezca al inicio si existe
+      const nameIdx = allHeaders.indexOf("NOMBRE_DOCENTE");
+      if (nameIdx > 0) {
+        allHeaders.splice(nameIdx, 1);
+        allHeaders.unshift("NOMBRE_DOCENTE");
+      }
+
+      let html = "<table><thead><tr>";
+      allHeaders.forEach(h => {
+        html += `<th>${escapeHtml(h)}</th>`;
+      });
+      html += "</tr></thead><tbody>";
+
+      data.forEach(row => {
+        html += "<tr>";
+        allHeaders.forEach(h => {
+          const val = row[h] ?? "";
+          html += `<td>${escapeHtml(String(val))}</td>`;
+        });
+        html += "</tr>";
+      });
+
+      html += "</tbody></table>";
+      tableWrap.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
