@@ -6,37 +6,325 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-  :root{--bd:#e2e8f0;--bg:#f7fafc;--pri:#2563eb;--tx:#0f172a}
-  body{font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--tx);margin:0}
-  .wrap{max-width:1200px;margin:auto;padding:20px}
-  .card{background:#fff;border:1px solid var(--bd);border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);padding:16px}
-  h1{margin:0 0 10px;font-size:20px}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 14px}
-  input[type=file],button{padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff}
-  button{background:var(--pri);color:#fff;border:none;cursor:pointer}
-  button.secondary{background:#fff;color:#0f172a;border:1px solid var(--bd)}
-  table{border-collapse:collapse;width:100%;margin-top:12px}
-  th,td{border:1px solid var(--bd);padding:8px;vertical-align:top}
-  th{background:#f1f5f9;text-align:left}
-  .muted{color:#64748b;font-size:13px}
-  .hidden{display:none}
-  .grid{display:grid;gap:16px}
-  @media(min-width:1000px){.grid{grid-template-columns:1fr 1fr}}
+  :root {
+    --bd: #e2e8f0;
+    --bg: #f7fafc;
+    --pri: #2563eb;
+    --pri-hover: #1d4ed8;
+    --sec: #64748b;
+    --tx: #0f172a;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --radius: 12px;
+  }
+  
+  body {
+    font-family: system-ui, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--tx);
+    margin: 0;
+    line-height: 1.5;
+  }
+  
+  .wrap {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+  }
+  
+  .card {
+    background: #fff;
+    border: 1px solid var(--bd);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  h1 {
+    margin: 0 0 15px;
+    font-size: 24px;
+    color: var(--pri);
+  }
+  
+  h2 {
+    font-size: 18px;
+    margin: 0 0 12px;
+  }
+  
+  h3 {
+    font-size: 16px;
+    margin: 0 0 10px;
+  }
+  
+  .row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin: 15px 0;
+  }
+  
+  .file-input-container {
+    flex: 1;
+    min-width: 250px;
+  }
+  
+  .file-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  
+  .file-status {
+    font-size: 13px;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .status-icon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  
+  .status-pending {
+    background-color: var(--warning);
+  }
+  
+  .status-success {
+    background-color: var(--success);
+  }
+  
+  input[type=file] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--bd);
+    border-radius: 10px;
+    background: #fff;
+    box-sizing: border-box;
+  }
+  
+  button {
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  button.primary {
+    background: var(--pri);
+    color: #fff;
+  }
+  
+  button.primary:hover {
+    background: var(--pri-hover);
+  }
+  
+  button.secondary {
+    background: #fff;
+    color: var(--tx);
+    border: 1px solid var(--bd);
+  }
+  
+  button.secondary:hover {
+    background: #f8fafc;
+  }
+  
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .progress-container {
+    width: 100%;
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 10px 0;
+    display: none;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    background-color: var(--pri);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  
+  .stats {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin: 15px 0;
+  }
+  
+  .stat-card {
+    background: #f8fafc;
+    border: 1px solid var(--bd);
+    border-radius: 8px;
+    padding: 12px;
+    min-width: 180px;
+  }
+  
+  .stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--pri);
+  }
+  
+  .stat-label {
+    font-size: 14px;
+    color: var(--sec);
+  }
+  
+  .muted {
+    color: var(--sec);
+    font-size: 14px;
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  .grid {
+    display: grid;
+    gap: 20px;
+  }
+  
+  @media (min-width: 1000px) {
+    .grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  
+  th, td {
+    border: 1px solid var(--bd);
+    padding: 8px;
+    vertical-align: top;
+  }
+  
+  th {
+    background: #f1f5f9;
+    text-align: left;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+  }
+  
+  .table-container {
+    max-height: 400px;
+    overflow: auto;
+    margin: 10px 0;
+    border: 1px solid var(--bd);
+    border-radius: 8px;
+  }
+  
+  .warning-text {
+    color: var(--warning);
+    font-weight: 600;
+  }
+  
+  .error-text {
+    color: var(--danger);
+    font-weight: 600;
+  }
+  
+  .success-text {
+    color: var(--success);
+    font-weight: 600;
+  }
+  
+  .loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  
+  .summary-row {
+    background-color: #f8fafc;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="card">
     <h1>Combinación Docentes × Estudiantes</h1>
+    
     <div class="row">
-      <label><b>PLANIFICACIÓN - DOCENTES.xlsx</b><br><input id="fileDoc" type="file" accept=".xlsx,.xls"></label>
-      <label><b>PLANIFICACIÓN - ESTUDIANTES.xlsx</b><br><input id="fileEst" type="file" accept=".xlsx,.xls"></label>
-      <label><b>(Opcional) Mallas.xlsx</b><br><input id="fileMal" type="file" accept=".xlsx,.xls"></label>
+      <div class="file-input-container">
+        <span class="file-label">PLANIFICACIÓN - DOCENTES.xlsx</span>
+        <input id="fileDoc" type="file" accept=".xlsx,.xls">
+        <div class="file-status" id="statusDoc">
+          <span class="status-icon status-pending"></span>
+          <span>Esperando archivo...</span>
+        </div>
+      </div>
+      
+      <div class="file-input-container">
+        <span class="file-label">PLANIFICACIÓN - ESTUDIANTES.xlsx</span>
+        <input id="fileEst" type="file" accept=".xlsx,.xls">
+        <div class="file-status" id="statusEst">
+          <span class="status-icon status-pending"></span>
+          <span>Esperando archivo...</span>
+        </div>
+      </div>
+      
+      <div class="file-input-container">
+        <span class="file-label">(Opcional) Mallas.xlsx</span>
+        <input id="fileMal" type="file" accept=".xlsx,.xls">
+        <div class="file-status" id="statusMal">
+          <span class="status-icon status-pending"></span>
+          <span>Opcional - Esperando archivo...</span>
+        </div>
+      </div>
     </div>
+    
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    
     <div class="row">
-      <button id="btnRun">Procesar</button>
+      <button id="btnRun" class="primary" disabled>Procesar</button>
       <button id="btnDown" class="secondary hidden">Descargar (.xlsx)</button>
     </div>
+    
+    <div class="stats" id="statsContainer" style="display: none;">
+      <div class="stat-card">
+        <div class="stat-value" id="statSecciones">0</div>
+        <div class="stat-label">Secciones creadas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statAsignaciones">0</div>
+        <div class="stat-label">Asignaciones realizadas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statNoAsignados">0</div>
+        <div class="stat-label">Estudiantes no asignados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statOcupacion">0%</div>
+        <div class="stat-label">Ocupación promedio</div>
+      </div>
+    </div>
+    
     <p class="muted">
       Salidas:
       <br>• <b>MATRIZ_SECCIONES</b> (7 columnas): NOMBRE_DOCENTE, MATERIA, CANTIDAD DE ALUMNOS ESPERADOS, DIA, HORA, Modalidad, Paralelo.
@@ -47,20 +335,34 @@
     </p>
   </div>
 
-  <div class="grid" style="margin-top:16px">
+  <div class="grid">
     <div class="card">
       <h3>Previsualización — COMBINACION</h3>
-      <div id="tblCombo"></div>
+      <div class="table-container">
+        <div id="tblCombo"></div>
+      </div>
     </div>
     <div class="card">
       <h3>Resumen — Carga por Docente</h3>
-      <div id="tblCarga"></div>
+      <div class="table-container">
+        <div id="tblCarga"></div>
+      </div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:16px">
-    <h3>No Asignados</h3>
-    <div id="tblNo"></div>
+  <div class="grid">
+    <div class="card">
+      <h3>Resumen por Materia</h3>
+      <div class="table-container">
+        <div id="tblResumenMateria"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>No Asignados <span id="noAsignadosCount" class="error-text"></span></h3>
+      <div class="table-container">
+        <div id="tblNo"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -77,220 +379,483 @@ const DAY_MAP = new Map(Object.entries({
   "sab":"SABADO","sáb":"SABADO","sabado":"SABADO","sábado":"SABADO","sab.":"SABADO",
   "dom":"DOMINGO","domingo":"DOMINGO","dom.":"DOMINGO"
 }));
-const canonDay = s=>{const t=String(s||"").toLowerCase(); if(DAY_MAP.has(t)) return DAY_MAP.get(t); for(const [k,v] of DAY_MAP.entries()){ if(t.includes(k)) return v;} return String(s||"").toUpperCase().trim();};
-const esc = s=> String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-const numberToLetter = n => String.fromCharCode(65 + ((n-1)%26)); // 1->A
 
-const readSheet = (file)=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=e=>{ const data=new Uint8Array(e.target.result); const wb=XLSX.read(data,{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; res(XLSX.utils.sheet_to_json(ws,{defval:""})); }; fr.onerror=rej; fr.readAsArrayBuffer(file);});
+// Utilidades mejoradas
+const canonDay = s => {
+  if (!s) return "";
+  const t = String(s).toLowerCase().trim();
+  if (DAY_MAP.has(t)) return DAY_MAP.get(t);
+  
+  for (const [k, v] of DAY_MAP.entries()) {
+    if (t.includes(k)) return v;
+  }
+  
+  // Si no coincide con ningún patrón, devolver el valor original en mayúsculas
+  return t.toUpperCase();
+};
 
-function renderTable(el, headers, rows){ if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return;} let html='<table><thead><tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'; for(const r of rows){ html+='<tr>'+headers.map(h=>`<td>${esc(r[h]??'')}</td>`).join('')+'</tr>'; } html+='</tbody></table>'; el.innerHTML=html; }
+const esc = s => {
+  if (s === null || s === undefined) return "";
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+};
+
+// Función para actualizar la barra de progreso
+function updateProgress(percent) {
+  const progressBar = document.getElementById('progressBar');
+  const progressContainer = document.getElementById('progressContainer');
+  
+  progressBar.style.width = percent + '%';
+  progressContainer.style.display = 'block';
+}
+
+// Función para mostrar estadísticas
+function updateStats(secciones, asignaciones, noAsig, resumenMateria) {
+  document.getElementById('statsContainer').style.display = 'flex';
+  document.getElementById('statSecciones').textContent = secciones.length;
+  document.getElementById('statAsignaciones').textContent = asignaciones.length;
+  document.getElementById('statNoAsignados').textContent = noAsig.length;
+  
+  // Calcular ocupación promedio
+  let totalCap = 0;
+  let totalAsig = 0;
+  
+  resumenMateria.forEach(m => {
+    totalCap += m.CAP;
+    totalAsig += m.ASIGNADOS;
+  });
+  
+  const ocupacionPromedio = totalCap > 0 ? Math.round((totalAsig / totalCap) * 100) : 0;
+  document.getElementById('statOcupacion').textContent = ocupacionPromedio + '%';
+  
+  // Actualizar contador de no asignados
+  const noAsignadosCount = document.getElementById('noAsignadosCount');
+  if (noAsig.length > 0) {
+    noAsignadosCount.textContent = `(${noAsig.length})`;
+  } else {
+    noAsignadosCount.textContent = '';
+  }
+}
+
+// Función para validar archivos
+function validateFiles() {
+  const fD = document.getElementById('fileDoc').files[0];
+  const fE = document.getElementById('fileEst').files[0];
+  const btnRun = document.getElementById('btnRun');
+  
+  btnRun.disabled = !(fD && fE);
+}
+
+// Función para actualizar el estado de los archivos
+function updateFileStatus(inputId, statusId, isRequired) {
+  const input = document.getElementById(inputId);
+  const status = document.getElementById(statusId);
+  const icon = status.querySelector('.status-icon');
+  
+  input.addEventListener('change', function() {
+    if (this.files.length > 0) {
+      icon.className = 'status-icon status-success';
+      status.querySelector('span:last-child').textContent = this.files[0].name;
+    } else {
+      icon.className = 'status-icon status-pending';
+      status.querySelector('span:last-child').textContent = isRequired ? 
+        'Esperando archivo...' : 'Opcional - Esperando archivo...';
+    }
+    validateFiles();
+  });
+}
+
+// Función para renderizar tablas con mejoras
+function renderTable(el, headers, rows, maxRows = 200) {
+  if (!rows || !rows.length) {
+    el.innerHTML = '<p class="muted">Sin datos.</p>';
+    return;
+  }
+  
+  // Limitar el número de filas para previsualización
+  const displayRows = rows.slice(0, maxRows);
+  const hasMore = rows.length > maxRows;
+  
+  let html = `
+    <table>
+      <thead>
+        <tr>${headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr>
+      </thead>
+      <tbody>
+  `;
+  
+  for (const r of displayRows) {
+    html += `<tr>${headers.map(h => `<td>${esc(r[h] ?? '')}</td>`).join('')}</tr>`;
+  }
+  
+  html += `</tbody></table>`;
+  
+  if (hasMore) {
+    html += `<p class="muted">Mostrando ${maxRows} de ${rows.length} registros. Descargue el archivo para ver todos.</p>`;
+  }
+  
+  el.innerHTML = html;
+}
+
+// Leer archivo Excel
+const readSheet = (file) => new Promise((resolve, reject) => {
+  const fr = new FileReader();
+  fr.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      resolve(XLSX.utils.sheet_to_json(ws, { defval: "" }));
+    } catch (error) {
+      reject(error);
+    }
+  };
+  fr.onerror = reject;
+  fr.readAsArrayBuffer(file);
+});
 
 // ===================== Normalización =====================
-function normalizeDocentes(rows){
-  return rows.map(r=>({
-    "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"]||r["DOCENTE"]||r["Docente"]||r["Profesor"]||"",
-    "MATERIA": r["MATERIA"]||r["ASIGNATURA"]||r["Materia"]||"",
-    "CANTIDAD DE ALUMNOS ESPERADOS": Number(r["CANTIDAD DE ALUMNOS ESPERADOS"]||r["CAPACIDAD"]||r["CUPOS"]||40)||40,
-    "DIA": canonDay(r["DIA"]||r["Dia"]||r["Día"]||r["DIA1"]||""),
-    "HORA": r["HORA"]||r["Horario"]||"",
-    "Modalidad": r["Modalidad"]||r["MODALIDAD"]||"",
-    "Paralelo": String(r["Paralelo"]||r["PARALELO"]||r["Grupo"]||"").toUpperCase().trim()
-  })).filter(x=>x.MATERIA && x.DIA && x.HORA);
+function normalizeDocentes(rows) {
+  return rows.map(r => ({
+    "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"] || r["DOCENTE"] || r["Docente"] || r["Profesor"] || "",
+    "MATERIA": r["MATERIA"] || r["ASIGNATURA"] || r["Materia"] || "",
+    "CANTIDAD DE ALUMNOS ESPERADOS": Number(r["CANTIDAD DE ALUMNOS ESPERADOS"] || r["CAPACIDAD"] || r["CUPOS"] || 40) || 40,
+    "DIA": canonDay(r["DIA"] || r["Dia"] || r["Día"] || r["DIA1"] || ""),
+    "HORA": r["HORA"] || r["Horario"] || "",
+    "Modalidad": r["Modalidad"] || r["MODALIDAD"] || "",
+    "Paralelo": String(r["Paralelo"] || r["PARALELO"] || r["Grupo"] || "").toUpperCase().trim()
+  })).filter(x => x.MATERIA && x.DIA && x.HORA);
 }
 
-function normalizeEstudiantes(rows){
-  return rows.map(r=>({
-    "ESTUDIANTE": r["ESTUDIANTE"]||r["NOMBRE_ESTUDIANTE"]||r["Nombre"]||"",
-    "MATERIAS": String(r["MATERIAS"]||r["MATERIA"]||r["ASIGNATURAS"]||r["ASIGNATURA"]||"")
-                  .split(/,|;|\n|\//).map(s=>s.trim()).filter(Boolean),
-    "Paralelo": String(r["Paralelo"]||r["PARALELO"]||"").toUpperCase().trim()
-  })).filter(x=>x.ESTUDIANTE && x.MATERIAS.length);
+function normalizeEstudiantes(rows) {
+  return rows.map(r => {
+    const materiasStr = String(r["MATERIAS"] || r["MATERIA"] || r["ASIGNATURAS"] || r["ASIGNATURA"] || "");
+    // Mejorar el split para manejar diferentes separadores
+    const materias = materiasStr.split(/[,;/\n]/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    
+    return {
+      "ESTUDIANTE": r["ESTUDIANTE"] || r["NOMBRE_ESTUDIANTE"] || r["Nombre"] || "",
+      "MATERIAS": materias,
+      "Paralelo": String(r["Paralelo"] || r["PARALELO"] || "").toUpperCase().trim()
+    };
+  }).filter(x => x.ESTUDIANTE && x.MATERIAS.length);
 }
 
-function normalizeMallas(rows){
-  return rows.map(r=>({
-    "MATERIA": r["MATERIA"]||r["ASIGNATURA"]||"",
-    "DIA": canonDay(r["DIA"]||r["Dia"]||r["Día"]||""),
-    "HORA": r["HORA"]||r["Horario"]||"",
-    "Paralelo": String(r["Paralelo"]||r["PARALELO"]||"").toUpperCase().trim(),
-    "CAPACIDAD": Number(r["CAPACIDAD"]||r["CUPOS"]||0)||0
-  })).filter(x=>x.MATERIA && x.DIA && x.HORA);
+function normalizeMallas(rows) {
+  return rows.map(r => ({
+    "MATERIA": r["MATERIA"] || r["ASIGNATURA"] || "",
+    "DIA": canonDay(r["DIA"] || r["Dia"] || r["Día"] || ""),
+    "HORA": r["HORA"] || r["Horario"] || "",
+    "Paralelo": String(r["Paralelo"] || r["PARALELO"] || "").toUpperCase().trim(),
+    "CAPACIDAD": Number(r["CAPACIDAD"] || r["CUPOS"] || 0) || 0
+  })).filter(x => x.MATERIA && x.DIA && x.HORA);
 }
 
 // ===================== Lógica de secciones y asignación =====================
-function construirSecciones(docentes, mallas){
-  // Unificamos secciones; si faltan en mallas pero existen en docentes, se usan de docentes.
-  const key = (m,d,h,p)=>`${m}¦${d}¦${h}¦${p||''}`;
+function construirSecciones(docentes, mallas) {
+  const key = (m, d, h, p) => `${m}¦${d}¦${h}¦${p || ''}`;
   const secciones = new Map();
-  // Desde mallas
-  for(const m of mallas){
-    const k=key(m.MATERIA,m.DIA,m.HORA,m.Paralelo);
-    if(!secciones.has(k)) secciones.set(k,{
-      MATERIA:m.MATERIA,DIA:m.DIA,HORA:m.HORA,Paralelo:m.Paralelo||"",
-      NOMBRE_DOCENTE:"",Modalidad:"", CAP:m.CAPACIDAD||0, ASIGNADOS:0
+  
+  // Primero procesar mallas (tienen prioridad para la capacidad)
+  for (const m of mallas) {
+    const k = key(m.MATERIA, m.DIA, m.HORA, m.Paralelo);
+    secciones.set(k, {
+      MATERIA: m.MATERIA,
+      DIA: m.DIA,
+      HORA: m.HORA,
+      Paralelo: m.Paralelo || "",
+      NOMBRE_DOCENTE: "",
+      Modalidad: "",
+      CAP: m.CAPACIDAD || 0,
+      ASIGNADOS: 0
     });
   }
-  // Desde docentes
-  for(const d of docentes){
-    const k=key(d.MATERIA,d.DIA,d.HORA,d.Paralelo);
-    const cap = d["CANTIDAD DE ALUMNOS ESPERADOS"]||40;
-    if(!secciones.has(k)) secciones.set(k,{
-      MATERIA:d.MATERIA,DIA:d.DIA,HORA:d.HORA,Paralelo:d.Paralelo||"",
-      NOMBRE_DOCENTE:d.NOMBRE_DOCENTE,Modalidad:d.Modalidad||"", CAP:cap, ASIGNADOS:0
-    });
-    else{
-      const s=secciones.get(k);
-      s.NOMBRE_DOCENTE = s.NOMBRE_DOCENTE||d.NOMBRE_DOCENTE;
-      s.Modalidad = s.Modalidad||d.Modalidad||"";
-      s.CAP = Math.max(s.CAP||0, cap||0) || cap || 40;
+  
+  // Luego procesar docentes (complementan la información)
+  for (const d of docentes) {
+    const k = key(d.MATERIA, d.DIA, d.HORA, d.Paralelo);
+    const cap = d["CANTIDAD DE ALUMNOS ESPERADOS"] || 40;
+    
+    if (secciones.has(k)) {
+      const s = secciones.get(k);
+      s.NOMBRE_DOCENTE = s.NOMBRE_DOCENTE || d.NOMBRE_DOCENTE;
+      s.Modalidad = s.Modalidad || d.Modalidad || "";
+      // Mantener la capacidad mayor entre mallas y docentes
+      s.CAP = Math.max(s.CAP, cap);
+    } else {
+      secciones.set(k, {
+        MATERIA: d.MATERIA,
+        DIA: d.DIA,
+        HORA: d.HORA,
+        Paralelo: d.Paralelo || "",
+        NOMBRE_DOCENTE: d.NOMBRE_DOCENTE,
+        Modalidad: d.Modalidad || "",
+        CAP: cap,
+        ASIGNADOS: 0
+      });
     }
   }
+  
   return Array.from(secciones.values());
 }
 
-function agruparPorMateria(secciones){
-  const map=new Map();
-  for(const s of secciones){
-    if(!map.has(s.MATERIA)) map.set(s.MATERIA,[]);
+function agruparPorMateria(secciones) {
+  const map = new Map();
+  for (const s of secciones) {
+    if (!map.has(s.MATERIA)) map.set(s.MATERIA, []);
     map.get(s.MATERIA).push(s);
   }
   return map;
 }
 
-function asignarEstudiantes(secciones, estudiantes){
-  // Distribuye por materia priorizando: paralelo pedido -> más cupo libre -> orden estable.
+function asignarEstudiantes(secciones, estudiantes) {
   const idxPorMateria = agruparPorMateria(secciones);
-  const asignaciones=[]; const noAsig=[];
-
-  // Índice rápido para carga docente
-  const kCarga=(d,m,par,h)=>`${d}¦${m}¦${par||''}¦${h}`;
-  const carga=new Map();
-  for(const s of secciones){
-    const key=kCarga(s.NOMBRE_DOCENTE||"SIN_DOCENTE", s.MATERIA, s.Paralelo, s.HORA);
-    if(!carga.has(key)) carga.set(key,{DOCENTE:s.NOMBRE_DOCENTE||"SIN_DOCENTE",MATERIA:s.MATERIA,Paralelo:s.Paralelo||"",DIA:s.DIA,HORA:s.HORA,ASIGNADOS:0,CAP:s.CAP||0});
+  const asignaciones = [];
+  const noAsig = [];
+  
+  // Índice para carga docente
+  const kCarga = (d, m, par, h) => `${d}¦${m}¦${par || ''}¦${h}`;
+  const carga = new Map();
+  
+  for (const s of secciones) {
+    const key = kCarga(s.NOMBRE_DOCENTE || "SIN_DOCENTE", s.MATERIA, s.Paralelo, s.HORA);
+    if (!carga.has(key)) {
+      carga.set(key, {
+        DOCENTE: s.NOMBRE_DOCENTE || "SIN_DOCENTE",
+        MATERIA: s.MATERIA,
+        Paralelo: s.Paralelo || "",
+        DIA: s.DIA,
+        HORA: s.HORA,
+        ASIGNADOS: 0,
+        CAP: s.CAP || 0
+      });
+    }
   }
-
-  for(const e of estudiantes){
-    for(const mat of e.MATERIAS){
-      const bucket = (idxPorMateria.get(mat)||[]).slice();
-      if(!bucket.length){
-        noAsig.push({ESTUDIANTE:e.ESTUDIANTE,MATERIA:mat,MOTIVO:"Sin secciones"});
+  
+  // Procesar estudiantes
+  for (const e of estudiantes) {
+    for (const mat of e.MATERIAS) {
+      const bucket = (idxPorMateria.get(mat) || []).slice();
+      
+      if (!bucket.length) {
+        noAsig.push({ ESTUDIANTE: e.ESTUDIANTE, MATERIA: mat, MOTIVO: "Sin secciones" });
         continue;
       }
-      // Ordenar por preferencia de paralelo (si trae), luego mayor cupo disponible
-      bucket.sort((a,b)=>{
-        const pref = e.Paralelo||"";
-        const hitA = pref && (a.Paralelo||"")===pref ? 1:0;
-        const hitB = pref && (b.Paralelo||"")===pref ? 1:0;
-        if(hitA!==hitB) return hitB-hitA; // primero el que coincide
-        const freeA=(a.CAP||0)-(a.ASIGNADOS||0), freeB=(b.CAP||0)-(b.ASIGNADOS||0);
-        if(freeA!==freeB) return freeB-freeA;
-        // Tiebreak: paralelo alfabético
-        return (a.Paralelo||"").localeCompare(b.Paralelo||"");
+      
+      // Ordenar por preferencia
+      bucket.sort((a, b) => {
+        const pref = e.Paralelo || "";
+        const hitA = pref && (a.Paralelo || "") === pref ? 1 : 0;
+        const hitB = pref && (b.Paralelo || "") === pref ? 1 : 0;
+        
+        if (hitA !== hitB) return hitB - hitA;
+        
+        const freeA = (a.CAP || 0) - (a.ASIGNADOS || 0);
+        const freeB = (b.CAP || 0) - (b.ASIGNADOS || 0);
+        
+        if (freeA !== freeB) return freeB - freeA;
+        return (a.Paralelo || "").localeCompare(b.Paralelo || "");
       });
-
-      let placed=false;
-      for(const s of bucket){
-        const free=(s.CAP||0)-(s.ASIGNADOS||0);
-        if(free<=0) continue; // lleno
-        s.ASIGNADOS=(s.ASIGNADOS||0)+1; placed=true;
+      
+      let placed = false;
+      for (const s of bucket) {
+        const free = (s.CAP || 0) - (s.ASIGNADOS || 0);
+        if (free <= 0) continue;
+        
+        s.ASIGNADOS = (s.ASIGNADOS || 0) + 1;
+        placed = true;
+        
         asignaciones.push({
-          ESTUDIANTE:e.ESTUDIANTE,
-          NOMBRE_DOCENTE:s.NOMBRE_DOCENTE||"",
-          MATERIA:s.MATERIA,
-          "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP||"",
-          DIA:s.DIA,
-          HORA:s.HORA,
-          Modalidad:s.Modalidad||"",
-          Paralelo:s.Paralelo||""
+          ESTUDIANTE: e.ESTUDIANTE,
+          NOMBRE_DOCENTE: s.NOMBRE_DOCENTE || "",
+          MATERIA: s.MATERIA,
+          "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP || "",
+          DIA: s.DIA,
+          HORA: s.HORA,
+          Modalidad: s.Modalidad || "",
+          Paralelo: s.Paralelo || ""
         });
-        const key=kCarga(s.NOMBRE_DOCENTE||"SIN_DOCENTE", s.MATERIA, s.Paralelo, s.HORA); carga.get(key).ASIGNADOS++;
+        
+        const key = kCarga(s.NOMBRE_DOCENTE || "SIN_DOCENTE", s.MATERIA, s.Paralelo, s.HORA);
+        if (carga.has(key)) {
+          carga.get(key).ASIGNADOS++;
+        }
         break;
       }
-      if(!placed){
-        noAsig.push({ESTUDIANTE:e.ESTUDIANTE,MATERIA:mat,MOTIVO:"Sin cupo"});
+      
+      if (!placed) {
+        noAsig.push({ ESTUDIANTE: e.ESTUDIANTE, MATERIA: mat, MOTIVO: "Sin cupo" });
       }
     }
   }
-
+  
   // Resúmenes
-  const cargaDocente = Array.from(carga.values()).sort((a,b)=> a.DOCENTE.localeCompare(b.DOCENTE)||a.MATERIA.localeCompare(b.MATERIA)||a.Paralelo.localeCompare(b.Paralelo));
-  const resumenMateria = (()=>{
-    const map=new Map();
-    for(const s of secciones){
-      const k=`${s.MATERIA}¦${s.Paralelo||''}`;
-      if(!map.has(k)) map.set(k,{MATERIA:s.MATERIA,Paralelo:s.Paralelo||"",ASIGNADOS:0,CAP:0,OCUPACION:"0%"});
-      const o=map.get(k); o.CAP+=(s.CAP||0); o.ASIGNADOS+=(s.ASIGNADOS||0);
+  const cargaDocente = Array.from(carga.values()).sort((a, b) => 
+    a.DOCENTE.localeCompare(b.DOCENTE) || 
+    a.MATERIA.localeCompare(b.MATERIA) || 
+    a.Paralelo.localeCompare(b.Paralelo)
+  );
+  
+  const resumenMateria = (() => {
+    const map = new Map();
+    for (const s of secciones) {
+      const k = `${s.MATERIA}¦${s.Paralelo || ''}`;
+      if (!map.has(k)) {
+        map.set(k, {
+          MATERIA: s.MATERIA,
+          Paralelo: s.Paralelo || "",
+          ASIGNADOS: 0,
+          CAP: 0,
+          OCUPACION: "0%"
+        });
+      }
+      const o = map.get(k);
+      o.CAP += (s.CAP || 0);
+      o.ASIGNADOS += (s.ASIGNADOS || 0);
     }
-    return Array.from(map.values()).map(r=>{ const occ = (r.CAP? Math.round((r.ASIGNADOS/r.CAP)*100):0)+"%"; return {...r,OCUPACION:occ}; })
-                 .sort((a,b)=> a.MATERIA.localeCompare(b.MATERIA)||a.Paralelo.localeCompare(b.Paralelo));
+    
+    return Array.from(map.values()).map(r => {
+      const occ = r.CAP ? Math.round((r.ASIGNADOS / r.CAP) * 100) : 0;
+      return { ...r, OCUPACION: occ + "%" };
+    }).sort((a, b) => a.MATERIA.localeCompare(b.MATERIA) || a.Paralelo.localeCompare(b.Paralelo));
   })();
-
-  return {asignaciones, noAsig, cargaDocente, resumenMateria, secciones};
+  
+  return { asignaciones, noAsig, cargaDocente, resumenMateria, secciones };
 }
 
 // ===================== Interfaz =====================
-let OUT_SECC=[], OUT_COMB=[], OUT_CARGA=[], OUT_RES_MAT=[], OUT_NO=[];
+let OUT_SECC = [], OUT_COMB = [], OUT_CARGA = [], OUT_RES_MAT = [], OUT_NO = [];
 
-document.getElementById('btnRun').addEventListener('click', async ()=>{
-  const fD=document.getElementById('fileDoc').files[0];
-  const fE=document.getElementById('fileEst').files[0];
-  const fM=document.getElementById('fileMal').files[0];
-  if(!fD || !fE){ alert('Carga DOCENTES y ESTUDIANTES. Mallas es opcional.'); return; }
-
-  const [rowsD, rowsE, rowsM] = await Promise.all([
-    readSheet(fD), readSheet(fE), fM? readSheet(fM): Promise.resolve([])
-  ]);
-
-  const DOC = normalizeDocentes(rowsD);
-  const EST = normalizeEstudiantes(rowsE);
-  const MAL = normalizeMallas(rowsM);
-
-  const secciones = construirSecciones(DOC, MAL);
-  const {asignaciones, noAsig, cargaDocente, resumenMateria, secciones:seccFinal} = asignarEstudiantes(secciones, EST);
-
-  // MATRIZ_SECCIONES (7 columnas exactas)
-  OUT_SECC = seccFinal.map(s=>({
-    "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE||"",
-    "MATERIA": s.MATERIA,
-    "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP||"",
-    "DIA": s.DIA,
-    "HORA": s.HORA,
-    "Modalidad": s.Modalidad||"",
-    "Paralelo": s.Paralelo||""
-  }));
-
-  // COMBINACION (8 columnas)
-  OUT_COMB = asignaciones.map(a=>({
-    "NOMBRE_DOCENTE": a.NOMBRE_DOCENTE,
-    "MATERIA": a.MATERIA,
-    "CANTIDAD DE ALUMNOS ESPERADOS": a["CANTIDAD DE ALUMNOS ESPERADOS"],
-    "DIA": a.DIA,
-    "HORA": a.HORA,
-    "Modalidad": a.Modalidad,
-    "Paralelo": a.Paralelo,
-    "ESTUDIANTE": a.ESTUDIANTE
-  }));
-
-  OUT_NO = noAsig;
-  OUT_CARGA = cargaDocente;
-  OUT_RES_MAT = resumenMateria;
-
-  renderTable(document.getElementById('tblCombo'), COMBO8, OUT_COMB.slice(0,200)); // muestra hasta 200
-  renderTable(document.getElementById('tblCarga'), ["DOCENTE","MATERIA","Paralelo","DIA","HORA","ASIGNADOS","CAP"], OUT_CARGA);
-  renderTable(document.getElementById('tblNo'), ["ESTUDIANTE","MATERIA","MOTIVO"], OUT_NO);
-
-  document.getElementById('btnDown').classList.remove('hidden');
-});
-
-document.getElementById('btnDown').addEventListener('click', ()=>{
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_SECC), 'MATRIZ_SECCIONES');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_COMB), 'COMBINACION');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_CARGA), 'RESUMEN_CARGA');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_RES_MAT), 'RESUMEN_MATERIA');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_NO), 'NO_ASIGNADOS');
-  XLSX.writeFile(wb, 'Combinacion_Cupos_Paralelos.xlsx');
+// Inicializar la interfaz
+document.addEventListener('DOMContentLoaded', function() {
+  // Configurar eventos para los inputs de archivo
+  updateFileStatus('fileDoc', 'statusDoc', true);
+  updateFileStatus('fileEst', 'statusEst', true);
+  updateFileStatus('fileMal', 'statusMal', false);
+  
+  // Evento para el botón de procesar
+  document.getElementById('btnRun').addEventListener('click', async () => {
+    const fD = document.getElementById('fileDoc').files[0];
+    const fE = document.getElementById('fileEst').files[0];
+    const fM = document.getElementById('fileMal').files[0];
+    
+    if (!fD || !fE) {
+      alert('Debe cargar los archivos de DOCENTES y ESTUDIANTES. El archivo de Mallas es opcional.');
+      return;
+    }
+    
+    // Mostrar estado de carga
+    document.body.classList.add('loading');
+    updateProgress(10);
+    
+    try {
+      const [rowsD, rowsE, rowsM] = await Promise.all([
+        readSheet(fD),
+        readSheet(fE),
+        fM ? readSheet(fM) : Promise.resolve([])
+      ]);
+      
+      updateProgress(40);
+      
+      const DOC = normalizeDocentes(rowsD);
+      const EST = normalizeEstudiantes(rowsE);
+      const MAL = normalizeMallas(rowsM || []);
+      
+      updateProgress(60);
+      
+      const secciones = construirSecciones(DOC, MAL);
+      
+      updateProgress(80);
+      
+      const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = 
+        asignarEstudiantes(secciones, EST);
+      
+      // Preparar datos de salida
+      OUT_SECC = seccFinal.map(s => ({
+        "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE || "",
+        "MATERIA": s.MATERIA,
+        "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP || "",
+        "DIA": s.DIA,
+        "HORA": s.HORA,
+        "Modalidad": s.Modalidad || "",
+        "Paralelo": s.Paralelo || ""
+      }));
+      
+      OUT_COMB = asignaciones.map(a => ({
+        "NOMBRE_DOCENTE": a.NOMBRE_DOCENTE,
+        "MATERIA": a.MATERIA,
+        "CANTIDAD DE ALUMNOS ESPERADOS": a["CANTIDAD DE ALUMNOS ESPERADOS"],
+        "DIA": a.DIA,
+        "HORA": a.HORA,
+        "Modalidad": a.Modalidad,
+        "Paralelo": a.Paralelo,
+        "ESTUDIANTE": a.ESTUDIANTE
+      }));
+      
+      OUT_NO = noAsig;
+      OUT_CARGA = cargaDocente;
+      OUT_RES_MAT = resumenMateria;
+      
+      updateProgress(90);
+      
+      // Actualizar la interfaz
+      renderTable(document.getElementById('tblCombo'), COMBO8, OUT_COMB, 100);
+      renderTable(document.getElementById('tblCarga'), 
+                 ["DOCENTE", "MATERIA", "Paralelo", "DIA", "HORA", "ASIGNADOS", "CAP"], 
+                 OUT_CARGA, 100);
+      renderTable(document.getElementById('tblResumenMateria'), 
+                 ["MATERIA", "Paralelo", "ASIGNADOS", "CAP", "OCUPACION"], 
+                 OUT_RES_MAT, 100);
+      renderTable(document.getElementById('tblNo'), 
+                 ["ESTUDIANTE", "MATERIA", "MOTIVO"], 
+                 OUT_NO, 100);
+      
+      updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT);
+      
+      document.getElementById('btnDown').classList.remove('hidden');
+      updateProgress(100);
+      
+      // Ocultar la barra de progreso después de un momento
+      setTimeout(() => {
+        document.getElementById('progressContainer').style.display = 'none';
+        document.body.classList.remove('loading');
+      }, 1000);
+      
+    } catch (error) {
+      console.error("Error procesando archivos:", error);
+      alert("Error al procesar los archivos: " + error.message);
+      document.body.classList.remove('loading');
+      document.getElementById('progressContainer').style.display = 'none';
+    }
+  });
+  
+  // Evento para el botón de descargar
+  document.getElementById('btnDown').addEventListener('click', () => {
+    const wb = XLSX.utils.book_new();
+    
+    XLSX.utils.book_append_sheet(wb, 
+      XLSX.utils.json_to_sheet(OUT_SECC), 
+      'MATRIZ_SECCIONES');
+    
+    XLSX.utils.book_append_sheet(wb, 
+      XLSX.utils.json_to_sheet(OUT_COMB), 
+      'COMBINACION');
+    
+    XLSX.utils.book_append_sheet(wb, 
+      XLSX.utils.json_to_sheet(OUT_CARGA), 
+      'RESUMEN_CARGA');
+    
+    XLSX.utils.book_append_sheet(wb, 
+      XLSX.utils.json_to_sheet(OUT_RES_MAT), 
+      'RESUMEN_MATERIA');
+    
+    XLSX.utils.book_append_sheet(wb, 
+      XLSX.utils.json_to_sheet(OUT_NO), 
+      'NO_ASIGNADOS');
+    
+    XLSX.writeFile(wb, 'Combinacion_Cupos_Paralelos.xlsx');
+  });
 });
 </script>
 </body>
