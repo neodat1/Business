@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<title>Combinación Docentes × Estudiantes (Paralelos Automáticos)</title>
+<title>Combinación Docentes × Estudiantes (Con Datos de Ejemplo)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -269,6 +269,12 @@
     margin: 12px 0;
     border-radius: 4px;
   }
+  
+  .debug-info {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 5px;
+  }
 </style>
 </head>
 <body>
@@ -311,6 +317,7 @@
     
     <div class="row">
       <button id="btnRun" class="primary" disabled>Procesar</button>
+      <button id="btnExample" class="secondary">Usar Datos de Ejemplo</button>
       <button id="btnDown" class="secondary hidden">Descargar (.xlsx)</button>
     </div>
     
@@ -392,6 +399,46 @@ const DAY_MAP = new Map(Object.entries({
   "sab":"SABADO","sáb":"SABADO","sabado":"SABADO","sábado":"SABADO","sab.":"SABADO",
   "dom":"DOMINGO","domingo":"DOMINGO","dom.":"DOMINGO"
 }));
+
+// Datos de ejemplo para pruebas
+const EXAMPLE_DOCENTES = [
+  {"NOMBRE_DOCENTE": "Dr. Pérez", "MATERIA": "MAT101", "CANTIDAD DE ALUMNOS ESPERADOS": 30, "DIA": "LUNES", "HORA": "08:00-10:00", "Modalidad": "Presencial", "Paralelo": "A"},
+  {"NOMBRE_DOCENTE": "Dra. Gómez", "MATERIA": "FIS201", "CANTIDAD DE ALUMNOS ESPERADOS": 25, "DIA": "MARTES", "HORA": "10:00-12:00", "Modalidad": "Presencial", "Paralelo": "A"},
+  {"NOMBRE_DOCENTE": "Mg. Rodríguez", "MATERIA": "QUI101", "CANTIDAD DE ALUMNOS ESPERADOS": 28, "DIA": "MIERCOLES", "HORA": "14:00-16:00", "Modalidad": "Presencial", "Paralelo": "A"}
+];
+
+const EXAMPLE_ESTUDIANTES = [
+  {"ESTUDIANTE": "Juan López", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "María García", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Carlos Martínez", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Ana Fernández", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "Pedro Díaz", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Laura Sánchez", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Miguel Ruiz", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "Sofía Torres", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Javier Mendoza", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Elena Castro", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "Diego Ortega", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Carmen Reyes", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Ricardo Vargas", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "Isabel Mora", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Francisco Ríos", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Patricia Herrera", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "José Navarro", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Raquel Jiménez", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Manuel Silva", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "Teresa Medina", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Alberto Campos", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Rosa Acosta", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "Fernando Guzmán", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Lucía Vega", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Roberto Paredes", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "Silvia Rojas", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Mario León", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Natalia Espinoza", "MATERIAS": "MAT101, FIS201", "Paralelo": "A"},
+  {"ESTUDIANTE": "Óscar Fuentes", "MATERIAS": "MAT101, QUI101", "Paralelo": "A"},
+  {"ESTUDIANTE": "Verónica Cortés", "MATERIAS": "FIS201, QUI101", "Paralelo": "A"}
+];
 
 // Utilidades mejoradas
 const canonDay = s => {
@@ -518,6 +565,7 @@ const readSheet = (file) => new Promise((resolve, reject) => {
       const ws = wb.Sheets[wb.SheetNames[0]];
       resolve(XLSX.utils.sheet_to_json(ws, { defval: "" }));
     } catch (error) {
+      console.error("Error leyendo archivo:", error);
       reject(error);
     }
   };
@@ -527,7 +575,8 @@ const readSheet = (file) => new Promise((resolve, reject) => {
 
 // ===================== Normalización =====================
 function normalizeDocentes(rows) {
-  return rows.map(r => ({
+  console.log("Normalizando docentes:", rows);
+  const result = rows.map(r => ({
     "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"] || r["DOCENTE"] || r["Docente"] || r["Profesor"] || "",
     "MATERIA": r["MATERIA"] || r["ASIGNATURA"] || r["Materia"] || "",
     "CANTIDAD DE ALUMNOS ESPERADOS": Number(r["CANTIDAD DE ALUMNOS ESPERADOS"] || r["CAPACIDAD"] || r["CUPOS"] || 40) || 40,
@@ -536,10 +585,14 @@ function normalizeDocentes(rows) {
     "Modalidad": r["Modalidad"] || r["MODALIDAD"] || "",
     "Paralelo": String(r["Paralelo"] || r["PARALELO"] || r["Grupo"] || "").toUpperCase().trim()
   })).filter(x => x.MATERIA && x.DIA && x.HORA);
+  
+  console.log("Docentes normalizados:", result);
+  return result;
 }
 
 function normalizeEstudiantes(rows) {
-  return rows.map(r => {
+  console.log("Normalizando estudiantes:", rows);
+  const result = rows.map(r => {
     const materiasStr = String(r["MATERIAS"] || r["MATERIA"] || r["ASIGNATURAS"] || r["ASIGNATURA"] || "");
     // Mejorar el split para manejar diferentes separadores
     const materias = materiasStr.split(/[,;/\n]/)
@@ -552,16 +605,23 @@ function normalizeEstudiantes(rows) {
       "Paralelo": String(r["Paralelo"] || r["PARALELO"] || "").toUpperCase().trim()
     };
   }).filter(x => x.ESTUDIANTE && x.MATERIAS.length);
+  
+  console.log("Estudiantes normalizados:", result);
+  return result;
 }
 
 function normalizeMallas(rows) {
-  return rows.map(r => ({
+  console.log("Normalizando mallas:", rows);
+  const result = rows.map(r => ({
     "MATERIA": r["MATERIA"] || r["ASIGNATURA"] || "",
     "DIA": canonDay(r["DIA"] || r["Dia"] || r["Día"] || ""),
     "HORA": r["HORA"] || r["Horario"] || "",
     "Paralelo": String(r["Paralelo"] || r["PARALELO"] || "").toUpperCase().trim(),
     "CAPACIDAD": Number(r["CAPACIDAD"] || r["CUPOS"] || 0) || 0
   })).filter(x => x.MATERIA && x.DIA && x.HORA);
+  
+  console.log("Mallas normalizadas:", result);
+  return result;
 }
 
 // ===================== Lógica de secciones y asignación =====================
@@ -664,7 +724,9 @@ function construirSecciones(docentes, mallas, estudiantes) {
     }
   }
   
-  return Array.from(secciones.values());
+  const result = Array.from(secciones.values());
+  console.log("Secciones construidas:", result);
+  return result;
 }
 
 // Contar estudiantes por materia
@@ -680,6 +742,7 @@ function contarMateriasEstudiantes(estudiantes) {
     }
   }
   
+  console.log("Conteo de materias por estudiantes:", countMap);
   return countMap;
 }
 
@@ -804,6 +867,9 @@ function asignarEstudiantes(secciones, estudiantes) {
     }).sort((a, b) => a.MATERIA.localeCompare(b.MATERIA) || a.Paralelo.localeCompare(b.Paralelo));
   })();
   
+  console.log("Asignaciones realizadas:", asignaciones.length);
+  console.log("No asignados:", noAsig.length);
+  
   return { asignaciones, noAsig, cargaDocente, resumenMateria, secciones };
 }
 
@@ -908,6 +974,90 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
       console.error("Error procesando archivos:", error);
       alert("Error al procesar los archivos: " + error.message);
+      document.body.classList.remove('loading');
+      document.getElementById('progressContainer').style.display = 'none';
+    }
+  });
+  
+  // Evento para el botón de ejemplo
+  document.getElementById('btnExample').addEventListener('click', () => {
+    document.body.classList.add('loading');
+    updateProgress(10);
+    
+    try {
+      // Usar datos de ejemplo
+      const DOC = normalizeDocentes(EXAMPLE_DOCENTES);
+      const EST = normalizeEstudiantes(EXAMPLE_ESTUDIANTES);
+      const MAL = normalizeMallas([]);
+      
+      updateProgress(60);
+      
+      const secciones = construirSecciones(DOC, MAL, EST);
+      
+      updateProgress(80);
+      
+      const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = 
+        asignarEstudiantes(secciones, EST);
+      
+      // Preparar datos de salida
+      OUT_SECC = seccFinal.map(s => ({
+        "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE || "",
+        "MATERIA": s.MATERIA,
+        "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP || "",
+        "DIA": s.DIA,
+        "HORA": s.HORA,
+        "Modalidad": s.Modalidad || "",
+        "Paralelo": s.Paralelo || ""
+      }));
+      
+      OUT_COMB = asignaciones.map(a => ({
+        "NOMBRE_DOCENTE": a.NOMBRE_DOCENTE,
+        "MATERIA": a.MATERIA,
+        "CANTIDAD DE ALUMNOS ESPERADOS": a["CANTIDAD DE ALUMNOS ESPERADOS"],
+        "DIA": a.DIA,
+        "HORA": a.HORA,
+        "Modalidad": a.Modalidad,
+        "Paralelo": a.Paralelo,
+        "ESTUDIANTE": a.ESTUDIANTE
+      }));
+      
+      OUT_NO = noAsig;
+      OUT_CARGA = cargaDocente;
+      OUT_RES_MAT = resumenMateria;
+      
+      updateProgress(90);
+      
+      // Actualizar la interfaz
+      renderTable(document.getElementById('tblCombo'), COMBO8, OUT_COMB, 100);
+      renderTable(document.getElementById('tblCarga'), 
+                 ["DOCENTE", "MATERIA", "Paralelo", "DIA", "HORA", "ASIGNADOS", "CAP"], 
+                 OUT_CARGA, 100);
+      renderTable(document.getElementById('tblResumenMateria'), 
+                 ["MATERIA", "Paralelo", "ASIGNADOS", "CAP", "OCUPACION"], 
+                 OUT_RES_MAT, 100);
+      renderTable(document.getElementById('tblNo'), 
+                 ["ESTUDIANTE", "MATERIA", "MOTIVO"], 
+                 OUT_NO, 100);
+      
+      updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT);
+      
+      document.getElementById('btnDown').classList.remove('hidden');
+      updateProgress(100);
+      
+      // Actualizar estados de archivos
+      document.getElementById('statusDoc').querySelector('span:last-child').textContent = "Datos de ejemplo (Docentes)";
+      document.getElementById('statusEst').querySelector('span:last-child').textContent = "Datos de ejemplo (Estudiantes)";
+      document.getElementById('statusMal').querySelector('span:last-child').textContent = "Sin mallas (usando valores por defecto)";
+      
+      // Ocultar la barra de progreso después de un momento
+      setTimeout(() => {
+        document.getElementById('progressContainer').style.display = 'none';
+        document.body.classList.remove('loading');
+      }, 1000);
+      
+    } catch (error) {
+      console.error("Error procesando datos de ejemplo:", error);
+      alert("Error al procesar datos de ejemplo: " + error.message);
       document.body.classList.remove('loading');
       document.getElementById('progressContainer').style.display = 'none';
     }
