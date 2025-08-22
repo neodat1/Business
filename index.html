@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<title>Combinación Docentes × Estudiantes (con validación de horarios)</title>
+<title>Combinación Docentes × Estudiantes (Paralelos Automáticos)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -262,8 +262,12 @@
     font-weight: 600;
   }
   
-  .conflict-row {
-    background-color: #fee2e2;
+  .info-box {
+    background-color: #e0f2fe;
+    border-left: 4px solid var(--pri);
+    padding: 12px;
+    margin: 12px 0;
+    border-radius: 4px;
   }
 </style>
 </head>
@@ -329,6 +333,11 @@
       </div>
     </div>
     
+    <div class="info-box">
+      <strong>Nota:</strong> Cuando hay más de 25 estudiantes para una materia, se crearán automáticamente paralelos adicionales.
+      Los códigos de asignatura se mantendrán y se agregará el sufijo del paralelo (A, B, C, etc.).
+    </div>
+    
     <p class="muted">
       Salidas:
       <br>• <b>MATRIZ_SECCIONES</b> (7 columnas): NOMBRE_DOCENTE, MATERIA, CANTIDAD DE ALUMNOS ESPERADOS, DIA, HORA, Modalidad, Paralelo.
@@ -336,7 +345,6 @@
       <br>• <b>RESUMEN_CARGA</b>: carga por docente (secciones, asignados, capacidad).
       <br>• <b>RESUMEN_MATERIA</b>: alumnos por materia/paralelo y ocupación (%).
       <br>• <b>NO_ASIGNADOS</b>: estudiante y materia cuando no hay cupo ni sección.
-      <br>• <b>CONFLICTOS_HORARIO</b>: materias del mismo ciclo con conflicto de horario.
     </p>
   </div>
 
@@ -369,13 +377,6 @@
       </div>
     </div>
   </div>
-
-  <div class="card">
-    <h3>Conflictos de Horario <span id="conflictosCount" class="error-text"></span></h3>
-    <div class="table-container">
-      <div id="tblConflictos"></div>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -402,7 +403,6 @@ const canonDay = s => {
     if (t.includes(k)) return v;
   }
   
-  // Si no coincide con ningún patrón, devolver el valor original en mayúsculas
   return t.toUpperCase();
 };
 
@@ -410,24 +410,6 @@ const esc = s => {
   if (s === null || s === undefined) return "";
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 };
-
-// Función para extraer el ciclo de una materia (asumiendo formato "MATERIA CICLO" o similar)
-function extraerCiclo(materia) {
-  // Buscar patrones comunes de nomenclatura de ciclos
-  const patrones = [
-    /(?:^|\s)([A-Z]*\s*[1-6])(?:\s|$)/i, // Ciclos 1-6
-    /(?:^|\s)(PRIMERO|SEGUNDO|TERCERO|CUARTO|QUINTO|SEXTO)(?:\s|$)/i, // Nombres de ciclos
-    /(?:^|\s)(I|II|III|IV|V|VI)(?:\s|$)/i // Números romanos
-  ];
-  
-  for (const patron of patrones) {
-    const match = materia.match(patron);
-    if (match) return match[1].toUpperCase();
-  }
-  
-  // Si no se encuentra un ciclo específico, considerar toda la materia como único
-  return materia;
-}
 
 // Función para actualizar la barra de progreso
 function updateProgress(percent) {
@@ -439,7 +421,7 @@ function updateProgress(percent) {
 }
 
 // Función para mostrar estadísticas
-function updateStats(secciones, asignaciones, noAsig, resumenMateria, conflictos) {
+function updateStats(secciones, asignaciones, noAsig, resumenMateria) {
   document.getElementById('statsContainer').style.display = 'flex';
   document.getElementById('statSecciones').textContent = secciones.length;
   document.getElementById('statAsignaciones').textContent = asignaciones.length;
@@ -463,14 +445,6 @@ function updateStats(secciones, asignaciones, noAsig, resumenMateria, conflictos
     noAsignadosCount.textContent = `(${noAsig.length})`;
   } else {
     noAsignadosCount.textContent = '';
-  }
-  
-  // Actualizar contador de conflictos
-  const conflictosCount = document.getElementById('conflictosCount');
-  if (conflictos.length > 0) {
-    conflictosCount.textContent = `(${conflictos.length})`;
-  } else {
-    conflictosCount.textContent = '';
   }
 }
 
@@ -522,8 +496,7 @@ function renderTable(el, headers, rows, maxRows = 200) {
   `;
   
   for (const r of displayRows) {
-    const isConflict = r.CONFLICTO || false;
-    html += `<tr class="${isConflict ? 'conflict-row' : ''}">${headers.map(h => `<td>${esc(r[h] ?? '')}</td>`).join('')}</tr>`;
+    html += `<tr>${headers.map(h => `<td>${esc(r[h] ?? '')}</td>`).join('')}</tr>`;
   }
   
   html += `</tbody></table>`;
@@ -591,73 +564,8 @@ function normalizeMallas(rows) {
   })).filter(x => x.MATERIA && x.DIA && x.HORA);
 }
 
-// ===================== Validación de conflictos de horario =====================
-function detectarConflictosHorario(secciones, estudiantes) {
-  const conflictos = [];
-  
-  // Crear un mapa de ciclos por materia
-  const ciclosPorMateria = new Map();
-  for (const materia of [...new Set(secciones.map(s => s.MATERIA))]) {
-    ciclosPorMateria.set(materia, extraerCiclo(materia));
-  }
-  
-  // Crear un mapa de materias por ciclo
-  const materiasPorCiclo = new Map();
-  for (const [materia, ciclo] of ciclosPorMateria.entries()) {
-    if (!materiasPorCiclo.has(ciclo)) {
-      materiasPorCiclo.set(ciclo, new Set());
-    }
-    materiasPorCiclo.get(ciclo).add(materia);
-  }
-  
-  // Para cada estudiante, verificar conflictos entre sus materias
-  for (const estudiante of estudiantes) {
-    const horariosEstudiante = new Map(); // Mapa de día+hora a materias
-    
-    for (const materia of estudiante.MATERIAS) {
-      const ciclo = ciclosPorMateria.get(materia) || materia;
-      const seccionesMateria = secciones.filter(s => s.MATERIA === materia);
-      
-      for (const seccion of seccionesMateria) {
-        const claveHorario = `${seccion.DIA}-${seccion.HORA}`;
-        
-        if (!horariosEstudiante.has(claveHorario)) {
-          horariosEstudiante.set(claveHorario, new Set());
-        }
-        
-        horariosEstudiante.get(claveHorario).add(materia);
-      }
-    }
-    
-    // Verificar si hay múltiples materias en el mismo horario
-    for (const [horario, materias] of horariosEstudiante.entries()) {
-      if (materias.size > 1) {
-        const [dia, hora] = horario.split('-');
-        const materiasArray = Array.from(materias);
-        
-        // Verificar si las materias en conflicto pertenecen al mismo ciclo
-        const ciclos = materiasArray.map(m => ciclosPorMateria.get(m) || m);
-        const mismoCiclo = ciclos.every(ciclo => ciclo === ciclos[0]);
-        
-        if (mismoCiclo) {
-          conflictos.push({
-            ESTUDIANTE: estudiante.ESTUDIANTE,
-            CICLO: ciclos[0],
-            DIA: dia,
-            HORA: hora,
-            MATERIAS: materiasArray.join(', '),
-            TIPO: 'Mismo ciclo mismo horario'
-          });
-        }
-      }
-    }
-  }
-  
-  return conflictos;
-}
-
 // ===================== Lógica de secciones y asignación =====================
-function construirSecciones(docentes, mallas) {
+function construirSecciones(docentes, mallas, estudiantes) {
   const key = (m, d, h, p) => `${m}¦${d}¦${h}¦${p || ''}`;
   const secciones = new Map();
   
@@ -701,7 +609,78 @@ function construirSecciones(docentes, mallas) {
     }
   }
   
+  // Crear paralelos automáticos si hay más de 25 estudiantes para una materia
+  const materiasCount = contarMateriasEstudiantes(estudiantes);
+  const materiasConParalelos = new Map();
+  
+  for (const [materia, count] of materiasCount.entries()) {
+    if (count > 25) {
+      const numParalelos = Math.ceil(count / 25);
+      materiasConParalelos.set(materia, numParalelos);
+      
+      // Buscar si ya existe una sección para esta materia
+      const seccionesMateria = Array.from(secciones.values()).filter(s => s.MATERIA === materia);
+      
+      if (seccionesMateria.length === 0) {
+        // Crear paralelos automáticamente si no hay secciones existentes
+        for (let i = 0; i < numParalelos; i++) {
+          const paralelo = String.fromCharCode(65 + i); // A, B, C, ...
+          const k = key(materia, "LUNES", "08:00-10:00", paralelo); // Horario por defecto
+          
+          if (!secciones.has(k)) {
+            secciones.set(k, {
+              MATERIA: materia,
+              DIA: "LUNES",
+              HORA: "08:00-10:00",
+              Paralelo: paralelo,
+              NOMBRE_DOCENTE: "POR ASIGNAR",
+              Modalidad: "PRESENCIAL",
+              CAP: 25,
+              ASIGNADOS: 0
+            });
+          }
+        }
+      } else if (seccionesMateria.length < numParalelos) {
+        // Crear paralelos adicionales si no hay suficientes
+        for (let i = seccionesMateria.length; i < numParalelos; i++) {
+          const paralelo = String.fromCharCode(65 + i); // A, B, C, ...
+          const primeraSeccion = seccionesMateria[0];
+          const k = key(materia, primeraSeccion.DIA, primeraSeccion.HORA, paralelo);
+          
+          if (!secciones.has(k)) {
+            secciones.set(k, {
+              MATERIA: materia,
+              DIA: primeraSeccion.DIA,
+              HORA: primeraSeccion.HORA,
+              Paralelo: paralelo,
+              NOMBRE_DOCENTE: primeraSeccion.NOMBRE_DOCENTE || "POR ASIGNAR",
+              Modalidad: primeraSeccion.Modalidad || "PRESENCIAL",
+              CAP: 25,
+              ASIGNADOS: 0
+            });
+          }
+        }
+      }
+    }
+  }
+  
   return Array.from(secciones.values());
+}
+
+// Contar estudiantes por materia
+function contarMateriasEstudiantes(estudiantes) {
+  const countMap = new Map();
+  
+  for (const e of estudiantes) {
+    for (const materia of e.MATERIAS) {
+      if (!countMap.has(materia)) {
+        countMap.set(materia, 0);
+      }
+      countMap.set(materia, countMap.get(materia) + 1);
+    }
+  }
+  
+  return countMap;
 }
 
 function agruparPorMateria(secciones) {
@@ -829,7 +808,7 @@ function asignarEstudiantes(secciones, estudiantes) {
 }
 
 // ===================== Interfaz =====================
-let OUT_SECC = [], OUT_COMB = [], OUT_CARGA = [], OUT_RES_MAT = [], OUT_NO = [], OUT_CONFLICTOS = [];
+let OUT_SECC = [], OUT_COMB = [], OUT_CARGA = [], OUT_RES_MAT = [], OUT_NO = [];
 
 // Inicializar la interfaz
 document.addEventListener('DOMContentLoaded', function() {
@@ -868,12 +847,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       updateProgress(60);
       
-      const secciones = construirSecciones(DOC, MAL);
-      
-      updateProgress(70);
-      
-      // Detectar conflictos de horario
-      OUT_CONFLICTOS = detectarConflictosHorario(secciones, EST);
+      const secciones = construirSecciones(DOC, MAL, EST);
       
       updateProgress(80);
       
@@ -919,11 +893,8 @@ document.addEventListener('DOMContentLoaded', function() {
       renderTable(document.getElementById('tblNo'), 
                  ["ESTUDIANTE", "MATERIA", "MOTIVO"], 
                  OUT_NO, 100);
-      renderTable(document.getElementById('tblConflictos'), 
-                 ["ESTUDIANTE", "CICLO", "DIA", "HORA", "MATERIAS", "TIPO"], 
-                 OUT_CONFLICTOS, 100);
       
-      updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT, OUT_CONFLICTOS);
+      updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT);
       
       document.getElementById('btnDown').classList.remove('hidden');
       updateProgress(100);
@@ -965,10 +936,6 @@ document.addEventListener('DOMContentLoaded', function() {
     XLSX.utils.book_append_sheet(wb, 
       XLSX.utils.json_to_sheet(OUT_NO), 
       'NO_ASIGNADOS');
-    
-    XLSX.utils.book_append_sheet(wb, 
-      XLSX.utils.json_to_sheet(OUT_CONFLICTOS), 
-      'CONFLICTOS_HORARIO');
     
     XLSX.writeFile(wb, 'Combinacion_Cupos_Paralelos.xlsx');
   });
