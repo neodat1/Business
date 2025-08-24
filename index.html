@@ -289,6 +289,15 @@
     font-weight: 600;
     margin-right: 5px;
   }
+  
+  .time-slot {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    font-size: 12px;
+    margin: 2px;
+  }
 </style>
 </head>
 <body>
@@ -360,6 +369,7 @@
     <div class="info-box">
       <strong>Nota:</strong> El sistema organizará automáticamente los horarios para evitar cruces entre materias del mismo ciclo.
       Las materias se asignarán según el ciclo actual de cada estudiante y la disponibilidad de los docentes.
+      Los horarios se organizan en bloques de 3 horas para optimizar la asignación.
     </div>
     
     <p class="muted">
@@ -451,7 +461,7 @@ function showError(message) {
   errorBox.style.display = 'block';
   setTimeout(() => {
     errorBox.style.display = 'none';
-  }, 5000);
+  }, 8000);
 }
 
 // Función para actualizar la barra de progreso
@@ -635,12 +645,14 @@ function normalizeDocentes(rows) {
       } else if (textoHoras.includes("07:00") && textoHoras.includes("22:00")) {
         // Si tiene horario amplio, usar todos los bloques
         horasDisponibles = [...HORARIOS];
+      } else {
+        // Si no se detectaron horarios, usar valores por defecto
+        horasDisponibles = [...HORARIOS];
       }
     }
     
-    // Si no se detectaron horarios, usar valores por defecto
+    // Si no se detectaron días, usar valores por defecto
     if (diasDisponibles.length === 0) diasDisponibles = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES"];
-    if (horasDisponibles.length === 0) horasDisponibles = [...HORARIOS];
     
     return {
       "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"] || r["DOCENTE"] || "",
@@ -674,7 +686,7 @@ function normalizeEstudiantes(rows) {
     
     return {
       "ESTUDIANTE": r["ESTUDIANTE"] || r["NOMBRE"] || "",
-      "CICLO": isNaN(ciclo) ? 1 : ciclo,
+      "CICLO": isNaN(ciclo) ? 1 : Math.max(1, Math.min(10, ciclo)), // Limitar entre 1 y 10
       "CARRERA": r["CARRERA"] || "",
       "MALLA": r["MALLA"] || ""
     };
@@ -711,10 +723,15 @@ function normalizeMallas(rows) {
       }
     }
     
+    // Si no se pudo extraer del código, intentar de otra columna
+    if (isNaN(ciclo) || ciclo < 1) {
+      ciclo = Number(r["CICLO"] || 1);
+    }
+    
     return {
       "MATERIA": materia,
       "CODIGO": codigo,
-      "CICLO": ciclo,
+      "CICLO": Math.max(1, Math.min(10, ciclo)), // Limitar entre 1 y 10
       "HORAS_TEORICAS": Number(r["HORAS TEÓRICAS"] || 0),
       "HORAS_PRACTICAS": Number(r["HORAS PRÁCTICAS"] || 0)
     };
@@ -754,7 +771,10 @@ function construirSecciones(docentes, mallas, estudiantes) {
     const estudiantesCiclo = estudiantesPorCiclo.get(ciclo) || [];
     const numEstudiantes = estudiantesCiclo.length;
     
-    if (numEstudiantes === 0) continue;
+    if (numEstudiantes === 0) {
+      console.log(`No hay estudiantes en el ciclo ${ciclo} para la materia ${materia.MATERIA}`);
+      continue;
+    }
     
     // Encontrar docentes para esta materia
     const docentesMateria = docentes.filter(d => d.MATERIA === materia.MATERIA);
@@ -764,8 +784,9 @@ function construirSecciones(docentes, mallas, estudiantes) {
       continue;
     }
     
-    // Calcular número de paralelos necesarios (máximo 25 estudiantes por paralelo)
-    const numParalelos = Math.ceil(numEstudiantes / 25);
+    // Calcular número de paralelos necesarios (máximo 30 estudiantes por paralelo)
+    const capacidadPorParalelo = 30;
+    const numParalelos = Math.ceil(numEstudiantes / capacidadPorParalelo);
     
     for (let i = 0; i < numParalelos; i++) {
       const paralelo = String.fromCharCode(65 + i); // A, B, C, ...
@@ -781,13 +802,16 @@ function construirSecciones(docentes, mallas, estudiantes) {
         continue;
       }
       
+      // Calcular capacidad basada en el número de estudiantes y paralelos
+      const capacidad = Math.min(capacidadPorParalelo, Math.ceil(numEstudiantes / numParalelos));
+      
       // Crear la sección
       secciones.push({
         MATERIA: materia.MATERIA,
         CODIGO: materia.CODIGO,
         CICLO: ciclo,
         NOMBRE_DOCENTE: docente.NOMBRE_DOCENTE,
-        CAP: 25,
+        CAP: capacidad,
         ASIGNADOS: 0,
         DIA: horario.dia,
         HORA: horario.hora,
@@ -801,7 +825,7 @@ function construirSecciones(docentes, mallas, estudiantes) {
   return secciones;
 }
 
-// Encontrar horario disponible para un docente que no se cruce con otras materias del mismo ciclo
+// Encontrar horario disponible para un docente que no esté ocupado en el mismo ciclo
 function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
   for (const dia of docente.DIA_DISPONIBLE) {
     const horariosOcupadosDia = horariosOcupadosCiclo.get(dia) || new Set();
@@ -818,28 +842,6 @@ function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
   }
   
   return null;
-}
-
-// Contar estudiantes por ciclo y materia
-function contarEstudiantesMateria(estudiantes, mallas) {
-  const countMap = new Map();
-  
-  // Agrupar estudiantes por ciclo
-  const estudiantesPorCiclo = new Map();
-  for (const e of estudiantes) {
-    if (!estudiantesPorCiclo.has(e.CICLO)) {
-      estudiantesPorCiclo.set(e.CICLO, []);
-    }
-    estudiantesPorCiclo.get(e.CICLO).push(e);
-  }
-  
-  // Contar estudiantes por materia
-  for (const materia of mallas) {
-    const estudiantesCiclo = estudiantesPorCiclo.get(materia.CICLO) || [];
-    countMap.set(materia.MATERIA, estudiantesCiclo.length);
-  }
-  
-  return countMap;
 }
 
 function agruparPorMateria(secciones) {
@@ -898,7 +900,7 @@ function asignarEstudiantes(secciones, estudiantes, mallas) {
           continue;
         }
         
-        // Ordenar por preferencia (mismo paralelo si es posible)
+        // Ordenar por preferencia (más espacio disponible primero)
         bucket.sort((a, b) => {
           const freeA = (a.CAP || 0) - (a.ASIGNADOS || 0);
           const freeB = (b.CAP || 0) - (b.ASIGNADOS || 0);
