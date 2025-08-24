@@ -450,6 +450,34 @@
   .fade-in {
     animation: fadeIn 0.3s ease;
   }
+  
+  /* Tabs */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+  }
+  
+  .tab.active {
+    border-bottom-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
 </style>
 </head>
 <body>
@@ -472,7 +500,7 @@
     <div class="alert alert-info">
       <span class="alert-icon">💡</span>
       <div>
-        <strong>Nota:</strong> El sistema organizará automáticamente los horarios en bloques de 3 horas para evitar cruces entre materias del mismo ciclo.
+        <strong>Nota:</strong> El sistema organizará automáticamente los horarios evitando cruces entre materias del mismo ciclo.
         Las materias se asignarán según el ciclo actual de cada estudiante y la disponibilidad de los docentes.
       </div>
     </div>
@@ -488,7 +516,7 @@
       <h3 class="card-title">Configuración del Sistema</h3>
       <div class="config-grid">
         <div class="config-item">
-          <label class="config-label">Bloques de Horario</label>
+          <label class="config-label">Bloques de Horario Disponibles</label>
           <div class="time-slots">
             <span class="time-slot">07:00-10:00</span>
             <span class="time-slot">10:00-13:00</span>
@@ -582,7 +610,14 @@
     </div>
   </div>
 
-  <div class="grid-2">
+  <div class="tabs">
+    <div class="tab active" data-tab="asignaciones">Asignaciones</div>
+    <div class="tab" data-tab="carga-docente">Carga Docente</div>
+    <div class="tab" data-tab="resumen-materia">Resumen por Materia</div>
+    <div class="tab" data-tab="no-asignados">No Asignados</div>
+  </div>
+
+  <div class="tab-content active" id="asignaciones">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Asignaciones Realizadas</h3>
@@ -592,7 +627,9 @@
         <div id="tblCombo"></div>
       </div>
     </div>
-    
+  </div>
+  
+  <div class="tab-content" id="carga-docente">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Carga por Docente</h3>
@@ -603,8 +640,8 @@
       </div>
     </div>
   </div>
-
-  <div class="grid-2">
+  
+  <div class="tab-content" id="resumen-materia">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Resumen por Materia</h3>
@@ -614,7 +651,9 @@
         <div id="tblResumenMateria"></div>
       </div>
     </div>
-    
+  </div>
+  
+  <div class="tab-content" id="no-asignados">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">No Asignados</h3>
@@ -1223,6 +1262,24 @@ document.addEventListener('DOMContentLoaded', function() {
   updateFileStatus('fileDoc', 'statusDoc', true);
   updateFileStatus('fileEst', 'statusEst', true);
   updateFileStatus('fileMal', 'statusMal', true);
+  
+  // Configurar pestañas
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabId = tab.getAttribute('data-tab');
+      
+      // Desactivar todas las pestañas
+      tabs.forEach(t => t.classList.remove('active'));
+      tabContents.forEach(tc => tc.classList.remove('active'));
+      
+      // Activar la pestaña seleccionada
+      tab.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
   
   // Evento para el botón de procesar
   document.getElementById('btnRun').addEventListener('click', async () => {
