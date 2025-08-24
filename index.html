@@ -478,6 +478,28 @@
   .tab-content.active {
     display: block;
   }
+  
+  /* Instructions */
+  .instructions {
+    background: #f0f9ff;
+    border-left: 4px solid var(--primary);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .instructions h3 {
+    margin-bottom: 10px;
+    color: var(--primary);
+  }
+  
+  .instructions ul {
+    padding-left: 20px;
+  }
+  
+  .instructions li {
+    margin-bottom: 8px;
+  }
 </style>
 </head>
 <body>
@@ -496,12 +518,23 @@
     <p class="app-subtitle">Asignación automatizada de estudiantes a materias y docentes</p>
   </header>
 
+  <div class="instructions">
+    <h3>Instrucciones de uso:</h3>
+    <ul>
+      <li>Cargue los archivos Excel con los formatos especificados</li>
+      <li>El sistema asignará las materias según el <strong>ciclo al que va</strong> cada estudiante</li>
+      <li>Se respetará la disponibilidad de días y horas de los docentes</li>
+      <li>Máximo de materias por estudiante: 6</li>
+      <li>Horarios disponibles: 7:00-10:00, 10:00-13:00, 13:00-16:00, 16:00-19:00, 19:00-22:00</li>
+    </ul>
+  </div>
+
   <div class="card">
     <div class="alert alert-info">
       <span class="alert-icon">💡</span>
       <div>
         <strong>Nota:</strong> El sistema organizará automáticamente los horarios evitando cruces entre materias del mismo ciclo.
-        Las materias se asignarán según el ciclo actual de cada estudiante y la disponibilidad de los docentes.
+        Las materias se asignarán según el ciclo al que va cada estudiante y la disponibilidad de los docentes.
       </div>
     </div>
 
@@ -945,11 +978,12 @@ function normalizeEstudiantes(rows) {
   }
   
   const result = rows.map(r => {
-    const ciclo = Number(r["CICLO ACTUAL"] || r["CICLO"] || r["CICLO DEL ESTUDIANTE"] || 1);
+    // Usar "CICLO AL QUE VA" en lugar de "CICLO ACTUAL"
+    const ciclo = Number(r["CICLO AL QUE VA"] || r["CICLO ACTUAL"] || r["CICLO"] || 1);
     
     return {
       "ESTUDIANTE": r["ESTUDIANTE"] || r["NOMBRE"] || r["NOMBRE DEL ESTUDIANTE"] || "",
-      "CICLO": isNaN(ciclo) ? 1 : Math.max(1, Math.min(10, ciclo)), // Limitar entre 1 y 10
+      "CICLO": isNaN(ciclo) ? 1 : Math.max(1, Math.min(8, ciclo)), // Limitar entre 1 y 8
       "CARRERA": r["CARRERA"] || r["CARRERA DEL ESTUDIANTE"] || "",
       "MALLA": r["MALLA"] || ""
     };
@@ -958,7 +992,7 @@ function normalizeEstudiantes(rows) {
   console.log("Estudiantes normalizados:", result);
   
   if (result.length === 0) {
-    showError("No se encontraron datos válidos en the archivo de estudiantes.");
+    showError("No se encontraron datos válidos en el archivo de estudiantes.");
   }
   
   return result;
@@ -994,7 +1028,7 @@ function normalizeMallas(rows) {
     return {
       "MATERIA": materia,
       "CODIGO": codigo,
-      "CICLO": Math.max(1, Math.min(10, ciclo)), // Limitar entre 1 y 10
+      "CICLO": Math.max(1, Math.min(8, ciclo)), // Limitar entre 1 y 8
       "HORAS_TEORICAS": Number(r["HORAS TEÓRICAS"] || r["HORAS_TEORICAS"] || 0),
       "HORAS_PRACTICAS": Number(r["HORAS PRÁCTICAS"] || r["HORAS_PRACTICAS"] || 0)
     };
@@ -1016,11 +1050,11 @@ function construirSecciones(docentes, mallas, estudiantes) {
   const capacidadPorParalelo = parseInt(document.getElementById('capacidadParalelo').value) || 30;
   
   // Inicializar horarios ocupados por ciclo
-  for (let ciclo = 1; ciclo <= 10; ciclo++) {
+  for (let ciclo = 1; ciclo <= 8; ciclo++) {
     horariosOcupados.set(ciclo, new Map()); // Map<DIA, Set<HORA>>
   }
   
-  // Agrupar estudiantes por ciclo
+  // Agrupar estudiantes por ciclo (al que van)
   const estudiantesPorCiclo = new Map();
   for (const e of estudiantes) {
     if (!estudiantesPorCiclo.has(e.CICLO)) {
@@ -1141,7 +1175,7 @@ function asignarEstudiantes(secciones, estudiantes, mallas) {
     }
   }
   
-  // Agrupar estudiantes por ciclo
+  // Agrupar estudiantes por ciclo (al que van)
   const estudiantesPorCiclo = new Map();
   for (const e of estudiantes) {
     if (!estudiantesPorCiclo.has(e.CICLO)) {
