@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<title>Combinación Inteligente por Ciclos y Horarios</title>
+<title>Planificación de Asignación Docente</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -298,15 +298,67 @@
     font-size: 12px;
     margin: 2px;
   }
+  
+  .config-panel {
+    background: #f8fafc;
+    border: 1px solid var(--bd);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+  }
+  
+  .config-item {
+    margin-bottom: 10px;
+  }
+  
+  .config-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  
+  .config-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--bd);
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="card">
-    <h1>Combinación Inteligente por Ciclos y Horarios</h1>
+    <h1>Planificación de Asignación Docente</h1>
     
     <div class="error-box" id="errorBox">
       <strong>Error:</strong> <span id="errorMessage"></span>
+    </div>
+    
+    <div class="config-panel">
+      <h3>Configuración de Horarios</h3>
+      <div class="row">
+        <div class="config-item">
+          <span class="config-label">Bloques de Horario (3 horas)</span>
+          <div>
+            <span class="time-slot">07:00-10:00</span>
+            <span class="time-slot">10:00-13:00</span>
+            <span class="time-slot">13:00-16:00</span>
+            <span class="time-slot">16:00-19:00</span>
+            <span class="time-slot">19:00-22:00</span>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="config-item">
+          <span class="config-label">Máximo de materias por estudiante</span>
+          <input type="number" id="maxMaterias" class="config-input" value="6" min="1" max="10">
+        </div>
+        <div class="config-item">
+          <span class="config-label">Capacidad máxima por paralelo</span>
+          <input type="number" id="capacidadParalelo" class="config-input" value="30" min="10" max="50">
+        </div>
+      </div>
     </div>
     
     <div class="row">
@@ -344,7 +396,7 @@
     
     <div class="row">
       <button id="btnRun" class="primary" disabled>Procesar</button>
-      <button id="btnDown" class="secondary hidden">Descargar (.xlsx)</button>
+      <button id="btnDown" class="secondary hidden">Descargar Planificación (.xlsx)</button>
     </div>
     
     <div class="stats" id="statsContainer" style="display: none;">
@@ -367,24 +419,15 @@
     </div>
     
     <div class="info-box">
-      <strong>Nota:</strong> El sistema organizará automáticamente los horarios para evitar cruces entre materias del mismo ciclo.
+      <strong>Nota:</strong> El sistema organizará automáticamente los horarios en bloques de 3 horas para evitar cruces entre materias del mismo ciclo.
       Las materias se asignarán según el ciclo actual de cada estudiante y la disponibilidad de los docentes.
-      Los horarios se organizan en bloques de 3 horas para optimizar la asignación.
+      Cada estudiante tendrá un máximo de 6 materias asignadas.
     </div>
-    
-    <p class="muted">
-      Salidas:
-      <br>• <b>MATRIZ_SECCIONES</b> (7 columnas): NOMBRE_DOCENTE, MATERIA, CANTIDAD DE ALUMNOS ESPERADOS, DIA, HORA, Modalidad, Paralelo.
-      <br>• <b>COMBINACION</b>: las 7 anteriores + ESTUDIANTE + CICLO.
-      <br>• <b>RESUMEN_CARGA</b>: carga por docente (secciones, asignados, capacidad).
-      <br>• <b>RESUMEN_MATERIA</b>: alumnos por materia/paralelo y ocupación (%).
-      <br>• <b>NO_ASIGNADOS</b>: estudiante y materia cuando no hay cupo ni sección.
-    </p>
   </div>
 
   <div class="grid">
     <div class="card">
-      <h3>Previsualización — COMBINACION</h3>
+      <h3>Previsualización — ASIGNACIONES</h3>
       <div class="table-container">
         <div id="tblCombo"></div>
       </div>
@@ -429,10 +472,8 @@ const DAY_MAP = new Map(Object.entries({
 
 // Horarios predefinidos en bloques de 3 horas
 const HORARIOS = [
-  "07:00-10:00", "08:00-11:00", "09:00-12:00", 
-  "10:00-13:00", "11:00-14:00", "12:00-15:00",
-  "13:00-16:00", "14:00-17:00", "15:00-18:00",
-  "16:00-19:00", "17:00-20:00", "18:00-21:00", "19:00-22:00"
+  "07:00-10:00", "10:00-13:00", "13:00-16:00", 
+  "16:00-19:00", "19:00-22:00"
 ];
 
 // Utilidades mejoradas
@@ -626,8 +667,8 @@ function normalizeDocentes(rows) {
     let diasDisponibles = [];
     let horasDisponibles = [];
     
-    if (r["DIA DISPONIBLE"]) {
-      const textoDias = String(r["DIA DISPONIBLE"]).toUpperCase();
+    if (r["DIA DISPONIBLE"] || r["DIA"]) {
+      const textoDias = String(r["DIA DISPONIBLE"] || r["DIA"] || "").toUpperCase();
       if (textoDias.includes("LUNES")) diasDisponibles.push("LUNES");
       if (textoDias.includes("MARTES")) diasDisponibles.push("MARTES");
       if (textoDias.includes("MIERCOLES") || textoDias.includes("MIÉRCOLES")) diasDisponibles.push("MIERCOLES");
@@ -636,8 +677,8 @@ function normalizeDocentes(rows) {
       if (textoDias.includes("SABADO") || textoDias.includes("SÁBADO")) diasDisponibles.push("SABADO");
     }
     
-    if (r["HORA DISPONIBLE"]) {
-      const textoHoras = String(r["HORA DISPONIBLE"]).toUpperCase();
+    if (r["HORA DISPONIBLE"] || r["HORA"]) {
+      const textoHoras = String(r["HORA DISPONIBLE"] || r["HORA"] || "").toUpperCase();
       // Intentar extraer horarios específicos
       const horaMatch = textoHoras.match(/(\d{1,2}:\d{2})\s*A\s*(\d{1,2}:\d{2})/);
       if (horaMatch) {
@@ -656,7 +697,7 @@ function normalizeDocentes(rows) {
     
     return {
       "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"] || r["DOCENTE"] || "",
-      "MATERIA": r["MATERIA"] || "",
+      "MATERIA": r["MATERIA"] || r["MATERIAS"] || "",
       "CANTIDAD DE ALUMNOS ESPERADOS": Number(r["CANTIDAD DE ALUMNOS ESPERADOS"] || r["CAPACIDAD"] || r["CUPOS"] || 30) || 30,
       "DIA_DISPONIBLE": diasDisponibles,
       "HORA_DISPONIBLE": horasDisponibles,
@@ -682,12 +723,12 @@ function normalizeEstudiantes(rows) {
   }
   
   const result = rows.map(r => {
-    const ciclo = Number(r["CICLO ACTUAL"] || r["CICLO"] || 1);
+    const ciclo = Number(r["CICLO ACTUAL"] || r["CICLO"] || r["CICLO DEL ESTUDIANTE"] || 1);
     
     return {
-      "ESTUDIANTE": r["ESTUDIANTE"] || r["NOMBRE"] || "",
+      "ESTUDIANTE": r["ESTUDIANTE"] || r["NOMBRE"] || r["NOMBRE DEL ESTUDIANTE"] || "",
       "CICLO": isNaN(ciclo) ? 1 : Math.max(1, Math.min(10, ciclo)), // Limitar entre 1 y 10
-      "CARRERA": r["CARRERA"] || "",
+      "CARRERA": r["CARRERA"] || r["CARRERA DEL ESTUDIANTE"] || "",
       "MALLA": r["MALLA"] || ""
     };
   }).filter(x => x.ESTUDIANTE);
@@ -710,8 +751,8 @@ function normalizeMallas(rows) {
   
   // Extraer información de ciclos desde los códigos (ej: PP-01-CONT1 -> ciclo 1)
   const result = rows.map(r => {
-    const materia = r["MATERIA"] || "";
-    const codigo = r["CÓDIGO"] || "";
+    const materia = r["MATERIA"] || r["MATERIAS"] || "";
+    const codigo = r["CÓDIGO"] || r["CODIGO"] || r["CÓDIGO ANTHOLOGY"] || "";
     
     // Intentar extraer el ciclo del código (formato XX-XX-XXX donde el segundo XX es el ciclo)
     let ciclo = 1;
@@ -732,8 +773,8 @@ function normalizeMallas(rows) {
       "MATERIA": materia,
       "CODIGO": codigo,
       "CICLO": Math.max(1, Math.min(10, ciclo)), // Limitar entre 1 y 10
-      "HORAS_TEORICAS": Number(r["HORAS TEÓRICAS"] || 0),
-      "HORAS_PRACTICAS": Number(r["HORAS PRÁCTICAS"] || 0)
+      "HORAS_TEORICAS": Number(r["HORAS TEÓRICAS"] || r["HORAS_TEORICAS"] || 0),
+      "HORAS_PRACTICAS": Number(r["HORAS PRÁCTICAS"] || r["HORAS_PRACTICAS"] || 0)
     };
   }).filter(x => x.MATERIA);
   
@@ -750,6 +791,7 @@ function normalizeMallas(rows) {
 function construirSecciones(docentes, mallas, estudiantes) {
   const secciones = [];
   const horariosOcupados = new Map(); // Mapa para controlar horarios ocupados por ciclo
+  const capacidadPorParalelo = parseInt(document.getElementById('capacidadParalelo').value) || 30;
   
   // Inicializar horarios ocupados por ciclo
   for (let ciclo = 1; ciclo <= 10; ciclo++) {
@@ -784,8 +826,7 @@ function construirSecciones(docentes, mallas, estudiantes) {
       continue;
     }
     
-    // Calcular número de paralelos necesarios (máximo 30 estudiantes por paralelo)
-    const capacidadPorParalelo = 30;
+    // Calcular número de paralelos necesarios
     const numParalelos = Math.ceil(numEstudiantes / capacidadPorParalelo);
     
     for (let i = 0; i < numParalelos; i++) {
@@ -857,6 +898,7 @@ function asignarEstudiantes(secciones, estudiantes, mallas) {
   const idxPorMateria = agruparPorMateria(secciones);
   const asignaciones = [];
   const noAsig = [];
+  const maxMaterias = parseInt(document.getElementById('maxMaterias').value) || 6;
   
   // Índice para carga docente
   const kCarga = (d, m, par, h) => `${d}¦${m}¦${par || ''}¦${h}`;
@@ -892,7 +934,15 @@ function asignarEstudiantes(secciones, estudiantes, mallas) {
     const materiasCiclo = mallas.filter(m => m.CICLO === ciclo).map(m => m.MATERIA);
     
     for (const e of estudiantesCiclo) {
+      let materiasAsignadas = 0;
+      
       for (const mat of materiasCiclo) {
+        // Verificar si ya alcanzó el máximo de materias
+        if (materiasAsignadas >= maxMaterias) {
+          noAsig.push({ ESTUDIANTE: e.ESTUDIANTE, MATERIA: mat, MOTIVO: "Límite de materias alcanzado", CICLO: ciclo });
+          continue;
+        }
+        
         const bucket = (idxPorMateria.get(mat) || []).slice();
         
         if (!bucket.length) {
@@ -916,6 +966,7 @@ function asignarEstudiantes(secciones, estudiantes, mallas) {
           
           s.ASIGNADOS = (s.ASIGNADOS || 0) + 1;
           placed = true;
+          materiasAsignadas++;
           
           asignaciones.push({
             ESTUDIANTE: e.ESTUDIANTE,
@@ -1116,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', function() {
       XLSX.utils.json_to_sheet(OUT_NO), 
       'NO_ASIGNADOS');
     
-    XLSX.writeFile(wb, 'Combinacion_Cupos_Paralelos.xlsx');
+    XLSX.writeFile(wb, 'Planificacion_Asignacion_Docente.xlsx');
   });
 });
 </script>
