@@ -1153,32 +1153,66 @@ function normalizeMallas(rows) {
 // ===================== Lógica de secciones y asignación =====================
 function construirSecciones(docentes, mallas, estudiantes) {
   const secciones = [];
-  const horariosOcupados = new Map(); // Mapa para controlar horarios ocupados por ciclo
+  const horariosOcupados = new Map(); // Map<ciclo, Map<dia, Set<hora>>>
   const capacidadPorParalelo = parseInt(document.getElementById('capacidadParalelo').value) || 25;
+
+  // Inicializar estructura de horarios por ciclo
   for (let ciclo = 1; ciclo <= 8; ciclo++) {
-    horariosOcupados.set(ciclo, new Map()); // Map<DIA, Set<HORA>>
+    horariosOcupados.set(ciclo, new Map());
   }
+
+  // Índices auxiliares
+  const seccionesPorDocente = new Map();            // Map<docente, conteoDeSecciones>
+  const correlativoParalelo = new Map();            // Map<`${materia}¦${ciclo}`, cantidadGenerada>
+
+  // Agrupar estudiantes por ciclo
   const estudiantesPorCiclo = new Map();
   for (const e of estudiantes) {
-    if (!estudiantesPorCiclo.has(e.CICLO)) {
-      estudiantesPorCiclo.set(e.CICLO, []);
-    }
+    if (!estudiantesPorCiclo.has(e.CICLO)) estudiantesPorCiclo.set(e.CICLO, []);
     estudiantesPorCiclo.get(e.CICLO).push(e);
   }
+
   for (const materia of mallas) {
     const ciclo = materia.CICLO;
     const estudiantesCiclo = estudiantesPorCiclo.get(ciclo) || [];
     const numEstudiantes = estudiantesCiclo.length;
-    if (numEstudiantes === 0) { console.log(`No hay estudiantes en el ciclo ${ciclo} para la materia ${materia.MATERIA}`); continue; }
+    if (numEstudiantes === 0) continue;
+
     const docentesMateria = docentes.filter(d => d.MATERIA === materia.MATERIA);
-    if (docentesMateria.length === 0) { console.warn(`No hay docentes para la materia: ${materia.MATERIA}`); continue; }
+    if (docentesMateria.length === 0) { 
+      console.warn(`Sin docentes para ${materia.MATERIA}`); 
+      continue; 
+    }
+
     const numParalelos = Math.ceil(numEstudiantes / capacidadPorParalelo);
+
+    // Correlativo de paralelos por materia + ciclo (evita repetir "A")
+    const kMat = `${materia.MATERIA}¦${ciclo}`;
+    const baseIndex = correlativoParalelo.get(kMat) || 0;
+
     for (let i = 0; i < numParalelos; i++) {
-      const paralelo = String.fromCharCode(65 + i); // A, B, C, ...
-      const docente = docentesMateria[i % docentesMateria.length];
+      // Elegir docente con menos de 5 secciones
+      let docente = null;
+      for (let j = 0; j < docentesMateria.length; j++) {
+        const cand = docentesMateria[(i + j) % docentesMateria.length];
+        const cnt = seccionesPorDocente.get(cand.NOMBRE_DOCENTE) || 0;
+        if (cnt < 5) { docente = cand; break; }
+      }
+      if (!docente) {
+        console.warn(`Todos los docentes alcanzaron 5 materias para ${materia.MATERIA}. Se omite creación de sección.`);
+        continue;
+      }
+
+      // Encontrar horario libre para ese docente en el ciclo
       const horario = encontrarHorarioDisponible(horariosOcupados.get(ciclo), docente);
-      if (!horario) { console.warn(`No se encontró horario disponible para ${materia.MATERIA} - Ciclo ${ciclo}`); continue; }
+      if (!horario) {
+        console.warn(`Sin horario disponible para ${materia.MATERIA} - Ciclo ${ciclo} (docente: ${docente.NOMBRE_DOCENTE})`);
+        continue;
+      }
+
       const capacidad = Math.min(capacidadPorParalelo, Math.ceil(numEstudiantes / numParalelos));
+      const paralelo = String.fromCharCode(65 + baseIndex + i); // A, B, C, ...
+
       secciones.push({
         MATERIA: materia.MATERIA,
         CODIGO: materia.CODIGO,
@@ -1202,11 +1236,22 @@ function construirSecciones(docentes, mallas, estudiantes) {
         "CARRERAS QUE COMPARTEN": materia["CARRERAS QUE COMPARTEN"],
         "CÓDIGO ANTHOLOGY": materia.CODIGO
       });
+
+      // Actualizar conteo por docente
+      seccionesPorDocente.set(
+        docente.NOMBRE_DOCENTE, 
+        (seccionesPorDocente.get(docente.NOMBRE_DOCENTE) || 0) + 1
+      );
     }
+
+    // Avanzar el correlativo global de paralelos para esa materia+ciclo
+    correlativoParalelo.set(kMat, baseIndex + numParalelos);
   }
+
   console.log("Secciones construidas:", secciones);
   return secciones;
 }
+
 
 // Encontrar horario disponible para un docente que no esté ocupado en el mismo ciclo
 function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
