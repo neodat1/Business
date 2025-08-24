@@ -2,94 +2,149 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<title>Planificación de Asignación Docente</title>
+<title>Sistema de Planificación Académica</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root {
-    --bd: #e2e8f0;
-    --bg: #f7fafc;
-    --pri: #2563eb;
-    --pri-hover: #1d4ed8;
-    --sec: #64748b;
-    --tx: #0f172a;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #dbeafe;
+    --secondary: #64748b;
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
+    --dark: #0f172a;
+    --light: #f8fafc;
+    --border: #e2e8f0;
     --radius: 12px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
   
   body {
-    font-family: system-ui, Segoe UI, Roboto, Inter, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--tx);
-    margin: 0;
-    line-height: 1.5;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    background: #f1f5f9;
+    color: var(--dark);
+    line-height: 1.6;
+    padding: 0;
   }
   
-  .wrap {
-    max-width: 1200px;
-    margin: auto;
+  .app-container {
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 20px;
   }
   
-  .card {
-    background: #fff;
-    border: 1px solid var(--bd);
+  /* Header Styles */
+  .app-header {
+    background: white;
     border-radius: var(--radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,.04);
-    padding: 20px;
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 24px;
+    border-left: 4px solid var(--primary);
+  }
+  
+  .app-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .app-subtitle {
+    color: var(--secondary);
+    font-size: 16px;
     margin-bottom: 20px;
   }
   
-  h1 {
-    margin: 0 0 15px;
-    font-size: 24px;
-    color: var(--pri);
+  /* Card Styles */
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 24px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   
-  h2 {
-    font-size: 18px;
-    margin: 0 0 12px;
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
   
-  h3 {
-    font-size: 16px;
-    margin: 0 0 10px;
-  }
-  
-  .row {
+  .card-header {
     display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    margin: 15px 0;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--dark);
+  }
+  
+  /* File Upload Styles */
+  .file-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
   }
   
   .file-input-container {
-    flex: 1;
-    min-width: 250px;
+    position: relative;
   }
   
   .file-label {
     display: block;
     font-weight: 600;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    color: var(--dark);
+  }
+  
+  .file-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--light);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .file-input:hover {
+    border-color: var(--primary);
+    background: #f0f7ff;
   }
   
   .file-status {
-    font-size: 13px;
-    margin-top: 5px;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 14px;
   }
   
   .status-icon {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    display: inline-block;
+    flex-shrink: 0;
   }
   
   .status-pending {
@@ -100,156 +155,277 @@
     background-color: var(--success);
   }
   
-  input[type=file] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--bd);
-    border-radius: 10px;
-    background: #fff;
-    box-sizing: border-box;
-  }
-  
-  button {
-    padding: 10px 16px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s ease;
+  /* Button Styles */
+  .btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
   
-  button.primary {
-    background: var(--pri);
-    color: #fff;
+  .btn-primary {
+    background: var(--primary);
+    color: white;
   }
   
-  button.primary:hover {
-    background: var(--pri-hover);
+  .btn-primary:hover {
+    background: var(--primary-dark);
   }
   
-  button.secondary {
-    background: #fff;
-    color: var(--tx);
-    border: 1px solid var(--bd);
+  .btn-secondary {
+    background: white;
+    color: var(--dark);
+    border: 1px solid var(--border);
   }
   
-  button.secondary:hover {
-    background: #f8fafc;
+  .btn-secondary:hover {
+    background: var(--light);
   }
   
-  button:disabled {
+  .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
   
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  
+  /* Progress Bar */
   .progress-container {
     width: 100%;
     height: 8px;
-    background-color: #e2e8f0;
+    background-color: var(--border);
     border-radius: 4px;
     overflow: hidden;
-    margin: 10px 0;
+    margin: 16px 0;
     display: none;
   }
   
   .progress-bar {
     height: 100%;
-    background-color: var(--pri);
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
     width: 0%;
-    transition: width 0.3s ease;
+    transition: width 0.4s ease;
+    border-radius: 4px;
   }
   
-  .stats {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin: 15px 0;
+  /* Stats Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
   }
   
   .stat-card {
-    background: #f8fafc;
-    border: 1px solid var(--bd);
-    border-radius: 8px;
-    padding: 12px;
-    min-width: 180px;
+    background: var(--light);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    border-left: 4px solid var(--primary);
   }
   
   .stat-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--pri);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
   }
   
   .stat-label {
     font-size: 14px;
-    color: var(--sec);
+    color: var(--secondary);
   }
   
-  .muted {
-    color: var(--sec);
+  /* Configuration Panel */
+  .config-panel {
+    background: var(--light);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 20px 0;
+  }
+  
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+  }
+  
+  .config-item {
+    margin-bottom: 12px;
+  }
+  
+  .config-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--dark);
+  }
+  
+  .config-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+  
+  .config-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .time-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  
+  .time-slot {
+    padding: 6px 12px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  /* Table Styles */
+  .table-container {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 16px 0;
+    max-height: 400px;
+    overflow: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
     font-size: 14px;
   }
   
-  .hidden {
-    display: none;
+  th {
+    background: #f8fafc;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--dark);
+    position: sticky;
+    top: 0;
+    border-bottom: 2px solid var(--border);
   }
   
-  .grid {
+  td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  tr:hover {
+    background: #f1f5f9;
+  }
+  
+  /* Alert Styles */
+  .alert {
+    padding: 16px;
+    border-radius: var(--radius);
+    margin: 16px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .alert-error {
+    background: #fef2f2;
+    color: var(--danger);
+    border-left: 4px solid var(--danger);
+  }
+  
+  .alert-info {
+    background: #eff6ff;
+    color: var(--primary);
+    border-left: 4px solid var(--primary);
+  }
+  
+  .alert-success {
+    background: #f0fdf4;
+    color: var(--success);
+    border-left: 4px solid var(--success);
+  }
+  
+  .alert-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .badge-primary {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+  
+  .badge-success {
+    background: #d1fae5;
+    color: var(--success);
+  }
+  
+  .badge-warning {
+    background: #fef3c7;
+    color: var(--warning);
+  }
+  
+  .badge-danger {
+    background: #fee2e2;
+    color: var(--danger);
+  }
+  
+  /* Grid Layout */
+  .grid-2 {
     display: grid;
-    gap: 20px;
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
   
-  @media (min-width: 1000px) {
-    .grid {
+  @media (min-width: 992px) {
+    .grid-2 {
       grid-template-columns: 1fr 1fr;
     }
   }
   
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 12px;
+  /* Utilities */
+  .text-muted {
+    color: var(--secondary);
     font-size: 14px;
   }
   
-  th, td {
-    border: 1px solid var(--bd);
-    padding: 8px;
-    vertical-align: top;
+  .text-center {
+    text-align: center;
   }
   
-  th {
-    background: #f1f5f9;
-    text-align: left;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-  }
-  
-  .table-container {
-    max-height: 400px;
-    overflow: auto;
-    margin: 10px 0;
-    border: 1px solid var(--bd);
-    border-radius: 8px;
-  }
-  
-  .warning-text {
-    color: var(--warning);
-    font-weight: 600;
-  }
-  
-  .error-text {
-    color: var(--danger);
-    font-weight: 600;
-  }
-  
-  .success-text {
-    color: var(--success);
-    font-weight: 600;
+  .hidden {
+    display: none;
   }
   
   .loading {
@@ -257,90 +433,63 @@
     pointer-events: none;
   }
   
-  .summary-row {
-    background-color: #f8fafc;
-    font-weight: 600;
+  .mt-2 {
+    margin-top: 16px;
   }
   
-  .info-box {
-    background-color: #e0f2fe;
-    border-left: 4px solid var(--pri);
-    padding: 12px;
-    margin: 12px 0;
-    border-radius: 4px;
+  .mb-2 {
+    margin-bottom: 16px;
   }
   
-  .error-box {
-    background-color: #fee2e2;
-    border-left: 4px solid var(--danger);
-    padding: 12px;
-    margin: 12px 0;
-    border-radius: 4px;
-    display: none;
+  /* Animation */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   
-  .cycle-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    background-color: #dbeafe;
-    color: var(--pri);
-    font-size: 12px;
-    font-weight: 600;
-    margin-right: 5px;
-  }
-  
-  .time-slot {
-    display: inline-block;
-    padding: 2px 6px;
-    background: #f1f5f9;
-    border-radius: 4px;
-    font-size: 12px;
-    margin: 2px;
-  }
-  
-  .config-panel {
-    background: #f8fafc;
-    border: 1px solid var(--bd);
-    border-radius: 8px;
-    padding: 15px;
-    margin: 15px 0;
-  }
-  
-  .config-item {
-    margin-bottom: 10px;
-  }
-  
-  .config-label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 5px;
-  }
-  
-  .config-input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--bd);
-    border-radius: 6px;
-    box-sizing: border-box;
+  .fade-in {
+    animation: fadeIn 0.3s ease;
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app-container">
+  <header class="app-header">
+    <h1 class="app-title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+      Sistema de Planificación Académica
+    </h1>
+    <p class="app-subtitle">Asignación automatizada de estudiantes a materias y docentes</p>
+  </header>
+
   <div class="card">
-    <h1>Planificación de Asignación Docente</h1>
-    
-    <div class="error-box" id="errorBox">
-      <strong>Error:</strong> <span id="errorMessage"></span>
+    <div class="alert alert-info">
+      <span class="alert-icon">💡</span>
+      <div>
+        <strong>Nota:</strong> El sistema organizará automáticamente los horarios en bloques de 3 horas para evitar cruces entre materias del mismo ciclo.
+        Las materias se asignarán según el ciclo actual de cada estudiante y la disponibilidad de los docentes.
+      </div>
     </div>
-    
+
+    <div class="alert alert-error hidden" id="errorBox">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <strong>Error:</strong> <span id="errorMessage"></span>
+      </div>
+    </div>
+
     <div class="config-panel">
-      <h3>Configuración de Horarios</h3>
-      <div class="row">
+      <h3 class="card-title">Configuración del Sistema</h3>
+      <div class="config-grid">
         <div class="config-item">
-          <span class="config-label">Bloques de Horario (3 horas)</span>
-          <div>
+          <label class="config-label">Bloques de Horario</label>
+          <div class="time-slots">
             <span class="time-slot">07:00-10:00</span>
             <span class="time-slot">10:00-13:00</span>
             <span class="time-slot">13:00-16:00</span>
@@ -348,23 +497,23 @@
             <span class="time-slot">19:00-22:00</span>
           </div>
         </div>
-      </div>
-      <div class="row">
+        
         <div class="config-item">
-          <span class="config-label">Máximo de materias por estudiante</span>
+          <label class="config-label" for="maxMaterias">Máximo de materias por estudiante</label>
           <input type="number" id="maxMaterias" class="config-input" value="6" min="1" max="10">
         </div>
+        
         <div class="config-item">
-          <span class="config-label">Capacidad máxima por paralelo</span>
+          <label class="config-label" for="capacidadParalelo">Capacidad máxima por paralelo</label>
           <input type="number" id="capacidadParalelo" class="config-input" value="30" min="10" max="50">
         </div>
       </div>
     </div>
-    
-    <div class="row">
+
+    <div class="file-section">
       <div class="file-input-container">
-        <span class="file-label">DOCENTES.xlsx</span>
-        <input id="fileDoc" type="file" accept=".xlsx,.xls">
+        <label class="file-label">DOCENTES.xlsx</label>
+        <input id="fileDoc" type="file" accept=".xlsx,.xls" class="file-input">
         <div class="file-status" id="statusDoc">
           <span class="status-icon status-pending"></span>
           <span>Esperando archivo...</span>
@@ -372,8 +521,8 @@
       </div>
       
       <div class="file-input-container">
-        <span class="file-label">ESTUDIANTES.xlsx</span>
-        <input id="fileEst" type="file" accept=".xlsx,.xls">
+        <label class="file-label">ESTUDIANTES.xlsx</label>
+        <input id="fileEst" type="file" accept=".xlsx,.xls" class="file-input">
         <div class="file-status" id="statusEst">
           <span class="status-icon status-pending"></span>
           <span>Esperando archivo...</span>
@@ -381,25 +530,39 @@
       </div>
       
       <div class="file-input-container">
-        <span class="file-label">MALLA.xlsx</span>
-        <input id="fileMal" type="file" accept=".xlsx,.xls">
+        <label class="file-label">MALLA.xlsx</label>
+        <input id="fileMal" type="file" accept=".xlsx,.xls" class="file-input">
         <div class="file-status" id="statusMal">
           <span class="status-icon status-pending"></span>
           <span>Esperando archivo...</span>
         </div>
       </div>
     </div>
-    
+
     <div class="progress-container" id="progressContainer">
       <div class="progress-bar" id="progressBar"></div>
     </div>
-    
-    <div class="row">
-      <button id="btnRun" class="primary" disabled>Procesar</button>
-      <button id="btnDown" class="secondary hidden">Descargar Planificación (.xlsx)</button>
+
+    <div class="btn-group">
+      <button id="btnRun" class="btn btn-primary" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Procesar Asignación
+      </button>
+      <button id="btnDown" class="btn btn-secondary hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Descargar Planificación
+      </button>
     </div>
-    
-    <div class="stats" id="statsContainer" style="display: none;">
+
+    <div class="stats-grid" id="statsContainer" style="display: none;">
       <div class="stat-card">
         <div class="stat-value" id="statSecciones">0</div>
         <div class="stat-label">Secciones creadas</div>
@@ -417,38 +580,46 @@
         <div class="stat-label">Ocupación promedio</div>
       </div>
     </div>
-    
-    <div class="info-box">
-      <strong>Nota:</strong> El sistema organizará automáticamente los horarios en bloques de 3 horas para evitar cruces entre materias del mismo ciclo.
-      Las materias se asignarán según el ciclo actual de cada estudiante y la disponibilidad de los docentes.
-      Cada estudiante tendrá un máximo de 6 materias asignadas.
-    </div>
   </div>
 
-  <div class="grid">
+  <div class="grid-2">
     <div class="card">
-      <h3>Previsualización — ASIGNACIONES</h3>
+      <div class="card-header">
+        <h3 class="card-title">Asignaciones Realizadas</h3>
+        <span class="badge badge-primary" id="asignacionesCount">0</span>
+      </div>
       <div class="table-container">
         <div id="tblCombo"></div>
       </div>
     </div>
+    
     <div class="card">
-      <h3>Resumen — Carga por Docente</h3>
+      <div class="card-header">
+        <h3 class="card-title">Carga por Docente</h3>
+        <span class="badge badge-primary" id="docentesCount">0</span>
+      </div>
       <div class="table-container">
         <div id="tblCarga"></div>
       </div>
     </div>
   </div>
 
-  <div class="grid">
+  <div class="grid-2">
     <div class="card">
-      <h3>Resumen por Materia</h3>
+      <div class="card-header">
+        <h3 class="card-title">Resumen por Materia</h3>
+        <span class="badge badge-primary" id="materiasCount">0</span>
+      </div>
       <div class="table-container">
         <div id="tblResumenMateria"></div>
       </div>
     </div>
+    
     <div class="card">
-      <h3>No Asignados <span id="noAsignadosCount" class="error-text"></span></h3>
+      <div class="card-header">
+        <h3 class="card-title">No Asignados</h3>
+        <span class="badge badge-danger" id="noAsignadosCount">0</span>
+      </div>
       <div class="table-container">
         <div id="tblNo"></div>
       </div>
@@ -457,7 +628,7 @@
 </div>
 
 <script>
-// ===================== Utilidades generales =====================
+// ===================== Constantes y Utilidades =====================
 const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
 const COMBO9  = [...TARGET7,"ESTUDIANTE","CICLO"];
 const DAY_MAP = new Map(Object.entries({
@@ -499,10 +670,24 @@ function showError(message) {
   const errorBox = document.getElementById('errorBox');
   const errorMessage = document.getElementById('errorMessage');
   errorMessage.textContent = message;
-  errorBox.style.display = 'block';
+  errorBox.classList.remove('hidden');
   setTimeout(() => {
-    errorBox.style.display = 'none';
+    errorBox.classList.add('hidden');
   }, 8000);
+}
+
+// Función para mostrar éxito
+function showSuccess(message) {
+  const alertBox = document.createElement('div');
+  alertBox.className = 'alert alert-success fade-in';
+  alertBox.innerHTML = `
+    <span class="alert-icon">✅</span>
+    <div>${message}</div>
+  `;
+  document.querySelector('.card').prepend(alertBox);
+  setTimeout(() => {
+    alertBox.remove();
+  }, 5000);
 }
 
 // Función para actualizar la barra de progreso
@@ -516,10 +701,16 @@ function updateProgress(percent) {
 
 // Función para mostrar estadísticas
 function updateStats(secciones, asignaciones, noAsig, resumenMateria) {
-  document.getElementById('statsContainer').style.display = 'flex';
+  document.getElementById('statsContainer').style.display = 'grid';
   document.getElementById('statSecciones').textContent = secciones.length;
   document.getElementById('statAsignaciones').textContent = asignaciones.length;
   document.getElementById('statNoAsignados').textContent = noAsig.length;
+  
+  // Actualizar contadores en los headers
+  document.getElementById('asignacionesCount').textContent = asignaciones.length;
+  document.getElementById('docentesCount').textContent = new Set(asignaciones.map(a => a.NOMBRE_DOCENTE)).size;
+  document.getElementById('materiasCount').textContent = new Set(asignaciones.map(a => a.MATERIA)).size;
+  document.getElementById('noAsignadosCount').textContent = noAsig.length;
   
   // Calcular ocupación promedio
   let totalCap = 0;
@@ -532,14 +723,6 @@ function updateStats(secciones, asignaciones, noAsig, resumenMateria) {
   
   const ocupacionPromedio = totalCap > 0 ? Math.round((totalAsig / totalCap) * 100) : 0;
   document.getElementById('statOcupacion').textContent = ocupacionPromedio + '%';
-  
-  // Actualizar contador de no asignados
-  const noAsignadosCount = document.getElementById('noAsignadosCount');
-  if (noAsig.length > 0) {
-    noAsignadosCount.textContent = `(${noAsig.length})`;
-  } else {
-    noAsignadosCount.textContent = '';
-  }
 }
 
 // Función para validar archivos
@@ -572,9 +755,9 @@ function updateFileStatus(inputId, statusId, isRequired) {
 }
 
 // Función para renderizar tablas con mejoras
-function renderTable(el, headers, rows, maxRows = 200) {
+function renderTable(el, headers, rows, maxRows = 100) {
   if (!rows || !rows.length) {
-    el.innerHTML = '<p class="muted">Sin datos.</p>';
+    el.innerHTML = '<p class="text-muted text-center">No hay datos para mostrar.</p>';
     return;
   }
   
@@ -597,7 +780,7 @@ function renderTable(el, headers, rows, maxRows = 200) {
   html += `</tbody></table>`;
   
   if (hasMore) {
-    html += `<p class="muted">Mostrando ${maxRows} de ${rows.length} registros. Descargue el archivo para ver todos.</p>`;
+    html += `<p class="text-muted text-center">Mostrando ${maxRows} de ${rows.length} registros. Descargue el archivo para ver todos.</p>`;
   }
   
   el.innerHTML = html;
@@ -736,7 +919,7 @@ function normalizeEstudiantes(rows) {
   console.log("Estudiantes normalizados:", result);
   
   if (result.length === 0) {
-    showError("No se encontraron datos válidos en el archivo de estudiantes.");
+    showError("No se encontraron datos válidos en the archivo de estudiantes.");
   }
   
   return result;
@@ -1133,6 +1316,7 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         document.getElementById('progressContainer').style.display = 'none';
         document.body.classList.remove('loading');
+        showSuccess(`Procesamiento completado. Se realizaron ${OUT_COMB.length} asignaciones.`);
       }, 1000);
       
     } catch (error) {
@@ -1168,6 +1352,7 @@ document.addEventListener('DOMContentLoaded', function() {
       'NO_ASIGNADOS');
     
     XLSX.writeFile(wb, 'Planificacion_Asignacion_Docente.xlsx');
+    showSuccess('Archivo descargado correctamente.');
   });
 });
 </script>
