@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8"/>
 <title>Sistema de Planificación Académica</title>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<meta name="viewport" 
+content="width=device-width,initial-scale=1"/>
+<script 
+src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root {
     --primary: #2563eb;
@@ -18,7 +20,8 @@
     --light: #f8fafc;
     --border: #e2e8f0;
     --radius: 12px;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 
+0, 0, 0.06);
   }
   
   * {
@@ -79,7 +82,8 @@
   
   .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px 
+rgba(0, 0, 0, 0.05);
   }
   
   .card-header {
@@ -213,7 +217,8 @@
   
   .progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    background: linear-gradient(90deg, var(--primary), 
+var(--primary-light));
     width: 0%;
     transition: width 0.4s ease;
     border-radius: 4px;
@@ -551,8 +556,11 @@
 <div class="app-container">
   <header class="app-header">
     <h1 class="app-title">
-      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" 
+viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 
+2-2V8z"></path>
         <polyline points="14 2 14 8 20 8"></polyline>
         <line x1="16" y1="13" x2="8" y2="13"></line>
         <line x1="16" y1="13" x2="8" y2="17"></line>
@@ -560,18 +568,23 @@
       </svg>
       Sistema de Planificación Académica
     </h1>
-    <p class="app-subtitle">Asignación automatizada de estudiantes a materias y docentes</p>
+    <p class="app-subtitle">Asignación automatizada de estudiantes
+ a materias y docentes</p>
   </header>
 
   <div class="instructions">
     <h3>Instrucciones de uso:</h3>
     <ul>
-      <li>Cargue los archivos Excel con los formatos especificados</li>
-      <li>El sistema asignará las materias según el <strong>ciclo al que va</strong> cada estudiante</li>
-      <li>Se respetará la disponibilidad de días y horas de los docentes</li>
+      <li>Cargue los archivos Excel con los formatos 
+especificados</li>
+      <li>El sistema asignará las materias según el 
+<strong>ciclo al que va</strong> cada estudiante</li>
+      <li>Se respetará la disponibilidad de días y horas de los 
+docentes</li>
       <li>Máximo de materias por estudiante: 6</li>
       <li>Máximo de estudiantes por paralelo: 25</li>
-      <li>Horarios disponibles: 7:00-10:00, 10:00-13:00, 13:00-16:00, 16:00-19:00, 19:00-22:00</li>
+      <li>Horarios disponibles: 7:00-10:00, 10:00-13:00, 
+13:00-16:00, 16:00-19:00, 19:00-22:00</li>
     </ul>
   </div>
 
@@ -579,15 +592,19 @@
     <div class="alert alert-info">
       <span class="alert-icon">💡</span>
       <div>
-        <strong>Nota:</strong> El sistema organizará automáticamente los horarios evitando cruces entre materias del mismo ciclo.
-        Las materias se asignarán según el ciclo al que va cada estudiante y la disponibilidad de los docentes.
+        <strong>Nota:</strong> El sistema organizará 
+automáticamente los horarios evitando cruces entre materias del mismo 
+ciclo.
+        Las materias se asignarán según el ciclo al que va cada 
+estudiante y la disponibilidad de los docentes.
       </div>
     </div>
 
     <div class="alert alert-error hidden" id="errorBox">
       <span class="alert-icon">⚠️</span>
       <div>
-        <strong>Error:</strong> <span id="errorMessage"></span>
+        <strong>Error:</strong> <span 
+id="errorMessage"></span>
       </div>
     </div>
 
@@ -595,7 +612,8 @@
       <h3 class="card-title">Configuración del Sistema</h3>
       <div class="config-grid">
         <div class="config-item">
-          <label class="config-label">Bloques de Horario Disponibles</label>
+          <label class="config-label">Bloques de Horario 
+Disponibles</label>
           <div class="time-slots">
             <span class="time-slot">07:00-10:00</span>
             <span class="time-slot">10:00-13:00</span>
@@ -606,13 +624,17 @@
         </div>
         
         <div class="config-item">
-          <label class="config-label" for="maxMaterias">Máximo de materias por estudiante</label>
-          <input type="number" id="maxMaterias" class="config-input" value="6" min="1" max="10">
+          <label class="config-label" for="maxMaterias">Máximo de 
+materias por estudiante</label>
+          <input type="number" id="maxMaterias" class="config-input" 
+value="6" min="1" max="10">
         </div>
         
         <div class="config-item">
-          <label class="config-label" for="capacidadParalelo">Capacidad máxima por paralelo</label>
-          <input type="number" id="capacidadParalelo" class="config-input" value="25" min="10" max="25">
+          <label class="config-label" 
+for="capacidadParalelo">Capacidad máxima por paralelo</label>
+          <input type="number" id="capacidadParalelo" 
+class="config-input" value="25" min="10" max="25">
         </div>
       </div>
     </div>
@@ -620,7 +642,8 @@
     <div class="file-section">
       <div class="file-input-container">
         <label class="file-label">DOCENTES.xlsx</label>
-        <input id="fileDoc" type="file" accept=".xlsx,.xls" class="file-input">
+        <input id="fileDoc" type="file" accept=".xlsx,.xls" 
+class="file-input">
         <div class="file-status" id="statusDoc">
           <span class="status-icon status-pending"></span>
           <span>Esperando archivo...</span>
@@ -629,7 +652,8 @@
       
       <div class="file-input-container">
         <label class="file-label">ESTUDIANTES.xlsx</label>
-        <input id="fileEst" type="file" accept=".xlsx,.xls" class="file-input">
+        <input id="fileEst" type="file" accept=".xlsx,.xls" 
+class="file-input">
         <div class="file-status" id="statusEst">
           <span class="status-icon status-pending"></span>
           <span>Esperando archivo...</span>
@@ -638,7 +662,8 @@
       
       <div class="file-input-container">
         <label class="file-label">MALLA.xlsx</label>
-        <input id="fileMal" type="file" accept=".xlsx,.xls" class="file-input">
+        <input id="fileMal" type="file" accept=".xlsx,.xls" 
+class="file-input">
         <div class="file-status" id="statusMal">
           <span class="status-icon status-pending"></span>
           <span>Esperando archivo...</span>
@@ -652,16 +677,22 @@
 
     <div class="btn-group">
       <button id="btnRun" class="btn btn-primary" disabled>
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" 
+height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 
+1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
         Procesar Asignación
       </button>
       <button id="btnDown" class="btn btn-secondary hidden">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" 
+height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 
+1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
@@ -669,18 +700,22 @@
       </button>
     </div>
 
-    <div class="stats-grid" id="statsContainer" style="display: none;">
+    <div class="stats-grid" id="statsContainer" style="display: 
+none;">
       <div class="stat-card">
         <div class="stat-value" id="statSecciones">0</div>
         <div class="stat-label">Secciones creadas</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value" id="statAsignaciones">0</div>
-        <div class="stat-label">Asignaciones realizadas</div>
+        <div class="stat-value" 
+id="statAsignaciones">0</div>
+        <div class="stat-label">Asignaciones 
+realizadas</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statNoAsignados">0</div>
-        <div class="stat-label">Estudiantes no asignados</div>
+        <div class="stat-label">Estudiantes no 
+asignados</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statOcupacion">0%</div>
@@ -690,18 +725,24 @@
   </div>
 
   <div class="tabs">
-    <div class="tab active" data-tab="asignaciones">Asignaciones</div>
-    <div class="tab" data-tab="carga-docente">Carga Docente</div>
-    <div class="tab" data-tab="resumen-materia">Resumen por Materia</div>
-    <div class="tab" data-tab="no-asignados">No Asignados</div>
-    <div class="tab" data-tab="matriz-completa">Matriz Completa</div>
+    <div class="tab active" 
+data-tab="asignaciones">Asignaciones</div>
+    <div class="tab" data-tab="carga-docente">Carga 
+Docente</div>
+    <div class="tab" data-tab="resumen-materia">Resumen por 
+Materia</div>
+    <div class="tab" data-tab="no-asignados">No 
+Asignados</div>
+    <div class="tab" data-tab="matriz-completa">Matriz 
+Completa</div>
   </div>
 
   <div class="tab-content active" id="asignaciones">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Asignaciones Realizadas</h3>
-        <span class="badge badge-primary" id="asignacionesCount">0</span>
+        <span class="badge badge-primary" 
+id="asignacionesCount">0</span>
       </div>
       <div class="table-container">
         <div id="tblCombo"></div>
@@ -713,7 +754,8 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Carga por Docente</h3>
-        <span class="badge badge-primary" id="docentesCount">0</span>
+        <span class="badge badge-primary" 
+id="docentesCount">0</span>
       </div>
       <div class="table-container">
         <div id="tblCarga"></div>
@@ -725,7 +767,8 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Resumen por Materia</h3>
-        <span class="badge badge-primary" id="materiasCount">0</span>
+        <span class="badge badge-primary" 
+id="materiasCount">0</span>
       </div>
       <div class="table-container">
         <div id="tblResumenMateria"></div>
@@ -737,7 +780,8 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">No Asignados</h3>
-        <span class="badge badge-danger" id="noAsignadosCount">0</span>
+        <span class="badge badge-danger" 
+id="noAsignadosCount">0</span>
       </div>
       <div class="table-container">
         <div id="tblNo"></div>
@@ -748,8 +792,10 @@
   <div class="tab-content" id="matriz-completa">
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">Matriz Completa de Asignación</h3>
-        <span class="badge badge-primary" id="matrizCount">0</span>
+        <h3 class="card-title">Matriz Completa de 
+Asignación</h3>
+        <span class="badge badge-primary" 
+id="matrizCount">0</span>
       </div>
       <div class="matrix-container">
         <table class="matrix-table" id="tblMatriz">
@@ -784,8 +830,10 @@
           </thead>
           <tbody>
             <tr>
-              <td colspan="25" style="text-align: center; padding: 20px; color: var(--secondary);">
-                Cargue los archivos y procese la asignación para ver la matriz completa
+              <td colspan="25" style="text-align: center; padding: 
+20px; color: var(--secondary);">
+                Cargue los archivos y procese la asignación para ver la 
+matriz completa
               </td>
             </tr>
           </tbody>
@@ -797,8 +845,9 @@
 
 <script>
 // ===================== Constantes y Utilidades =====================
-let __DOCENTE_SLOTS__ = new Map(); // Map<Docente, Map<DIA, Set<HORA>>>
-const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
+let __DOCENTE_SLOTS__ = new Map();
+const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS 
+ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
 const COMBO9  = [...TARGET7,"ESTUDIANTE","CICLO"];
 const DAY_MAP = new Map(Object.entries({
   "lun":"LUNES","lunes":"LUNES","lun.":"LUNES",
@@ -810,40 +859,31 @@ const DAY_MAP = new Map(Object.entries({
   "dom":"DOMINGO","domingo":"DOMINGO","dom.":"DOMINGO"
 }));
 
-// Horarios predefinidos en bloques de 3 horas
 const HORARIOS = [
   "07:00-10:00", "10:00-13:00", "13:00-16:00", 
   "16:00-19:00", "19:00-22:00"
 ];
 
-// Función para convertir horarios a bloques de 3 horas
 function normalizarHorario(horario) {
-  if (!horario) return HORARIOS[0]; // Valor por defecto
-  
+  if (!horario) return HORARIOS[0];
   const horarioStr = String(horario).toUpperCase().trim();
-  
-  // Si ya es un horario válido, devolverlo
   if (HORARIOS.includes(horarioStr)) {
     return horarioStr;
   }
-  
-  // Intentar parsear horarios como "07:00-22:00" o "14:00-22:00"
-  const match = horarioStr.match(/(\d{1,2}):(\d{2})\s*[-–a]+\s*(\d{1,2}):(\d{2})/);
+  const match = 
+horarioStr.match(/(\d{1,2}):(\d{2})\s*[-–a]+\s*(\d{1,2}):(\d{2})/);
   if (match) {
     const horaInicio = parseInt(match[1],10);
     for (const bloque of HORARIOS) {
-      const bloqueMatch = bloque.match(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/);
-      if (bloqueMatch) {
-        const bloqueInicio = parseInt(bloqueMatch[1],10);
-        if (horaInicio === bloqueInicio) return bloque;
-      }
+      const bloqueMatch = 
+bloque.match(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/);
+      if (bloqueMatch && parseInt(bloqueMatch[1],10) === horaInicio) 
+return bloque;
     }
   }
-  // Si no se puede determinar, usar el primer bloque
   return HORARIOS[0];
 }
 
-// Utilidades mejoradas
 const canonDay = s => {
   if (!s) return "";
   const t = String(s).toLowerCase().trim();
@@ -856,10 +896,10 @@ const canonDay = s => {
 
 const esc = s => {
   if (s === null || s === undefined) return "";
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, 
+'&lt;').replace(/>/g, '&gt;');
 };
 
-// Función para mostrar errores
 function showError(message) {
   const errorBox = document.getElementById('errorBox');
   const errorMessage = document.getElementById('errorMessage');
@@ -868,7 +908,6 @@ function showError(message) {
   setTimeout(() => { errorBox.classList.add('hidden'); }, 8000);
 }
 
-// Función para mostrar éxito
 function showSuccess(message) {
   const alertBox = document.createElement('div');
   alertBox.className = 'alert alert-success fade-in';
@@ -880,37 +919,44 @@ function showSuccess(message) {
   setTimeout(() => { alertBox.remove(); }, 5000);
 }
 
-// Función para actualizar la barra de progreso
 function updateProgress(percent) {
   const progressBar = document.getElementById('progressBar');
-  const progressContainer = document.getElementById('progressContainer');
+  const progressContainer = 
+document.getElementById('progressContainer');
   progressBar.style.width = percent + '%';
   progressContainer.style.display = 'block';
 }
 
-// Función para mostrar estadísticas
 function updateStats(secciones, asignaciones, noAsig, resumenMateria) {
   document.getElementById('statsContainer').style.display = 'grid';
-  document.getElementById('statSecciones').textContent = secciones.length;
-  document.getElementById('statAsignaciones').textContent = asignaciones.length;
-  document.getElementById('statNoAsignados').textContent = noAsig.length;
+  document.getElementById('statSecciones').textContent = 
+secciones.length;
+  document.getElementById('statAsignaciones').textContent = 
+asignaciones.length;
+  document.getElementById('statNoAsignados').textContent = 
+noAsig.length;
   
-  // Actualizar contadores en los headers
-  document.getElementById('asignacionesCount').textContent = asignaciones.length;
-  document.getElementById('docentesCount').textContent = new Set(asignaciones.map(a => a.NOMBRE_DOCENTE)).size;
-  document.getElementById('materiasCount').textContent = new Set(asignaciones.map(a => a.MATERIA)).size;
-  document.getElementById('noAsignadosCount').textContent = noAsig.length;
-  document.getElementById('matrizCount').textContent = asignaciones.length;
+  document.getElementById('asignacionesCount').textContent = 
+asignaciones.length;
+  document.getElementById('docentesCount').textContent = new 
+Set(asignaciones.map(a => a.NOMBRE_DOCENTE)).size;
+  document.getElementById('materiasCount').textContent = new 
+Set(asignaciones.map(a => a.MATERIA)).size;
+  document.getElementById('noAsignadosCount').textContent = 
+noAsig.length;
+  document.getElementById('matrizCount').textContent = 
+asignaciones.length;
   
-  // Calcular ocupación promedio
   let totalCap = 0;
   let totalAsig = 0;
-  resumenMateria.forEach(m => { totalCap += m.CAP; totalAsig += m.ASIGNADOS; });
-  const ocupacionPromedio = totalCap > 0 ? Math.round((totalAsig / totalCap) * 100) : 0;
-  document.getElementById('statOcupacion').textContent = ocupacionPromedio + '%';
+  resumenMateria.forEach(m => { totalCap += m.CAP; totalAsig += 
+m.ASIGNADOS; });
+  const ocupacionPromedio = totalCap > 0 ? Math.round((totalAsig / 
+totalCap) * 100) : 0;
+  document.getElementById('statOcupacion').textContent = 
+ocupacionPromedio + '%';
 }
 
-// Función para validar archivos
 function validateFiles() {
   const fD = document.getElementById('fileDoc').files[0];
   const fE = document.getElementById('fileEst').files[0];
@@ -919,7 +965,6 @@ function validateFiles() {
   btnRun.disabled = !(fD && fE && fM);
 }
 
-// Función para actualizar el estado de los archivos
 function updateFileStatus(inputId, statusId, isRequired) {
   const input = document.getElementById(inputId);
   const status = document.getElementById(statusId);
@@ -927,20 +972,21 @@ function updateFileStatus(inputId, statusId, isRequired) {
   input.addEventListener('change', function() {
     if (this.files.length > 0) {
       icon.className = 'status-icon status-success';
-      status.querySelector('span:last-child').textContent = this.files[0].name;
+      status.querySelector('span:last-child').textContent = 
+this.files[0].name;
     } else {
       icon.className = 'status-icon status-pending';
-      status.querySelector('span:last-child').textContent = isRequired ? 
-        'Esperando archivo...' : 'Opcional - Esperando archivo...';
+      status.querySelector('span:last-child').textContent = 
+isRequired ? 'Esperando archivo...' : 'Opcional - Esperando archivo...';
     }
     validateFiles();
   });
 }
 
-// Función para renderizar tablas con mejoras
 function renderTable(el, headers, rows, maxRows = 100) {
   if (!rows || !rows.length) {
-    el.innerHTML = '<p class="text-muted text-center">No hay datos para mostrar.</p>';
+    el.innerHTML = '<p class="text-muted text-center">No hay datos
+ para mostrar.</p>';
     return;
   }
   const displayRows = rows.slice(0, maxRows);
@@ -948,28 +994,32 @@ function renderTable(el, headers, rows, maxRows = 100) {
   let html = `
     <table>
       <thead>
-        <tr>${headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr>
+        <tr>${headers.map(h => 
+`<th>${esc(h)}</th>`).join('')}</tr>
       </thead>
       <tbody>
   `;
   for (const r of displayRows) {
-    html += `<tr>${headers.map(h => `<td>${esc(r[h] ?? '')}</td>`).join('')}</tr>`;
+    html += `<tr>${headers.map(h => `<td>${esc(r[h] ?? 
+'')}</td>`).join('')}</tr>`;
   }
   html += `</tbody></table>`;
   if (hasMore) {
-    html += `<p class="text-muted text-center">Mostrando ${maxRows} de ${rows.length} registros. Descargue el archivo para ver todos.</p>`;
+    html += `<p class="text-muted text-center">Mostrando 
+${maxRows} de ${rows.length} registros. Descargue el archivo para ver 
+todos.</p>`;
   }
   el.innerHTML = html;
 }
 
-// Función para renderizar la matriz completa
 function renderMatrizTable(asignaciones) {
   const el = document.getElementById('tblMatriz');
   const tbody = el.querySelector('tbody');
   if (!asignaciones || !asignaciones.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="25" style="text-align: center; padding: 20px; color: var(--secondary);">
+        <td colspan="25" style="text-align: center; padding: 20px; 
+color: var(--secondary);">
           No hay datos para mostrar
         </td>
       </tr>
@@ -1011,8 +1061,8 @@ function renderMatrizTable(asignaciones) {
   tbody.innerHTML = html;
 }
 
-// Leer archivo Excel con mejor manejo de errores
-const readSheet = (file, fileName) => new Promise((resolve, reject) => {
+const readSheet = (file, fileName) => new Promise((resolve, reject) 
+=> {
   if (!file) { resolve([]); return; }
   const fr = new FileReader();
   fr.onload = e => {
@@ -1020,531 +1070,535 @@ const readSheet = (file, fileName) => new Promise((resolve, reject) => {
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, { type: 'array' });
       if (!wb.SheetNames || wb.SheetNames.length === 0) {
-        reject(new Error(`El archivo ${fileName} no contiene hojas válidas.`));
+        reject(new Error(`El archivo ${fileName} no contiene hojas 
+válidas.`));
         return;
       }
       const ws = wb.Sheets[wb.SheetNames[0]];
       if (!ws || !ws['!ref']) {
-        reject(new Error(`La hoja del archivo ${fileName} está vacía.`));
+        reject(new Error(`La hoja del archivo ${fileName} está 
+vacía.`));
         return;
       }
       const jsonData = XLSX.utils.sheet_to_json(ws, { defval: "" });
       if (!jsonData || jsonData.length === 0) {
-        reject(new Error(`No se pudieron extraer datos del archivo ${fileName}. Verifique el formato.`));
+        reject(new Error(`No se pudieron extraer datos del archivo 
+${fileName}. Verifique el formato.`));
         return;
       }
       console.log(`Datos leídos de ${fileName}:`, jsonData);
       resolve(jsonData);
     } catch (error) {
       console.error(`Error leyendo archivo ${fileName}:`, error);
-      reject(new Error(`Error al leer el archivo ${fileName}: ${error.message}`));
+      reject(new Error(`Error al leer el archivo ${fileName}: 
+${error.message}`));
     }
   };
-  fr.onerror = () => { reject(new Error(`Error al leer el archivo ${fileName}.`)); };
+  fr.onerror = () => { reject(new Error(`Error al leer el archivo 
+${fileName}.`)); };
   fr.readAsArrayBuffer(file);
 });
 
-// ===================== Normalización =====================
 function normalizeDocentes(rows) {
   console.log("Normalizando docentes:", rows);
   if (!rows || !rows.length) {
-    showError("El archivo de docentes está vacío o no tiene el formato correcto.");
+    showError("El archivo de docentes está vacío o no tiene el formato 
+correcto.");
     return [];
   }
   const result = rows.map(r => {
     let diasDisponibles = [];
     let horasDisponibles = [];
     if (r["DIA DISPONIBLE"] || r["DIA"]) {
-      const textoDias = String(r["DIA DISPONIBLE"] || r["DIA"] || "").toUpperCase();
+      const textoDias = String(r["DIA DISPONIBLE"] || r["DIA"] || 
+"").toUpperCase();
       if (textoDias.includes("LUNES")) diasDisponibles.push("LUNES");
       if (textoDias.includes("MARTES")) diasDisponibles.push("MARTES");
-      if (textoDias.includes("MIERCOLES") || textoDias.includes("MIÉRCOLES")) diasDisponibles.push("MIERCOLES");
+      if (textoDias.includes("MIERCOLES") || 
+textoDias.includes("MIÉRCOLES")) diasDisponibles.push("MIERCOLES");
       if (textoDias.includes("JUEVES")) diasDisponibles.push("JUEVES");
-      if (textoDias.includes("VIERNES")) diasDisponibles.push("VIERNES");
-      if (textoDias.includes("SABADO") || textoDias.includes("SÁBADO")) diasDisponibles.push("SABADO");
+      if (textoDias.includes("VIERNES")) 
+diasDisponibles.push("VIERNES");
+      if (textoDias.includes("SABADO") || textoDias.includes("SÁBADO")) 
+diasDisponibles.push("SABADO");
     }
     if (r["HORA DISPONIBLE"] || r["HORA"]) {
-      const textoHoras = String(r["HORA DISPONIBLE"] || r["HORA"] || "").toUpperCase();
-      const horaMatch = textoHoras.match(/(\d{1,2}):(\d{2})\s*[-–a]+\s*(\d{1,2}):(\d{2})/);
+      const textoHoras = String(r["HORA DISPONIBLE"] || r["HORA"] || 
+"").toUpperCase();
+      const horaMatch = 
+textoHoras.match(/(\d{1,2}):(\d{2})\s*[-–a]+\s*(\d{1,2}):(\d{2})/);
       if (horaMatch) {
-        const rango = `${horaMatch[1].padStart(2,'0')}:${horaMatch[2]}-${horaMatch[3].padStart(2,'0')}:${horaMatch[4]}`;
+        const rango = 
+`${horaMatch[1].padStart(2,'0')}:${horaMatch[2]}-${horaMatch[3].padStart(2,'0')}:${horaMatch[4]}`;
         horasDisponibles.push(normalizarHorario(rango));
-      } else if (textoHoras.includes("07:00") && textoHoras.includes("22:00")) {
+      } else if (textoHoras.includes("07:00") && 
+textoHoras.includes("22:00")) {
         horasDisponibles = [...HORARIOS];
       } else {
         horasDisponibles = [...HORARIOS];
       }
     }
-    if (diasDisponibles.length === 0) diasDisponibles = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES"];
+    if (diasDisponibles.length === 0) diasDisponibles = ["LUNES", 
+"MARTES", "MIERCOLES", "JUEVES", "VIERNES"];
     return {
       "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"] || r["DOCENTE"] || "",
       "MATERIA": r["MATERIA"] || r["MATERIAS"] || "",
-      "CANTIDAD DE ALUMNOS ESPERADOS": Number(r["CANTIDAD DE ALUMNOS ESPERADOS"] || r["CAPACIDAD"] || r["CUPOS"] || 25) || 25,
+      "CANTIDAD DE ALUMNOS ESPERADOS": Number(r["CANTIDAD DE ALUMNOS 
+ESPERADOS"] || r["CAPACIDAD"] || r["CUPOS"] || 25) || 25,
       "DIA_DISPONIBLE": diasDisponibles,
       "HORA_DISPONIBLE": horasDisponibles,
       "Modalidad": r["Modalidad"] || "PRESENCIAL",
-      "Paralelo": String(r["Paralelo"] || "").toUpperCase().trim() || "A",
+      "Paralelo": String(r["Paralelo"] || "").toUpperCase().trim() || 
+"A",
       "DEDICACIÓN": r["DEDICACIÓN"] || ""
     };
   }).filter(x => x.MATERIA && x.NOMBRE_DOCENTE);
   console.log("Docentes normalizados:", result);
-  if (result.length === 0) showError("No se encontraron datos válidos en el archivo de docentes.");
+  if (result.length === 0) showError("No se encontraron datos válidos en
+ el archivo de docentes.");
   return result;
 }
 
 function normalizeEstudiantes(rows) {
   console.log("Normalizando estudiantes:", rows);
   if (!rows || !rows.length) {
-    showError("El archivo de estudiantes está vacío o no tiene el formato correcto.");
+    showError("El archivo de estudiantes está vacío o no tiene el 
+formato correcto.");
     return [];
   }
   const result = rows.map(r => {
-    const ciclo = Number(r["CICLO AL QUE VA"] || r["CICLO ACTUAL"] || r["CICLO"] || 1);
+    const ciclo = Number(r["CICLO AL QUE VA"] || r["CICLO ACTUAL"] || 
+r["CICLO"] || 1);
     return {
-      "ESTUDIANTE": r["ESTUDIANTE"] || r["NOMBRE"] || r["NOMBRE DEL ESTUDIANTE"] || "",
+      "ESTUDIANTE": r["ESTUDIANTE"] || r["NOMBRE"] || r["NOMBRE DEL 
+ESTUDIANTE"] || "",
       "CICLO": isNaN(ciclo) ? 1 : Math.max(1, Math.min(8, ciclo)),
       "CARRERA": r["CARRERA"] || r["CARRERA DEL ESTUDIANTE"] || "",
       "MALLA": r["MALLA"] || "",
       "NIVEL INGLES": r["NIVEL INGLES"] || ""
     };
-  }).filter(x => x.ESTUDIANTE);
+  }).filter(x => x.ESTUDIANTE && x.CICLO);
   console.log("Estudiantes normalizados:", result);
-  if (result.length === 0) showError("No se encontraron datos válidos en el archivo de estudiantes.");
+  if (result.length === 0) showError("No se encontraron datos válidos en
+ el archivo de estudiantes.");
   return result;
 }
 
-function normalizeMallas(rows) {
-  console.log("Normalizando mallas:", rows);
+function normalizeMalla(rows) {
+  console.log("Normalizando malla:", rows);
   if (!rows || !rows.length) {
-    showError("El archivo de mallas está vacío o no tiene el formato correcto.");
+    showError("El archivo de malla está vacío o no tiene el formato 
+correcto.");
     return [];
   }
   const result = rows.map(r => {
-    const materia = r["MATERIA"] || r["MATERIAS"] || "";
-    const codigo = r["CÓDIGO"] || r["CODIGO"] || r["CÓDIGO ANTHOLOGY"] || "";
-    let ciclo = 1;
-    if (codigo) {
-      const partes = codigo.split('-');
-      if (partes.length >= 2) {
-        const numCiclo = parseInt(partes[1],10);
-        if (!isNaN(numCiclo)) ciclo = numCiclo;
-      }
-    }
-    if (isNaN(ciclo) || ciclo < 1) ciclo = Number(r["CICLO"] || 1);
+    const ciclo = Number(r["CICLO"] || r["NIVEL"] || 1);
     return {
-      "MATERIA": materia,
-      "CODIGO": codigo,
-      "CICLO": Math.max(1, Math.min(8, ciclo)),
-      "HORAS_TEORICAS": Number(r["HORAS TEÓRICAS"] || r["HORAS_TEORICAS"] || 0),
-      "HORAS_PRACTICAS": Number(r["HORAS PRÁCTICAS"] || r["HORAS_PRACTICAS"] || 0),
-      "HORAS AUTÓNOMAS": Number(r["HORAS AUTÓNOMAS"] || 0),
-      "CREDITOS": Number(r["CREDITOS"] || 0),
+      "MATERIA": r["MATERIA"] || r["ASIGNATURA"] || "",
+      "CICLO": isNaN(ciclo) ? 1 : Math.max(1, Math.min(8, ciclo)),
+      "CÓDIGO ANTHOLOGY": r["CÓDIGO ANTHOLOGY"] || r["CODIGO ANTHOLOGY"] 
+|| "",
+      "CARRERAS QUE COMPARTEN": r["CARRERAS QUE COMPARTEN"] || "",
+      "PRE-REQUISITO": r["PRE-REQUISITO"] || "",
+      "CODIGO": r["CODIGO"] || "",
+      "HORAS TEÓRICAS": Number(r["HORAS TEÓRICAS"]) || 0,
+      "HORAS PRÁCTICAS": Number(r["HORAS PRÁCTICAS"]) || 0,
+      "HORAS AUTÓNOMAS": Number(r["HORAS AUTÓNOMAS"]) || 0,
+      "CREDITOS": Number(r["CREDITOS"]) || 0,
       "CAMPO DE FORMACIÓN": r["CAMPO DE FORMACIÓN"] || "",
       "MALLA": r["MALLA"] || "",
-      "Nº ORDEN EN LA MALLA": r["Nº ORDEN EN LA MALLA"] || "",
-      "PRE-REQUISITO": r["PRE-REQUISITO"] || "",
-      "CARRERAS QUE COMPARTEN": r["CARRERAS QUE COMPARTEN"] || ""
+      "Nº ORDEN EN LA MALLA": r["Nº ORDEN EN LA MALLA"] || ""
     };
-  }).filter(x => x.MATERIA);
-  console.log("Mallas normalizadas:", result);
-  if (result.length === 0) showError("No se encontraron datos válidos en el archivo de mallas.");
+  }).filter(x => x.MATERIA && x.CICLO);
+  console.log("Malla normalizada:", result);
+  if (result.length === 0) showError("No se encontraron datos válidos en
+ el archivo de malla.");
   return result;
 }
 
-// ===================== Lógica de secciones y asignación =====================
-function construirSecciones(docentes, mallas, estudiantes) {
-  __DOCENTE_SLOTS__ = new Map(); // reset por corrida
+// ===================== Lógica de Asignación (NUEVA) =====================
+function asignar(docentes, estudiantes, malla) {
+  updateProgress(10);
+  console.log("Iniciando proceso de asignación...");
+  
+  const MAX_MATERIAS_ESTUDIANTE = Number(document.getElementById("maxMaterias").value);
+  const CAPACIDAD_PARALELO = Number(document.getElementById("capacidadParalelo").value);
+
+  // 1. Estructuras de datos para la planificación
   const secciones = [];
-  const horariosOcupados = new Map(); // Map<ciclo, Map<dia, Set<hora>>>
-  const capacidadPorParalelo = parseInt(document.getElementById('capacidadParalelo').value) || 25;
+  const asignacionesFinales = [];
+  const estudiantesAsignados = new Set();
+  const noAsignados = [];
 
-  // Inicializar estructura de horarios por ciclo
-  for (let ciclo = 1; ciclo <= 8; ciclo++) {
-    horariosOcupados.set(ciclo, new Map());
-  }
+  // Agrupar estudiantes por ciclo al que van
+  const estudiantesPorCiclo = estudiantes.reduce((acc, est) => {
+    if (!acc[est.CICLO]) acc[est.CICLO] = [];
+    acc[est.CICLO].push(est);
+    return acc;
+  }, {});
+  
+  // Agrupar materias de la malla por ciclo
+  const materiasPorCiclo = malla.reduce((acc, mat) => {
+    if (!acc[mat.CICLO]) acc[mat.CICLO] = [];
+    acc[mat.CICLO].push(mat);
+    return acc;
+  }, {});
 
-  // Índices auxiliares
-  const seccionesPorDocente = new Map();            // Map<docente, conteoDeSecciones>
-  const correlativoParalelo = new Map();            // Map<`${materia}¦${ciclo}`, cantidadGenerada>
+  // Agrupar docentes por materia y crear un mapa para la disponibilidad
+  const docentesPorMateria = docentes.reduce((acc, doc) => {
+    if (!acc[doc.MATERIA]) acc[doc.MATERIA] = [];
+    acc[doc.MATERIA].push(doc);
+    return acc;
+  }, {});
+  
+  const docenteDisponibilidad = new Map();
+  docentes.forEach(doc => {
+    docenteDisponibilidad.set(doc.NOMBRE_DOCENTE, new Map());
+    doc.DIA_DISPONIBLE.forEach(dia => {
+      docenteDisponibilidad.get(doc.NOMBRE_DOCENTE).set(dia, new 
+Set(doc.HORA_DISPONIBLE));
+    });
+  });
 
-  // Agrupar estudiantes por ciclo
-  const estudiantesPorCiclo = new Map();
-  for (const e of estudiantes) {
-    if (!estudiantesPorCiclo.has(e.CICLO)) estudiantesPorCiclo.set(e.CICLO, []);
-    estudiantesPorCiclo.get(e.CICLO).push(e);
-  }
+  updateProgress(30);
 
-  for (const materia of mallas) {
-    const ciclo = materia.CICLO;
-    const estudiantesCiclo = estudiantesPorCiclo.get(ciclo) || [];
-    const numEstudiantes = estudiantesCiclo.length;
-    if (numEstudiantes === 0) continue;
+  // 2. Crear las secciones (paralelos) para cada materia y asignar docentes
+  console.log("Creando secciones y asignando docentes...");
+  const seccionesPorMateria = {};
+  let paraleloCounter = 1;
 
-    const docentesMateria = docentes.filter(d => d.MATERIA === materia.MATERIA);
-    if (docentesMateria.length === 0) { 
-      console.warn(`Sin docentes para ${materia.MATERIA}`); 
-      continue; 
-    }
+  for (const ciclo in materiasPorCiclo) {
+    const materiasDelCiclo = materiasPorCiclo[ciclo];
+    let horariosOcupadosCiclo = new Set(); // Para evitar cruces en el mismo ciclo
+    let docenteHorariosOcupados = new Map();
 
-    const numParalelos = Math.ceil(numEstudiantes / capacidadPorParalelo);
-
-    // Correlativo de paralelos por materia + ciclo (evita repetir "A")
-    const kMat = `${materia.MATERIA}¦${ciclo}`;
-    const baseIndex = correlativoParalelo.get(kMat) || 0;
-
-    for (let i = 0; i < numParalelos; i++) {
-      // Elegir docente con menos de 5 secciones
-      let docente = null;
-      for (let j = 0; j < docentesMateria.length; j++) {
-        const cand = docentesMateria[(i + j) % docentesMateria.length];
-        const cnt = seccionesPorDocente.get(cand.NOMBRE_DOCENTE) || 0;
-        if (cnt < 5) { docente = cand; break; }
-      }
-      if (!docente) {
-        console.warn(`Todos los docentes alcanzaron 5 materias para ${materia.MATERIA}. Se omite creación de sección.`);
-        continue;
-      }
-
-      // Encontrar horario libre para ese docente en el ciclo
-      const horario = encontrarHorarioDisponible(horariosOcupados.get(ciclo), docente);
-      if (!horario) {
-        console.warn(`Sin horario disponible para ${materia.MATERIA} - Ciclo ${ciclo} (docente: ${docente.NOMBRE_DOCENTE})`);
-        continue;
-      }
-
-      const capacidad = Math.min(capacidadPorParalelo, Math.ceil(numEstudiantes / numParalelos));
-      const paralelo = String.fromCharCode(65 + baseIndex + i); // A, B, C, ...
-
-      secciones.push({
-        MATERIA: materia.MATERIA,
-        CODIGO: materia.CODIGO,
-        CICLO: ciclo,
-        NOMBRE_DOCENTE: docente.NOMBRE_DOCENTE,
-        CAP: capacidad,
-        ASIGNADOS: 0,
-        DIA: horario.dia,
-        HORA: horario.hora,
-        Modalidad: docente.Modalidad,
-        Paralelo: paralelo,
-        DEDICACIÓN: docente.DEDICACIÓN || "",
-        "HORAS TEÓRICAS": materia.HORAS_TEORICAS,
-        "HORAS PRÁCTICAS": materia.HORAS_PRACTICAS,
-        "HORAS AUTÓNOMAS": materia["HORAS AUTÓNOMAS"],
-        "CREDITOS": materia.CREDITOS,
-        "CAMPO DE FORMACIÓN": materia["CAMPO DE FORMACIÓN"],
-        "MALLA": materia.MALLA,
-        "Nº ORDEN EN LA MALLA": materia["Nº ORDEN EN LA MALLA"],
-        "PRE-REQUISITO": materia["PRE-REQUISITO"],
-        "CARRERAS QUE COMPARTEN": materia["CARRERAS QUE COMPARTEN"],
-        "CÓDIGO ANTHOLOGY": materia.CODIGO
-      });
-
-      // Actualizar conteo por docente
-      seccionesPorDocente.set(
-        docente.NOMBRE_DOCENTE, 
-        (seccionesPorDocente.get(docente.NOMBRE_DOCENTE) || 0) + 1
-      );
-    }
-
-    // Avanzar el correlativo global de paralelos para esa materia+ciclo
-    correlativoParalelo.set(kMat, baseIndex + numParalelos);
-  }
-
-  console.log("Secciones construidas:", secciones);
-  return secciones;
-}
-
-
-// Encontrar horario disponible para un docente que no esté ocupado en el mismo ciclo
-// Encontrar horario disponible sin cruces: por ciclo Y por docente
-function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
-  // estructura por docente
-  const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
-  const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
-
-  for (const dia of docente.DIA_DISPONIBLE) {
-    const ocupadosDiaCiclo = horariosOcupadosCiclo.get(dia) || new Set(); // evita cruces dentro del ciclo
-    const ocupadosDiaDoc = slotsDoc.get(dia) || new Set();                 // evita cruces del docente (todos los ciclos)
-
-    for (const hora of docente.HORA_DISPONIBLE) {
-      // libre en el ciclo y libre para el docente
-      if (!ocupadosDiaCiclo.has(hora) && !ocupadosDiaDoc.has(hora)) {
-        // marcar ocupación en ambas estructuras
-        ocupadosDiaCiclo.add(hora);
-        horariosOcupadosCiclo.set(dia, ocupadosDiaCiclo);
-
-        ocupadosDiaDoc.add(hora);
-        slotsDoc.set(dia, ocupadosDiaDoc);
-        __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc);
-
-        return { dia, hora };
-      }
-    }
-  }
-  return null; // no hay slot compatible
-}
-
-function agruparPorMateria(secciones) {
-  const map = new Map();
-  for (const s of secciones) {
-    if (!map.has(s.MATERIA)) map.set(s.MATERIA, []);
-    map.get(s.MATERIA).push(s);
-  }
-  return map;
-}
-
-function asignarEstudiantes(secciones, estudiantes, mallas) {
-  const idxPorMateria = agruparPorMateria(secciones);
-  const asignaciones = [];
-  const noAsig = [];
-  const maxMaterias = parseInt(document.getElementById('maxMaterias').value) || 6;
-  const kCarga = (d, m, par, h) => `${d}¦${m}¦${par || ''}¦${h}`;
-  const carga = new Map();
-  for (const s of secciones) {
-    const key = kCarga(s.NOMBRE_DOCENTE || "SIN_DOCENTE", s.MATERIA, s.Paralelo, s.HORA);
-    if (!carga.has(key)) {
-      carga.set(key, {
-        DOCENTE: s.NOMBRE_DOCENTE || "SIN_DOCENTE",
-        MATERIA: s.MATERIA,
-        Paralelo: s.Paralelo || "",
-        DIA: s.DIA,
-        HORA: s.HORA,
-        ASIGNADOS: 0,
-        CAP: s.CAP || 0
-      });
-    }
-  }
-  const estudiantesPorCiclo = new Map();
-  for (const e of estudiantes) {
-    if (!estudiantesPorCiclo.has(e.CICLO)) {
-      estudiantesPorCiclo.set(e.CICLO, []);
-    }
-    estudiantesPorCiclo.get(e.CICLO).push(e);
-  }
-  for (const [ciclo, estudiantesCiclo] of estudiantesPorCiclo.entries()) {
-    const materiasCiclo = mallas.filter(m => m.CICLO === ciclo).map(m => m.MATERIA);
-    for (const e of estudiantesCiclo) {
-      let materiasAsignadas = 0;
-      for (const mat of materiasCiclo) {
-        if (materiasAsignadas >= maxMaterias) {
-          noAsig.push({ 
-            ESTUDIANTE: e.ESTUDIANTE, 
-            MATERIA: mat, 
-            MOTIVO: "Límite de materias alcanzado", 
-            CICLO: ciclo,
-            "CARRERA DEL ESTUDIANTE": e.CARRERA,
-            "NIVEL INGLES": e["NIVEL INGLES"] 
-          });
-          continue;
+    for (const materia of materiasDelCiclo) {
+      // Buscar un docente disponible
+      const docentesCandidatos = docentesPorMateria[materia.MATERIA] || [];
+      
+      let seccionCreada = false;
+      for (const docente of docentesCandidatos) {
+        let docenteNombre = docente.NOMBRE_DOCENTE;
+        
+        // Inicializar horarios ocupados del docente si no existe
+        if (!docenteHorariosOcupados.has(docenteNombre)) {
+          docenteHorariosOcupados.set(docenteNombre, new Set());
         }
-        const bucket = (idxPorMateria.get(mat) || []).slice();
-        if (!bucket.length) {
-          noAsig.push({ 
-            ESTUDIANTE: e.ESTUDIANTE, 
-            MATERIA: mat, 
-            MOTIVO: "Sin secciones", 
-            CICLO: ciclo,
-            "CARRERA DEL ESTUDIANTE": e.CARRERA,
-            "NIVEL INGLES": e["NIVEL INGLES"] 
-          });
-          continue;
+
+        // Encontrar un día y hora disponibles
+        let horarioAsignado = null;
+        for (const dia of docente.DIA_DISPONIBLE) {
+          for (const hora of docente.HORA_DISPONIBLE) {
+            const slot = `${dia}-${hora}`;
+            
+            // Verificar si el slot no está ocupado por otra materia del mismo ciclo
+            // y si el docente está disponible en ese slot
+            if (!horariosOcupadosCiclo.has(slot) && 
+                !docenteHorariosOcupados.get(docenteNombre).has(slot)) {
+              horarioAsignado = { dia, hora };
+              break;
+            }
+          }
+          if (horarioAsignado) break;
         }
-        bucket.sort((a, b) => {
-          const freeA = (a.CAP || 0) - (a.ASIGNADOS || 0);
-          const freeB = (b.CAP || 0) - (b.ASIGNADOS || 0);
-          if (freeA !== freeB) return freeB - freeA;
-          return (a.Paralelo || "").localeCompare(b.Paralelo || "");
-        });
-        let placed = false;
-        for (const s of bucket) {
-          const free = (s.CAP || 0) - (s.ASIGNADOS || 0);
-          if (free <= 0) continue;
-          s.ASIGNADOS = (s.ASIGNADOS || 0) + 1;
-          placed = true;
-          materiasAsignadas++;
-          const asignacion = {
-            ESTUDIANTE: e.ESTUDIANTE,
-            CICLO: ciclo,
-            NOMBRE_DOCENTE: s.NOMBRE_DOCENTE || "",
-            MATERIA: s.MATERIA,
-            "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP || "",
-            DIA: s.DIA,
-            HORA: s.HORA,
-            Modalidad: s.Modalidad || "",
-            Paralelo: s.Paralelo || "",
-            DEDICACIÓN: s.DEDICACIÓN || "",
-            "CÓDIGO ANTHOLOGY": s["CÓDIGO ANTHOLOGY"] || "",
-            "CARRERAS QUE COMPARTEN": s["CARRERAS QUE COMPARTEN"] || "",
-            "PRE-REQUISITO": s["PRE-REQUISITO"] || "",
-            CODIGO: s.CODIGO || "",
-            "HORAS TEÓRICAS": s["HORAS TEÓRICAS"] || "",
-            "HORAS PRÁCTICAS": s["HORAS PRÁCTICAS"] || "",
-            "HORAS AUTÓNOMAS": s["HORAS AUTÓNOMAS"] || "",
-            CREDITOS: s.CREDITOS || "",
-            "CAMPO DE FORMACIÓN": s["CAMPO DE FORMACIÓN"] || "",
-            MALLA: s.MALLA || "",
-            "Nº ORDEN EN LA MALLA": s["Nº ORDEN EN LA MALLA"] || "",
-            "Nro. HORAS": (s["HORAS TEÓRICAS"] || 0) + (s["HORAS PRÁCTICAS"] || 0),
-            "CARRERA DEL ESTUDIANTE": e.CARRERA || "",
-            "CICLO DEL ESTUDIANTE": ciclo,
-            "NIVEL INGLES": e["NIVEL INGLES"] || "",
-            OBSERVACIONES: ""
+
+        if (horarioAsignado) {
+          const seccion = {
+            ...materia,
+            NOMBRE_DOCENTE: docente.NOMBRE_DOCENTE,
+            DEDICACIÓN: docente.DEDICACIÓN,
+            Modalidad: docente.Modalidad,
+            Paralelo: `P${paraleloCounter++}`,
+            DIA: horarioAsignado.dia,
+            HORA: horarioAsignado.hora,
+            'Nro. HORAS': materia['HORAS TEÓRICAS'] + 
+materia['HORAS PRÁCTICAS'],
+            'ESTUDIANTES_ASIGNADOS': [],
+            CAPACIDAD_MAXIMA: CAPACIDAD_PARALELO
           };
-          asignaciones.push(asignacion);
-          const key = kCarga(s.NOMBRE_DOCENTE || "SIN_DOCENTE", s.MATERIA, s.Paralelo, s.HORA);
-          if (carga.has(key)) { carga.get(key).ASIGNADOS++; }
-          break;
+          secciones.push(seccion);
+          if (!seccionesPorMateria[materia.MATERIA]) {
+            seccionesPorMateria[materia.MATERIA] = [];
+          }
+          seccionesPorMateria[materia.MATERIA].push(seccion);
+          
+          horariosOcupadosCiclo.add(`${horarioAsignado.dia}-${horarioAsignado.hora}`);
+          docenteHorariosOcupados.get(docente.NOMBRE_DOCENTE).add(`${horarioAsignado.dia}-${horarioAsignado.hora}`);
+          seccionCreada = true;
+          break; // Salir del bucle de docentes
         }
-        if (!placed) {
-          noAsig.push({ 
-            ESTUDIANTE: e.ESTUDIANTE, 
-            MATERIA: mat, 
-            MOTIVO: "Sin cupo", 
-            CICLO: ciclo,
-            "CARRERA DEL ESTUDIANTE": e.CARRERA,
-            "NIVEL INGLES": e["NIVEL INGLES"] 
-          });
-        }
+      }
+      if (!seccionCreada) {
+        console.warn(`No se pudo crear una sección para la materia 
+${materia.MATERIA}.`);
       }
     }
   }
-  const cargaDocente = Array.from(carga.values()).sort((a, b) => 
-    a.DOCENTE.localeCompare(b.DOCENTE) || 
-    a.MATERIA.localeCompare(b.MATERIA) || 
-    a.Paralelo.localeCompare(b.Paralelo)
-  );
-  const resumenMateria = (() => {
-    const map = new Map();
-    for (const s of secciones) {
-      const k = `${s.MATERIA}¦${s.Paralelo || ''}`;
-      if (!map.has(k)) {
-        map.set(k, {
-          MATERIA: s.MATERIA,
-          Paralelo: s.Paralelo || "",
-          ASIGNADOS: 0,
-          CAP: 0,
-          OCUPACION: "0%"
+
+  updateProgress(60);
+
+  // 3. Asignar estudiantes a las secciones
+  console.log("Asignando estudiantes a las secciones...");
+  for (const ciclo in estudiantesPorCiclo) {
+    const estudiantesDelCiclo = estudiantesPorCiclo[ciclo];
+    const materiasDelCiclo = secciones.filter(s => s.CICLO == ciclo);
+    
+    for (const estudiante of estudiantesDelCiclo) {
+      if (estudiantesAsignados.has(estudiante.ESTUDIANTE)) continue;
+      
+      const materiasAsignadas = [];
+      const estudianteHorario = new Set();
+      
+      for (const materia of materiasDelCiclo) {
+        if (materiasAsignadas.length >= MAX_MATERIAS_ESTUDIANTE) break;
+        
+        // Verificar si el estudiante ya tiene una materia en ese horario
+        const slot = `${materia.DIA}-${materia.HORA}`;
+        if (estudianteHorario.has(slot)) continue;
+        
+        // Encontrar una sección disponible para la materia
+        let seccionDisponible = seccionesPorMateria[materia.MATERIA]?.find(
+          s => s.ESTUDIANTES_ASIGNADOS.length < s.CAPACIDAD_MAXIMA
+        );
+        
+        if (seccionDisponible) {
+          seccionDisponible.ESTUDIANTES_ASIGNADOS.push(estudiante);
+          materiasAsignadas.push(materia);
+          estudianteHorario.add(slot);
+        }
+      }
+
+      if (materiasAsignadas.length > 0) {
+        estudiantesAsignados.add(estudiante.ESTUDIANTE);
+        for (const materia of materiasAsignadas) {
+          asignacionesFinales.push({
+            ...materia,
+            ESTUDIANTE: estudiante.ESTUDIANTE,
+            'CARRERA DEL ESTUDIANTE': estudiante.CARRERA,
+            'CICLO DEL ESTUDIANTE': estudiante.CICLO,
+            'NIVEL INGLES': estudiante['NIVEL INGLES']
+          });
+        }
+      } else {
+        noAsignados.push({
+          ESTUDIANTE: estudiante.ESTUDIANTE,
+          'CARRERA DEL ESTUDIANTE': estudiante.CARRERA,
+          'CICLO DEL ESTUDIANTE': estudiante.CICLO,
+          'OBSERVACIONES': 'No se encontraron secciones disponibles.'
         });
       }
-      const o = map.get(k);
-      o.CAP += (s.CAP || 0);
-      o.ASIGNADOS += (s.ASIGNADOS || 0);
+    }
   }
-    return Array.from(map.values()).map(r => {
-      const occ = r.CAP ? Math.round((r.ASIGNADOS / r.CAP) * 100) : 0;
-      return { ...r, OCUPACION: occ + "%" };
-    }).sort((a, b) => a.MATERIA.localeCompare(b.MATERIA) || a.Paralelo.localeCompare(b.Paralelo));
-  })();
-  console.log("Asignaciones realizadas:", asignaciones.length);
-  console.log("No asignados:", noAsig.length);
-  return { asignaciones, noAsig, cargaDocente, resumenMateria, secciones };
+
+  // Estudiantes que no fueron asignados
+  const estudiantesSinAsignacion = estudiantes.filter(e => 
+!estudiantesAsignados.has(e.ESTUDIANTE));
+  estudiantesSinAsignacion.forEach(e => {
+    noAsignados.push({
+      ESTUDIANTE: e.ESTUDIANTE,
+      'CARRERA DEL ESTUDIANTE': e.CARRERA,
+      'CICLO DEL ESTUDIANTE': e.CICLO,
+      'OBSERVACIONES': 'No se encontraron materias disponibles para su ciclo.'
+    });
+  });
+
+  updateProgress(80);
+
+  // 4. Generar reportes
+  const resumenMateria = secciones.map(s => ({
+    "MATERIA": s.MATERIA,
+    "DOCENTE": s.NOMBRE_DOCENTE,
+    "CICLO": s.CICLO,
+    "PARALELO": s.Paralelo,
+    "CAP": s.CAPACIDAD_MAXIMA,
+    "ASIGNADOS": s.ESTUDIANTES_ASIGNADOS.length,
+    "DIA": s.DIA,
+    "HORA": s.HORA
+  }));
+  
+  const cargaDocente = docentes.map(doc => {
+    const materiasAsignadas = asignacionesFinales.filter(a => 
+a.NOMBRE_DOCENTE === doc.NOMBRE_DOCENTE);
+    const numMaterias = new Set(materiasAsignadas.map(a => 
+a.MATERIA)).size;
+    const numAlumnos = new Set(materiasAsignadas.map(a => 
+a.ESTUDIANTE)).size;
+    return {
+      "NOMBRE_DOCENTE": doc.NOMBRE_DOCENTE,
+      "DEDICACIÓN": doc.DEDICACIÓN,
+      "MATERIAS ASIGNADAS": numMaterias,
+      "ALUMNOS ASIGNADOS": numAlumnos
+    };
+  });
+
+  updateProgress(100);
+  
+  return {
+    secciones,
+    asignacionesFinales,
+    resumenMateria,
+    cargaDocente,
+    noAsignados
+  };
 }
 
-// ===================== Interfaz =====================
-let OUT_SECC = [], OUT_COMB = [], OUT_CARGA = [], OUT_RES_MAT = [], OUT_NO = [];
+// ===================== Manejadores de Eventos =====================
+let dataDocentes = [];
+let dataEstudiantes = [];
+let dataMalla = [];
+let processedData = null;
 
-document.addEventListener('DOMContentLoaded', function() {
+async function handleRun() {
+  const btnRun = document.getElementById('btnRun');
+  const btnDown = document.getElementById('btnDown');
+  const mainCard = document.querySelector('.card');
+
+  btnRun.disabled = true;
+  btnRun.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+stroke-linecap="round" stroke-linejoin="round" class="animate-spin">
+      <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+    </svg>
+    Procesando...
+  `;
+  mainCard.classList.add('loading');
+  document.getElementById('progressContainer').style.display = 'block';
+
+  try {
+    const fileDoc = document.getElementById('fileDoc').files[0];
+    const fileEst = document.getElementById('fileEst').files[0];
+    const fileMal = document.getElementById('fileMal').files[0];
+
+    dataDocentes = await readSheet(fileDoc, 'DOCENTES.xlsx');
+    dataEstudiantes = await readSheet(fileEst, 'ESTUDIANTES.xlsx');
+    dataMalla = await readSheet(fileMal, 'MALLA.xlsx');
+
+    const normalizedDocentes = normalizeDocentes(dataDocentes);
+    const normalizedEstudiantes = normalizeEstudiantes(dataEstudiantes);
+    const normalizedMalla = normalizeMalla(dataMalla);
+
+    if (normalizedDocentes.length === 0 || 
+        normalizedEstudiantes.length === 0 || 
+        normalizedMalla.length === 0) {
+      throw new Error("No se pudieron procesar los archivos. Verifique 
+los datos y reintente.");
+    }
+    
+    processedData = asignar(normalizedDocentes, normalizedEstudiantes, 
+normalizedMalla);
+    
+    if (processedData.asignacionesFinales.length > 0) {
+      showSuccess('¡Asignación completada exitosamente!');
+    } else {
+      showError('El proceso de asignación finalizó, pero no se pudo asignar a ningún estudiante.');
+    }
+    
+    renderResults(processedData);
+    
+    btnDown.classList.remove('hidden');
+    updateProgress(100);
+  } catch (error) {
+    console.error(error);
+    showError(`Ha ocurrido un error durante el procesamiento: ${error.message}`);
+    updateProgress(0);
+  } finally {
+    btnRun.disabled = false;
+    btnRun.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Procesar Asignación
+    `;
+    mainCard.classList.remove('loading');
+  }
+}
+
+function renderResults(data) {
+  const { asignacionesFinales, resumenMateria, cargaDocente, 
+noAsignados, secciones } = data;
+  
+  // Render tables
+  const asignacionHeaders = ["ESTUDIANTE", "MATERIA", "CICLO", 
+"NOMBRE_DOCENTE", "Paralelo", "DIA", "HORA"];
+  renderTable(document.getElementById('tblCombo'), asignacionHeaders, 
+asignacionesFinales);
+  
+  const cargaHeaders = ["NOMBRE_DOCENTE", "DEDICACIÓN", "MATERIAS 
+ASIGNADAS", "ALUMNOS ASIGNADOS"];
+  renderTable(document.getElementById('tblCarga'), cargaHeaders, 
+cargaDocente);
+  
+  const resumenHeaders = ["MATERIA", "DOCENTE", "CICLO", "PARALELO", 
+"CAP", "ASIGNADOS", "DIA", "HORA"];
+  renderTable(document.getElementById('tblResumenMateria'), 
+resumenHeaders, resumenMateria);
+  
+  const noAsignadosHeaders = ["ESTUDIANTE", "CARRERA DEL ESTUDIANTE", 
+"CICLO DEL ESTUDIANTE", "OBSERVACIONES"];
+  renderTable(document.getElementById('tblNo'), noAsignadosHeaders, 
+noAsignados);
+  
+  renderMatrizTable(asignacionesFinales);
+  
+  updateStats(secciones, asignacionesFinales, noAsignados, 
+resumenMateria);
+}
+
+function handleDownload() {
+  if (!processedData) {
+    showError("No hay datos para descargar. Por favor, procese la asignación 
+primero.");
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // Hoja de Asignaciones
+  const wsAsignaciones = XLSX.utils.json_to_sheet(processedData.asignacionesFinales);
+  XLSX.utils.book_append_sheet(wb, wsAsignaciones, "Asignaciones");
+
+  // Hoja de Resumen por Materia
+  const wsResumen = XLSX.utils.json_to_sheet(processedData.resumenMateria);
+  XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen por Materia");
+
+  // Hoja de Carga Docente
+  const wsCarga = XLSX.utils.json_to_sheet(processedData.cargaDocente);
+  XLSX.utils.book_append_sheet(wb, wsCarga, "Carga Docente");
+
+  // Hoja de No Asignados
+  const wsNoAsignados = XLSX.utils.json_to_sheet(processedData.noAsignados);
+  XLSX.utils.book_append_sheet(wb, wsNoAsignados, "No Asignados");
+  
+  // Guardar el archivo
+  XLSX.writeFile(wb, "Planificacion_Academica.xlsx");
+}
+
+function handleTabs() {
+  const tabs = document.querySelectorAll('.tab');
+  const contents = document.querySelectorAll('.tab-content');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      contents.forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
   updateFileStatus('fileDoc', 'statusDoc', true);
   updateFileStatus('fileEst', 'statusEst', true);
   updateFileStatus('fileMal', 'statusMal', true);
-  
-  const tabs = document.querySelectorAll('.tab');
-  const tabContents = document.querySelectorAll('.tab-content');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      const tabId = tab.getAttribute('data-tab');
-      tabs.forEach(t => t.classList.remove('active'));
-      tabContents.forEach(tc => tc.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(tabId).classList.add('active');
-    });
-  });
-  
-  document.getElementById('btnRun').addEventListener('click', async () => {
-    const fD = document.getElementById('fileDoc').files[0];
-    const fE = document.getElementById('fileEst').files[0];
-    const fM = document.getElementById('fileMal').files[0];
-    if (!fD || !fE || !fM) { showError('Debe cargar los archivos de DOCENTES, ESTUDIANTES y MALLA.'); return; }
-    document.body.classList.add('loading');
-    updateProgress(10);
-    try {
-      const [rowsD, rowsE, rowsM] = await Promise.all([
-        readSheet(fD, "DOCENTES"),
-        readSheet(fE, "ESTUDIANTES"),
-        readSheet(fM, "MALLA")
-      ]);
-      updateProgress(40);
-      const DOC = normalizeDocentes(rowsD);
-      const EST = normalizeEstudiantes(rowsE);
-      const MAL = normalizeMallas(rowsM);
-      if (DOC.length === 0 || EST.length === 0 || MAL.length === 0) {
-        throw new Error("Datos insuficientes para procesar. Verifique el formato de los archivos.");
-      }
-      updateProgress(60);
-      const secciones = construirSecciones(DOC, MAL, EST);
-      updateProgress(80);
-      const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = asignarEstudiantes(secciones, EST, MAL);
-      OUT_SECC = seccFinal.map(s => ({
-        "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE || "",
-        "MATERIA": s.MATERIA,
-        "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP || "",
-        "DIA": s.DIA,
-        "HORA": s.HORA,
-        "Modalidad": s.Modalidad || "",
-        "Paralelo": s.Paralelo || ""
-      }));
-      OUT_COMB = asignaciones.map(a => ({
-        "NOMBRE_DOCENTE": a.NOMBRE_DOCENTE,
-        "MATERIA": a.MATERIA,
-        "CANTIDAD DE ALUMNOS ESPERADOS": a["CANTIDAD DE ALUMNOS ESPERADOS"],
-        "DIA": a.DIA,
-        "HORA": a.HORA,
-        "Modalidad": a.Modalidad,
-        "Paralelo": a.Paralelo,
-        "ESTUDIANTE": a.ESTUDIANTE,
-        "CICLO": a.CICLO
-      }));
-      OUT_NO = noAsig;
-      OUT_CARGA = cargaDocente;
-      OUT_RES_MAT = resumenMateria;
-      updateProgress(90);
-      renderTable(document.getElementById('tblCombo'), COMBO9, OUT_COMB, 100);
-      renderTable(document.getElementById('tblCarga'), 
-                 ["DOCENTE", "MATERIA", "Paralelo", "DIA", "HORA", "ASIGNADOS", "CAP"], 
-                 OUT_CARGA, 100);
-      renderTable(document.getElementById('tblResumenMateria'), 
-                 ["MATERIA", "Paralelo", "ASIGNADOS", "CAP", "OCUPACION"], 
-                 OUT_RES_MAT, 100);
-      renderTable(document.getElementById('tblNo'), 
-                 ["ESTUDIANTE", "MATERIA", "CICLO", "MOTIVO"], 
-                 OUT_NO, 100);
-      renderMatrizTable(asignaciones);
-      updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT);
-      document.getElementById('btnDown').classList.remove('hidden');
-      updateProgress(100);
-      setTimeout(() => {
-        document.getElementById('progressContainer').style.display = 'none';
-        document.body.classList.remove('loading');
-        showSuccess(`Procesamiento completado. Se realizaron ${OUT_COMB.length} asignaciones.`);
-      }, 1000);
-    } catch (error) {
-      console.error("Error procesando archivos:", error);
-      showError(error.message);
-      document.body.classList.remove('loading');
-      document.getElementById('progressContainer').style.display = 'none';
-    }
-  });
-  
-  document.getElementById('btnDown').addEventListener('click', () => {
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_SECC), 'MATRIZ_SECCIONES');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_COMB), 'COMBINACION');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_CARGA), 'RESUMEN_CARGA');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_RES_MAT), 'RESUMEN_MATERIA');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_NO), 'NO_ASIGNADOS');
-    XLSX.writeFile(wb, 'Planificacion_Asignacion_Docente.xlsx');
-    showSuccess('Archivo descargado correctamente.');
-  });
+  document.getElementById('btnRun').addEventListener('click', handleRun);
+  document.getElementById('btnDown').addEventListener('click', handleDownload);
+  handleTabs();
 });
 </script>
 </body>
