@@ -794,9 +794,10 @@
     </div>
   </div>
 </div>
-let __DOCENTE_SLOTS__ = new Map(); // Map<Docente, Map<DIA, Set<HORA>>>
+
 <script>
 // ===================== Constantes y Utilidades =====================
+let __DOCENTE_SLOTS__ = new Map(); // Map<Docente, Map<DIA, Set<HORA>>>
 const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
 const COMBO9  = [...TARGET7,"ESTUDIANTE","CICLO"];
 const DAY_MAP = new Map(Object.entries({
@@ -1428,7 +1429,7 @@ function asignarEstudiantes(secciones, estudiantes, mallas) {
       const o = map.get(k);
       o.CAP += (s.CAP || 0);
       o.ASIGNADOS += (s.ASIGNADOS || 0);
-    }
+  }
     return Array.from(map.values()).map(r => {
       const occ = r.CAP ? Math.round((r.ASIGNADOS / r.CAP) * 100) : 0;
       return { ...r, OCUPACION: occ + "%" };
