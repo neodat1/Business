@@ -856,8 +856,37 @@ const canonDay = s => {
 const esc = s => {
   if (s === null || s === undefined) return "";
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// --- Normalización de textos de materia ---
+const stripAccents = s => String(s || "").normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const canonMat = s => stripAccents(s).toUpperCase().replace(/\s+/g, ' ').trim();
 };
 
+  // Campos que deben ser numéricos en tablas/Excel
+const NUMERIC_FIELDS = new Set([
+  "CANTIDAD DE ALUMNOS ESPERADOS","ASIGNADOS","CAP",
+  "HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS",
+  "CREDITOS","Nº ORDEN EN LA MALLA","Nro. HORAS",
+  "CICLO","CICLO DEL ESTUDIANTE"
+]);
+
+function fillNumericZeros(row) {
+  const out = { ...row };
+  for (const k in out) {
+    if (NUMERIC_FIELDS.has(k)) {
+      const v = out[k];
+      // tratar "", null, undefined y NaN como 0
+      if (v === "" || v === null || v === undefined || (typeof v === "number" && Number.isNaN(v))) {
+        out[k] = 0;
+      }
+      // si viene como string numérica, normalizar
+      if (typeof out[k] === "string" && out[k].trim() !== "") {
+        const num = Number(out[k].toString().replace(',', '.'));
+        if (!Number.isNaN(num)) out[k] = num;
+      }
+    }
+  }
+  return out;
+}
 // Función para mostrar errores
 function showError(message) {
   const errorBox = document.getElementById('errorBox');
@@ -942,7 +971,7 @@ function renderTable(el, headers, rows, maxRows = 100) {
     el.innerHTML = '<p class="text-muted text-center">No hay datos para mostrar.</p>';
     return;
   }
-  const displayRows = rows.slice(0, maxRows);
+  const displayRows = rows.slice(0, maxRows).map(fillNumericZeros);
   const hasMore = rows.length > maxRows;
   let html = `
     <table>
@@ -977,6 +1006,7 @@ function renderMatrizTable(asignaciones) {
   }
   let html = '';
   for (const r of asignaciones) {
+    const rr = fillNumericZeros(r); // <--- NUEVO
     html += `
       <tr>
         <td>${esc(r.NOMBRE_DOCENTE || '')}</td>
@@ -1077,7 +1107,8 @@ function normalizeDocentes(rows) {
     if (diasDisponibles.length === 0) diasDisponibles = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES"];
     return {
       "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"] || r["DOCENTE"] || "",
-      "MATERIA": r["MATERIA"] || r["MATERIAS"] || "",
+      "MATERIA": canonMat(r["MATERIA"] || r["MATERIAS"] || ""),
+      "MATERIA_ORIG": r["MATERIA"] || r["MATERIAS"] || "",
       "CANTIDAD DE ALUMNOS ESPERADOS": Number(r["CANTIDAD DE ALUMNOS ESPERADOS"] || r["CAPACIDAD"] || r["CUPOS"] || 25) || 25,
       "DIA_DISPONIBLE": diasDisponibles,
       "HORA_DISPONIBLE": horasDisponibles,
@@ -1120,6 +1151,8 @@ function normalizeMallas(rows) {
   }
   const result = rows.map(r => {
     const materia = r["MATERIA"] || r["MATERIAS"] || "";
+    "MATERIA": canonMat(materia),
+    "MATERIA_ORIG": materia,
     const codigo = r["CÓDIGO"] || r["CODIGO"] || r["CÓDIGO ANTHOLOGY"] || "";
     let ciclo = 1;
     if (codigo) {
@@ -1536,11 +1569,11 @@ document.addEventListener('DOMContentLoaded', function() {
   
   document.getElementById('btnDown').addEventListener('click', () => {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_SECC), 'MATRIZ_SECCIONES');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_COMB), 'COMBINACION');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_CARGA), 'RESUMEN_CARGA');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_RES_MAT), 'RESUMEN_MATERIA');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_NO), 'NO_ASIGNADOS');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_SECC.map(fillNumericZeros)), 'MATRIZ_SECCIONES');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_COMB.map(fillNumericZeros)), 'COMBINACION');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_CARGA.map(fillNumericZeros)), 'RESUMEN_CARGA');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_RES_MAT.map(fillNumericZeros)), 'RESUMEN_MATERIA');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_NO.map(fillNumericZeros)), 'NO_ASIGNADOS');
     XLSX.writeFile(wb, 'Planificacion_Asignacion_Docente.xlsx');
     showSuccess('Archivo descargado correctamente.');
   });
