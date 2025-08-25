@@ -811,7 +811,9 @@ let __DOCENTE_SUBJ__  = new Map();  // Map<Docente, Set<Materias>>
 let __DOC_DAY_GLOBAL__ = new Map(); // Map<Docente, Map<DIA, count>>
 
 const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
-const COMBO9  = [...TARGET7,"ESTUDIANTE","CICLO"];
+// >>> AÑADIMOS DEDICACIÓN EN LA TABLA DE ASIGNACIONES (sin borrar constantes previas)
+const COMBO9  = [...TARGET7,"DEDICACIÓN","ESTUDIANTE","CICLO"];
+
 const DAY_MAP = new Map(Object.entries({
   "lun":"LUNES","lunes":"LUNES","lun.":"LUNES",
   "mar":"MARTES","martes":"MARTES","mar.":"MARTES",
@@ -1072,9 +1074,10 @@ function normalizeDocentes(rows) {
       "CANTIDAD DE ALUMNOS ESPERADOS": Number(r["CANTIDAD DE ALUMNOS ESPERADOS"] || r["CAPACIDAD"] || r["CUPOS"] || 25) || 25,
       "DIA_DISPONIBLE": Array.from(new Set(diasDisponibles)),
       "HORA_DISPONIBLE": Array.from(new Set(horasDisponibles)),
-      "Modalidad": r["Modalidad"] || "PRESENCIAL",
-      "Paralelo": String(r["Paralelo"] || "").toUpperCase().trim() || "A",
-      "DEDICACIÓN": r["DEDICACIÓN"] || ""
+      "Modalidad": r["Modalidad"] || r["MODALIDAD"] || "PRESENCIAL",
+      "Paralelo": String(r["Paralelo"] || r["PARALELO"] || "").toUpperCase().trim() || "A",
+      // >>> AÑADIMOS ALIAS SIN ACENTO
+      "DEDICACIÓN": r["DEDICACIÓN"] || r["DEDICACION"] || r["DEDICACION "] || ""
     };
     return out;
   }).filter(x => x.MATERIA && x.NOMBRE_DOCENTE);
@@ -1117,15 +1120,15 @@ function normalizeMallas(rows) {
       "MATERIA": materia,
       "CODIGO": String(codigo).trim(),
       "CICLO": Math.max(1, Math.min(12, Number(ciclo)||1)),
-      "HORAS TEÓRICAS": Number(r["HORAS TEÓRICAS"] || r["HORAS_TEORICAS"] || 0) || 0,
-      "HORAS PRÁCTICAS": Number(r["HORAS PRÁCTICAS"] || r["HORAS_PRACTICAS"] || 0) || 0,
-      "HORAS AUTÓNOMAS": Number(r["HORAS AUTÓNOMAS"] || 0) || 0,
+      "HORAS TEÓRICAS": Number(r["HORAS TEÓRICAS"] || r["HORAS_TEORICAS"] || r["HORAS TEORICAS"] || 0) || 0,
+      "HORAS PRÁCTICAS": Number(r["HORAS PRÁCTICAS"] || r["HORAS_PRACTICAS"] || r["HORAS PRACTICAS"] || 0) || 0,
+      "HORAS AUTÓNOMAS": Number(r["HORAS AUTÓNOMAS"] || r["HORAS AUTONOMAS"] || 0) || 0,
       "CREDITOS": Number(r["CREDITOS"] || 0) || 0,
-      "CAMPO DE FORMACIÓN": r["CAMPO DE FORMACIÓN"] || "",
+      "CAMPO DE FORMACIÓN": r["CAMPO DE FORMACIÓN"] || r["CAMPO DE FORMACION"] || "",
       "MALLA": r["MALLA"] || "",
-      "Nº ORDEN EN LA MALLA": r["Nº ORDEN EN LA MALLA"] || 0,
-      "PRE-REQUISITO": r["PRE-REQUISITO"] || "",
-      "CARRERAS QUE COMPARTEN": r["CARRERAS QUE COMPARTEN"] || ""
+      "Nº ORDEN EN LA MALLA": r["Nº ORDEN EN LA MALLA"] || r["NRO ORDEN EN LA MALLA"] || 0,
+      "PRE-REQUISITO": r["PRE-REQUISITO"] || r["PREREQUISITO"] || "",
+      "CARRERAS QUE COMPARTEN": r["CARRERAS QUE COMPARTEN"] || r["CARRERAS_COMPARTEN"] || ""
     };
   }).filter(x => x.MATERIA);
   return result;
@@ -1290,7 +1293,7 @@ function construirSecciones(docentes, mallas, estudiantes) {
   return secciones;
 }
 
-// ===== Helpers para creación de secciones extra en caso necesario (sin eliminar líneas previas) =====
+// ===== Helpers para creación de secciones extra =====
 function buildMetaFromMalla(ciclo, materia, mallas){
   const codigos = new Set(), carreras = new Set(), mallasSet = new Set();
   let hT=0,hP=0,hA=0, cred=0, campo="0", orden=0, prereq="0";
@@ -1369,7 +1372,7 @@ function ensureExtraSection(ciclo, materia, mallas, secciones){
   return null;
 }
 
-// Encontrar horario disponible sin cruces: por ciclo Y por docente (se mantiene por compatibilidad)
+// Encontrar horario disponible sin cruces (compatibilidad)
 function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
   const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
   const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
@@ -1546,6 +1549,8 @@ function asignarEstudiantes(secciones, estudiantes, mallas) {
   // Resúmenes
   const cargaDocente = Array.from(secciones).map(s => ({
     DOCENTE: s.NOMBRE_DOCENTE || "0",
+    // >>> INCLUIMOS DEDICACIÓN EN CARGA DOCENTE
+    DEDICACIÓN: s.DEDICACIÓN || "0",
     MATERIA: s.MATERIA,
     Paralelo: s.Paralelo || "A",
     DIA: s.DIA || "0",
@@ -1618,8 +1623,11 @@ document.addEventListener('DOMContentLoaded', function() {
       const secciones = construirSecciones(DOC, MAL, EST);
       updateProgress(80);
       const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = asignarEstudiantes(secciones, EST, MAL);
+
+      // >>> INCLUIMOS DEDICACIÓN EN TODAS LAS HOJAS DE SALIDA
       OUT_SECC = seccFinal.map(s => ({
         "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE || "0",
+        "DEDICACIÓN": s.DEDICACIÓN || "0",
         "MATERIA": s.MATERIA,
         "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP || 0,
         "DIA": s.DIA || "0",
@@ -1629,6 +1637,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }));
       OUT_COMB = asignaciones.map(a => ({
         "NOMBRE_DOCENTE": a.NOMBRE_DOCENTE,
+        "DEDICACIÓN": a.DEDICACIÓN || "0",
         "MATERIA": a.MATERIA,
         "CANTIDAD DE ALUMNOS ESPERADOS": a["CANTIDAD DE ALUMNOS ESPERADOS"] || 0,
         "DIA": a.DIA || "0",
@@ -1642,10 +1651,16 @@ document.addEventListener('DOMContentLoaded', function() {
       OUT_CARGA = cargaDocente;
       OUT_RES_MAT = resumenMateria;
       updateProgress(90);
+
+      // >>> TABLA DE ASIGNACIONES (con DEDICACIÓN)
       renderTable(document.getElementById('tblCombo'), COMBO9, OUT_COMB, 100);
-      renderTable(document.getElementById('tblCarga'), 
-                 ["DOCENTE", "MATERIA", "Paralelo", "DIA", "HORA", "ASIGNADOS", "CAP"], 
-                 OUT_CARGA, 100);
+      // >>> TABLA CARGA DOCENTE (agregamos cabecera DEDICACIÓN)
+      renderTable(
+        document.getElementById('tblCarga'), 
+        ["DOCENTE","DEDICACIÓN","MATERIA","Paralelo","DIA","HORA","ASIGNADOS","CAP"], 
+        OUT_CARGA, 
+        100
+      );
       renderTable(document.getElementById('tblResumenMateria'), 
                  ["MATERIA", "Paralelo", "ASIGNADOS", "CAP", "OCUPACION"], 
                  OUT_RES_MAT, 100);
