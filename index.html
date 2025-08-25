@@ -794,7 +794,7 @@
     </div>
   </div>
 </div>
-
+let __DOCENTE_SLOTS__ = new Map(); // Map<Docente, Map<DIA, Set<HORA>>>
 <script>
 // ===================== Constantes y Utilidades =====================
 const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
@@ -1152,6 +1152,7 @@ function normalizeMallas(rows) {
 
 // ===================== Lógica de secciones y asignación =====================
 function construirSecciones(docentes, mallas, estudiantes) {
+  __DOCENTE_SLOTS__ = new Map(); // reset por corrida
   const secciones = [];
   const horariosOcupados = new Map(); // Map<ciclo, Map<dia, Set<hora>>>
   const capacidadPorParalelo = parseInt(document.getElementById('capacidadParalelo').value) || 25;
@@ -1254,18 +1255,32 @@ function construirSecciones(docentes, mallas, estudiantes) {
 
 
 // Encontrar horario disponible para un docente que no esté ocupado en el mismo ciclo
+// Encontrar horario disponible sin cruces: por ciclo Y por docente
 function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
+  // estructura por docente
+  const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
+  const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
+
   for (const dia of docente.DIA_DISPONIBLE) {
-    const horariosOcupadosDia = horariosOcupadosCiclo.get(dia) || new Set();
+    const ocupadosDiaCiclo = horariosOcupadosCiclo.get(dia) || new Set(); // evita cruces dentro del ciclo
+    const ocupadosDiaDoc = slotsDoc.get(dia) || new Set();                 // evita cruces del docente (todos los ciclos)
+
     for (const hora of docente.HORA_DISPONIBLE) {
-      if (!horariosOcupadosDia.has(hora)) {
-        horariosOcupadosDia.add(hora);
-        horariosOcupadosCiclo.set(dia, horariosOcupadosDia);
+      // libre en el ciclo y libre para el docente
+      if (!ocupadosDiaCiclo.has(hora) && !ocupadosDiaDoc.has(hora)) {
+        // marcar ocupación en ambas estructuras
+        ocupadosDiaCiclo.add(hora);
+        horariosOcupadosCiclo.set(dia, ocupadosDiaCiclo);
+
+        ocupadosDiaDoc.add(hora);
+        slotsDoc.set(dia, ocupadosDiaDoc);
+        __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc);
+
         return { dia, hora };
       }
     }
   }
-  return null;
+  return null; // no hay slot compatible
 }
 
 function agruparPorMateria(secciones) {
