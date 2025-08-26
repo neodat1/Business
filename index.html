@@ -1090,6 +1090,7 @@ function normalizeDocentes(rows) {
   }).filter(x => x.MATERIA && x.NOMBRE_DOCENTE);
   console.log("Docentes normalizados:", result);
   if (result.length === 0) showError("No se encontraron datos válidos en el archivo de docentes.");
+  window.__DOCS_LAST__ = result;   // <— línea nueva
   return result;
 }
 
@@ -1721,6 +1722,8 @@ try { if (!COMBO9.includes("DEDICACIÓN")) COMBO9.splice(7,0,"DEDICACIÓN"); } c
 
   // Crea sección extra si falta cupo/slot (con toda la info consolidada)
   function ensureExtraSection(ciclo, materia, docentes, mallas, secciones){
+    if (!docentes || !docentes.length) return null;   // <— línea nueva
+    const capacidad = parseInt(document.getElementById('capacidadParalelo').value)||25;
     const capacidad = parseInt(document.getElementById('capacidadParalelo').value)||25;
     const candidatos = docentes.filter(d => String(d.MATERIA).toUpperCase().trim() === String(materia).toUpperCase().trim());
     if(!candidatos.length) return null;
