@@ -1470,6 +1470,46 @@ function ensureExtraSection(ciclo, materia, docentes, mallas, secciones) {
   return null;
 }
 
+
+// CAMBIO: limpieza sin forzar mayúsculas para mostrar, y normalización para comparar
+const __cleanName = s => String(s ?? "").trim();
+const __normEq = (a,b) => __norm(a) === __norm(b);
+
+// CAMBIO: devuelve true si la materia de malla "m" es elegible para el estudiante "e"
+function materiaElegibleParaEstudiante(e, m) {
+  if (Number(m.CICLO) !== Number(e.CICLO)) return false;
+
+  const eCarrera = __cleanName(e.CARRERA);
+  const eMalla   = __cleanName(e.MALLA);
+  const mCarrera = __cleanName(m.CARRERA);
+  const mMalla   = __cleanName(m.MALLA);
+
+  // 1) misma carrera
+  if (eCarrera && mCarrera && __normEq(eCarrera, mCarrera)) return true;
+
+  // 2) misma malla
+  if (eMalla && mMalla && __normEq(eMalla, mMalla)) return true;
+
+  // 3) carrera del estudiante listada en "CARRERAS QUE COMPARTEN"
+  const comparte = __splitList(m["CARRERAS QUE COMPARTEN"])
+                    .map(__cleanName)
+                    .some(c => c && __normEq(c, eCarrera));
+  if (eCarrera && comparte) return true;
+
+  return false;
+}
+
+// CAMBIO: obtener lista única de materias elegibles para el estudiante "e"
+function materiasElegiblesParaEstudiante(e, mallas) {
+  const set = new Set();
+  for (const m of mallas) {
+    if (materiaElegibleParaEstudiante(e, m)) set.add(m.MATERIA);
+  }
+  return Array.from(set);
+}
+
+
+  
 function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
   const idxPorMateria = agruparPorMateria(secciones);
   const asignaciones = [];
@@ -1490,7 +1530,9 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
   const markPlace = (est,dia,hora)=>{ const m=estDayCount.get(est)||new Map(); m.set(dia,(m.get(dia)||0)+1); estDayCount.set(est,m); const s=estSlots.get(est)||new Set(); s.add(`${dia}¦${hora}`); estSlots.set(est,s); };
 
   for (const e of estudiantes) {
-    const materias = Array.from(materiasPorCiclo.get(e.CICLO) || []);
+    // CAMBIO: solo materias de su malla o que comparten su carrera
+const materias = materiasElegiblesParaEstudiante(e, mallas);
+
     let materiasAsignadas = 0;
     const ya = new Set(); // no repetir la misma materia en el estudiante
 
@@ -1694,7 +1736,9 @@ document.addEventListener('DOMContentLoaded', function() {
       const secciones = construirSecciones(DOC, MAL, EST);
       updateProgress(80);
       const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = asignarEstudiantes(secciones, EST, MAL, DOC);
-      OUT_SECC = seccFinal.map(s => ({
+      const codStr = Array.from(info.CODIGOS||[]).filter(Boolean).join('/') || String(materia.CODIGO||"0");
+      const carStr = Array.from(info.CARRERAS||[]).filter(Boolean).join('/') || String(materia["CARRERAS QUE COMPARTEN"]||"0");
+     OUT_SECC = seccFinal.map(s => ({
         "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE || "0",
         "DEDICACIÓN": s.DEDICACIÓN || "0",
         "MATERIA": s.MATERIA,
