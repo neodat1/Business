@@ -830,27 +830,31 @@ const HORARIOS = [
 const __norm = s => String(s ?? "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
 const __splitList = s => String(s ?? "").split(/[,;/]| Y | E /i).map(x=>x.trim()).filter(Boolean);
 
-// Función para convertir horarios a bloques de 3 horas
+// CAMBIO GENERAL: interpretar rangos como "19:00 A 22:00", "19:00-22:00", "7-10", etc.
+// Devuelve un bloque EXACTO de HORARIOS si el inicio coincide. Si no puede interpretar, devuelve null.
 function normalizarHorario(horario) {
-  if (!horario) return HORARIOS[0]; // Valor por defecto
-  
-  const horarioStr = String(horario).toUpperCase().trim();
-  
-  // Si ya es un horario válido, devolverlo
-  if (HORARIOS.includes(horarioStr)) {
-    return horarioStr;
-  }
-  
-  // Intentar parsear horarios como "07:00-22:00" o "14:00-22:00"
-  const match = horarioStr.match(/(\d{1,2}):(\d{2})\s*[-–a]+\s*(\d{1,2}):(\d{2})/);
-  if (match) {
-    const horaInicio = `${match[1].padStart(2,'0')}:${match[2]}`;
-    const bloque = HORARIOS.find(b=>b.startsWith(horaInicio));
-    if (bloque) return bloque;
-  }
-  // Si no se puede determinar, usar el primer bloque
-  return HORARIOS[0];
+  if (!horario) return null;
+
+  const raw = String(horario).toUpperCase().trim();
+
+  // Si ya coincide con un bloque permitido, úselo
+  if (HORARIOS.includes(raw)) return raw;
+
+  // Aceptar separadores y minutos opcionales
+  // Ej: "07:00-10:00", "07:00 – 10:00", "07:00 A 10:00", "7-10", "7 a 10"
+  const re = /(\d{1,2})(?::(\d{2}))?\s*(?:-|–|—|A|AL|A LAS|A LOS|TO)\s*(\d{1,2})(?::(\d{2}))?/i;
+  const m = raw.match(re);
+  if (!m) return null;
+
+  const hIni = m[1].padStart(2,'0');
+  const mIni = (m[2] ?? '00').padStart(2,'0');
+  const start = `${hIni}:${mIni}`;
+
+  // Solo si el inicio coincide exactamente con un bloque válido
+  const bloque = HORARIOS.find(b => b.startsWith(start));
+  return bloque || null;
 }
+
 
 // Utilidades mejoradas
 const canonDay = s => {
