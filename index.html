@@ -1391,31 +1391,6 @@ if (!Array.isArray(docente.HORA_DISPONIBLE) || docente.HORA_DISPONIBLE.length ==
   return null; // no hay slot compatible
 }
 
-// (Se conserva la versión original por compatibilidad; no se usa aquí, pero no se elimina)
-/* function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
-  const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
-  const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
-
-  for (const dia of docente.DIA_DISPONIBLE) {
-    const ocupadosDiaCiclo = horariosOcupadosCiclo.get(dia) || new Set();
-    const ocupadosDiaDoc = slotsDoc.get(dia) || new Set();
-
-    for (const hora of docente.HORA_DISPONIBLE) {
-      if (!ocupadosDiaCiclo.has(hora) && !ocupadosDiaDoc.has(hora)) {
-        ocupadosDiaCiclo.add(hora);
-        horariosOcupadosCiclo.set(dia, ocupadosDiaCiclo);
-
-        ocupadosDiaDoc.add(hora);
-        slotsDoc.set(dia, ocupadosDiaDoc);
-        __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc);
-
-        return { dia, hora };
-      }
-    }
-  }
-  return null;
-} */
-
 function agruparPorMateria(secciones) {
   const map = new Map();
   for (const s of secciones) {
