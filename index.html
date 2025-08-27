@@ -1516,6 +1516,10 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
   const asignaciones = [];
   const noAsig = [];
   const maxMaterias = parseInt(document.getElementById('maxMaterias').value) || 6;
+  const mallaEst = String(e.MALLA || "0").trim();
+  const carreraEst = String(e.CARRERA || "0").trim();
+  const mallaCarreraEst = [mallaEst, carreraEst].filter(Boolean).join('/');
+
 
   // materias del ciclo (todas las carreras pueden mezclarse)
   const materiasPorCiclo = new Map();
@@ -1583,7 +1587,7 @@ const materias = materiasElegiblesParaEstudiante(e, mallas);
           "HORAS AUTÓNOMAS": Number(s["HORAS AUTÓNOMAS"] || 0),
           CREDITOS: Number(s.CREDITOS || 0),
           "CAMPO DE FORMACIÓN": s["CAMPO DE FORMACIÓN"] || "0",
-          MALLA: s.MALLA || "0",
+          MALLA: mallaCarreraEst,   // <-- en lugar de s.MALLA
           "Nº ORDEN EN LA MALLA": Number(s["Nº ORDEN EN LA MALLA"] || 0),
           "Nro. HORAS": Number(s["HORAS TEÓRICAS"] || 0) + Number(s["HORAS PRÁCTICAS"] || 0),
           "CARRERA DEL ESTUDIANTE": e.CARRERA || "0",
@@ -1693,8 +1697,54 @@ const materias = materiasElegiblesParaEstudiante(e, mallas);
   return { asignaciones, noAsig, cargaDocente, resumenMateria, secciones };
 }
 
+  // Guardar la planificación de estudiantes (la matriz completa que ya renderizas)
+OUT_PLAN_EST = asignaciones.slice();
+
+// Construir Planificación-Docentes (mismo contenido pero ordenado por docente)
+const PLAN_DOC_COLS = [
+  "DOCENTE","DEDICACIÓN","MATERIA","CÓDIGO ANTHOLOGY","CARRERAS QUE COMPARTEN","PRE-REQUISITO",
+  "CODIGO","HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","CREDITOS","CAMPO DE FORMACIÓN",
+  "CICLO","MALLA","Nº ORDEN EN LA MALLA","PARALELO","DIA","HORA","Modalidad","Nro. HORAS",
+  "NOMBRE DEL ESTUDIANTE","CARRERA DEL ESTUDIANTE","CICLO DEL ESTUDIANTE","NIVEL INGLES","OBSERVACIONES"
+];
+
+OUT_PLAN_DOC = OUT_PLAN_EST.map(a => ({
+  "DOCENTE": a.NOMBRE_DOCENTE,
+  "DEDICACIÓN": a.DEDICACIÓN || "0",
+  "MATERIA": a.MATERIA,
+  "CÓDIGO ANTHOLOGY": a["CÓDIGO ANTHOLOGY"] || a.CODIGO || "0",
+  "CARRERAS QUE COMPARTEN": a["CARRERAS QUE COMPARTEN"] || "0",
+  "PRE-REQUISITO": a["PRE-REQUISITO"] || "0",
+  "CODIGO": a.CODIGO || "0",
+  "HORAS TEÓRICAS": Number(a["HORAS TEÓRICAS"] || 0),
+  "HORAS PRÁCTICAS": Number(a["HORAS PRÁCTICAS"] || 0),
+  "HORAS AUTÓNOMAS": Number(a["HORAS AUTÓNOMAS"] || 0),
+  "CREDITOS": Number(a.CREDITOS || 0),
+  "CAMPO DE FORMACIÓN": a["CAMPO DE FORMACIÓN"] || "0",
+  "CICLO": a.CICLO || 0,
+  "MALLA": a.MALLA || "0", // aquí ya viene como MALLA/CARRERA del estudiante
+  "Nº ORDEN EN LA MALLA": Number(a["Nº ORDEN EN LA MALLA"] || 0),
+  "PARALELO": a.Paralelo || "0",
+  "DIA": a.DIA || "0",
+  "HORA": a.HORA || "0",
+  "Modalidad": a.Modalidad || "0",
+  "Nro. HORAS": Number(a["Nro. HORAS"] || 0),
+  "NOMBRE DEL ESTUDIANTE": a.ESTUDIANTE,
+  "CARRERA DEL ESTUDIANTE": a["CARRERA DEL ESTUDIANTE"] || "0",
+  "CICLO DEL ESTUDIANTE": a["CICLO DEL ESTUDIANTE"] || 0,
+  "NIVEL INGLES": a["NIVEL INGLES"] || "0",
+  "OBSERVACIONES": a.OBSERVACIONES || "0"
+})).sort((x,y) =>
+  x.DOCENTE.localeCompare(y.DOCENTE) ||
+  x.MATERIA.localeCompare(y.MATERIA) ||
+  String(x.PARALELO).localeCompare(String(y.PARALELO)) ||
+  x["NOMBRE DEL ESTUDIANTE"].localeCompare(y["NOMBRE DEL ESTUDIANTE"])
+);
+
+
 // ===================== Interfaz =====================
 let OUT_SECC = [], OUT_COMB = [], OUT_CARGA = [], OUT_RES_MAT = [], OUT_NO = [];
+let OUT_PLAN_DOC = [], OUT_PLAN_EST = [];
 
 document.addEventListener('DOMContentLoaded', function() {
   updateFileStatus('fileDoc', 'statusDoc', true);
