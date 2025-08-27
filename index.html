@@ -1736,9 +1736,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const secciones = construirSecciones(DOC, MAL, EST);
       updateProgress(80);
       const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = asignarEstudiantes(secciones, EST, MAL, DOC);
-      const codStr = Array.from(info.CODIGOS||[]).filter(Boolean).join('/') || String(materia.CODIGO||"0");
-      const carStr = Array.from(info.CARRERAS||[]).filter(Boolean).join('/') || String(materia["CARRERAS QUE COMPARTEN"]||"0");
-     OUT_SECC = seccFinal.map(s => ({
+      OUT_SECC = seccFinal.map(s => ({
         "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE || "0",
         "DEDICACIÓN": s.DEDICACIÓN || "0",
         "MATERIA": s.MATERIA,
