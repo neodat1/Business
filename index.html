@@ -826,6 +826,28 @@ const HORARIOS = [
   "16:00-19:00", "19:00-22:00"
 ];
 
+// CAMBIO: Política de ventanas por ciclo (edítela si su institución usa otra).
+// Cada ciclo solo puede usarse en los días/horas aquí definidos (además de la disponibilidad del docente).
+const CYCLE_CALENDAR = {
+  1: { dias: ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"], horas: ["07:00-10:00"] },
+  2: { dias: ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"], horas: ["10:00-13:00"] },
+  3: { dias: ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"], horas: ["13:00-16:00"] },
+  4: { dias: ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"], horas: ["16:00-19:00"] },
+  5: { dias: ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"], horas: ["19:00-22:00"] },
+  6: { dias: ["LUNES","MIERCOLES","VIERNES"],                 horas: ["07:00-10:00","13:00-16:00"] },
+  7: { dias: ["MARTES","JUEVES"],                             horas: ["07:00-10:00","13:00-16:00"] },
+  8: { dias: ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"], horas: ["10:00-13:00","16:00-19:00"] },
+  // 9 no se usa (graduados). Si un ciclo no está aquí, no se restringe (se permiten todos los días/horas válidos).
+};
+
+// CAMBIO: chequear si un (día,hora) está permitido para el ciclo
+function slotPermitidoPorCiclo(ciclo, dia, hora) {
+  const pol = CYCLE_CALENDAR[Number(ciclo)];
+  if (!pol) return true; // si no hay política para ese ciclo, no se restringe
+  return pol.dias.includes(dia) && pol.horas.includes(hora);
+}
+
+  
 // ---- helpers extra sin quitar originales ----
 const __norm = s => String(s ?? "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
 const __splitList = s => String(s ?? "").split(/[,;/]| Y | E /i).map(x=>x.trim()).filter(Boolean);
@@ -1226,8 +1248,10 @@ function construirSecciones(docentes, mallas, estudiantes) {
     }
     const o = metaMap.get(key);
     if (m.CODIGO) o.CODIGOS.add(String(m.CODIGO));
-    if (m.CARRERA) o.CARRERAS.add(__norm(m.CARRERA));
-    __splitList(m["CARRERAS QUE COMPARTEN"]).forEach(c=>o.CARRERAS.add(__norm(c)));
+    // CAMBIO: conservar nombres tal como vienen (sin forzar mayúsculas)
+const __cleanName = s => String(s ?? "").trim();
+if (m.CARRERA) o.CARRERAS.add(__cleanName(m.CARRERA));
+__splitList(m["CARRERAS QUE COMPARTEN"]).forEach(c => { const t = __cleanName(c); if (t) o.CARRERAS.add(t); });
     if (m.MALLA) o.MALLAS.add(String(m.MALLA));
     o["HORAS TEÓRICAS"] = Math.max(o["HORAS TEÓRICAS"], Number(m["HORAS TEÓRICAS"]||0));
     o["HORAS PRÁCTICAS"] = Math.max(o["HORAS PRÁCTICAS"], Number(m["HORAS PRÁCTICAS"]||0));
@@ -1273,7 +1297,8 @@ function construirSecciones(docentes, mallas, estudiantes) {
         if ((seccionesPorDocente.get(cand.NOMBRE_DOCENTE)||0) >= 5) continue;
 
         // Encontrar horario libre para ese docente en el ciclo con máx 2 por día
-        const opt = encontrarHorarioDisponibleConLimite(horariosOcupados.get(ciclo), cand);
+        // CAMBIO: pasar el ciclo para validar contra CYCLE_CALENDAR
+        const opt = encontrarHorarioDisponibleConLimite(horariosOcupados.get(ciclo), cand, ciclo);
         if (opt) { docente = cand; horario = opt; break; }
       }
       if (!docente) {
@@ -1326,9 +1351,14 @@ function construirSecciones(docentes, mallas, estudiantes) {
 
 // Encontrar horario disponible para un docente que no esté ocupado en el mismo ciclo
 // con límite de 2 materias por día y respetando disponibilidad declarada
-function encontrarHorarioDisponibleConLimite(horariosOcupadosCiclo, docente) {
+// CAMBIO: ahora recibe el ciclo para validar ventana por ciclo
+function encontrarHorarioDisponibleConLimite(horariosOcupadosCiclo, docente, ciclo) {
 const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
 const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
+// CAMBIO: sin días/horas válidos => no se asigna
+if (!Array.isArray(docente.DIA_DISPONIBLE) || docente.DIA_DISPONIBLE.length === 0) return null;
+if (!Array.isArray(docente.HORA_DISPONIBLE) || docente.HORA_DISPONIBLE.length === 0) return null;
+
 
 // CAMBIO: si no hay días u horas válidas, no intentar asignar
 if (!Array.isArray(docente.DIA_DISPONIBLE) || docente.DIA_DISPONIBLE.length === 0) return null;
@@ -1342,6 +1372,8 @@ if (!Array.isArray(docente.DIA_DISPONIBLE) || docente.DIA_DISPONIBLE.length === 
 if (!Array.isArray(docente.HORA_DISPONIBLE) || docente.HORA_DISPONIBLE.length === 0) continue;
 
     for (const hora of docente.HORA_DISPONIBLE) {
+      // CAMBIO: el (día,hora) debe estar permitido para el ciclo
+      if (!slotPermitidoPorCiclo(ciclo, dia, hora)) continue;
       if (!ocupadosDiaCiclo.has(hora) && !ocupadosDiaDoc.has(hora)) {
         // marcar ocupación en ambas estructuras
         ocupadosDiaCiclo.add(hora);
