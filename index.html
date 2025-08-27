@@ -1472,7 +1472,6 @@ function ensureExtraSection(ciclo, materia, docentes, mallas, secciones) {
 
 
 // CAMBIO: limpieza sin forzar mayúsculas para mostrar, y normalización para comparar
-const __cleanName = s => String(s ?? "").trim();
 const __normEq = (a,b) => __norm(a) === __norm(b);
 
 // CAMBIO: devuelve true si la materia de malla "m" es elegible para el estudiante "e"
