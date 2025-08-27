@@ -1080,17 +1080,28 @@ function normalizeDocentes(rows) {
       if (textoDias.includes("SABADO") || textoDias.includes("SÁBADO")) diasDisponibles.push("SABADO");
     }
     if (r["HORA DISPONIBLE"] || r["HORA"]) {
-      const textoHoras = String(r["HORA DISPONIBLE"] || r["HORA"] || "").toUpperCase();
-      const rangos = textoHoras.match(/\d{1,2}:\d{2}\s*[-–a]+\s*\d{1,2}:\d{2}/g) || [];
-      if (rangos.length) {
-        horasDisponibles = Array.from(new Set(rangos.map(normalizarHorario)));
-      } else if (textoHoras.includes("07:00") && textoHoras.includes("22:00")) {
-        horasDisponibles = [...HORARIOS];
-      } else {
-        horasDisponibles = [...HORARIOS];
-      }
+  const textoHoras = String(r["HORA DISPONIBLE"] || r["HORA"] || "").toUpperCase();
+
+  // CAMBIO GENERAL: capturar más formatos y NO asumir horas por defecto
+  const rangos = textoHoras.match(/\d{1,2}(?::\d{2})?\s*(?:-|–|—|a|A|AL|A LAS|A LOS|TO)\s*\d{1,2}(?::\d{2})?/gi) || [];
+
+  if (rangos.length) {
+    const bloques = [];
+    for (const rstr of rangos) {
+      const b = normalizarHorario(rstr);
+      if (b) bloques.push(b);
     }
-    if (diasDisponibles.length === 0) diasDisponibles = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES"];
+    horasDisponibles = Array.from(new Set(bloques)); // solo bloques válidos
+  } else if (/\b07:00\b.*\b22:00\b/i.test(textoHoras) || /\b7\b.*\b22\b/.test(textoHoras)) {
+    // Rango total del día declarado explícitamente -> todos los bloques
+    horasDisponibles = [...HORARIOS];
+  } else {
+    horasDisponibles = []; // sin horas interpretables -> sin asignación
+  }
+}
+
+    // CAMBIO: sin días interpretables NO se asigna (respeto estricto de restricciones)
+    if (diasDisponibles.length === 0) diasDisponibles = [];
     return {
       "NOMBRE_DOCENTE": r["NOMBRE_DOCENTE"] || r["DOCENTE"] || "",
       "MATERIA": r["MATERIA"] || r["MATERIAS"] || "",
@@ -1316,8 +1327,11 @@ function construirSecciones(docentes, mallas, estudiantes) {
 // Encontrar horario disponible para un docente que no esté ocupado en el mismo ciclo
 // con límite de 2 materias por día y respetando disponibilidad declarada
 function encontrarHorarioDisponibleConLimite(horariosOcupadosCiclo, docente) {
-  const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
-  const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
+const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
+const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
+
+// CAMBIO: si no hay días u horas válidas, no intentar asignar
+if (!Array.isArray(docente.DIA_DISPONIBLE) || docente.DIA_DISPONIBLE.length === 0) return null;
 
   for (const dia of docente.DIA_DISPONIBLE) {
     // máx 2 por día para docente
@@ -1325,6 +1339,7 @@ function encontrarHorarioDisponibleConLimite(horariosOcupadosCiclo, docente) {
 
     const ocupadosDiaCiclo = horariosOcupadosCiclo.get(dia) || new Set(); // evita cruces dentro del ciclo
     const ocupadosDiaDoc = slotsDoc.get(dia) || new Set();                 // evita cruces del docente (todos los ciclos)
+if (!Array.isArray(docente.HORA_DISPONIBLE) || docente.HORA_DISPONIBLE.length === 0) continue;
 
     for (const hora of docente.HORA_DISPONIBLE) {
       if (!ocupadosDiaCiclo.has(hora) && !ocupadosDiaDoc.has(hora)) {
