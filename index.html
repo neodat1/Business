@@ -804,6 +804,8 @@
 </div>
 
 <script>
+// FIX: defínelo una sola vez a nivel global, si aún no existe
+window.__cleanName ??= (s => String(s ?? "").trim());
 // ===================== Constantes y Utilidades =====================
 let __DOCENTE_SLOTS__ = new Map(); // Map<Docente, Map<DIA, Set<HORA>>>
 const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
