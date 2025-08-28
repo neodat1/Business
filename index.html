@@ -595,8 +595,13 @@
   #careerFilterBar{ display:none; gap:12px; align-items:center; margin:12px 0 0 0; }
   #careerFilter{ padding:8px 12px; border:1px solid var(--border); border-radius:8px; max-width:320px; }
 
-  /* ====== UIDE: ocultar el ícono de documento del título SIN eliminar el SVG ====== */
-  .app-title svg{ display:none !important; }
+  /* ====== MOSTRAR SOLO “ASIGNACIONES” Y “MATRIZ COMPLETA” (sin borrar nada) ====== */
+  .tab[data-tab="carga-docente"],
+  .tab[data-tab="resumen-materia"],
+  .tab[data-tab="no-asignados"],
+  #carga-docente,
+  #resumen-materia,
+  #no-asignados { display: none !important; }
 </style>
 </head>
 <body>
@@ -749,8 +754,6 @@
 
   <div class="tabs">
     <div class="tab active" data-tab="asignaciones">Asignaciones</div>
-    <!-- NUEVO: pestaña paralelos (añadida sin eliminar ninguna existente) -->
-    <div class="tab" data-tab="paralelos">Estudiantes por Paralelo</div>
     <div class="tab" data-tab="carga-docente">Carga Docente</div>
     <div class="tab" data-tab="resumen-materia">Resumen por Materia</div>
     <div class="tab" data-tab="no-asignados">No Asignados</div>
@@ -773,19 +776,6 @@
       </div>
       <div class="table-container">
         <div id="tblCombo"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- NUEVO: contenido de la pestaña de paralelos -->
-  <div class="tab-content" id="paralelos">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Número de Estudiantes por Paralelo</h3>
-        <span class="badge badge-primary" id="paralelosCount">0</span>
-      </div>
-      <div class="table-container">
-        <div id="tblParalelos"></div>
       </div>
     </div>
   </div>
@@ -817,7 +807,7 @@
   <div class="tab-content" id="no-asignados">
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">No Asignados</h3>
+        <h3 class="card-title">No Asignados</div>
         <span class="badge badge-danger" id="noAsignadosCount">0</span>
       </div>
       <div class="table-container">
@@ -1720,44 +1710,6 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
 const DIAS_DEFAULT = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO"];
 let GLOBAL_ASIGNACIONES = [];
 
-/* NUEVO: helper para construir tabla de paralelos desde secciones */
-function buildParallelTableData(secciones){
-  return secciones.map(s=>({
-    MATERIA:s.MATERIA,
-    CICLO:s.CICLO,
-    PARALELO:s.Paralelo||"",
-    DOCENTE:s.NOMBRE_DOCENTE||"0",
-    DIA:s.DIA||"0",
-    HORA:s.HORA||"0",
-    ASIGNADOS:Number(s.ASIGNADOS||0),
-    CAPACIDAD:Number(s.CAP||0),
-    OCUPACION:(s.CAP?Math.round((Number(s.ASIGNADOS||0)/Number(s.CAP))*100):0)+"%"
-  })).sort((a,b)=> a.MATERIA.localeCompare(b.MATERIA)||a.CICLO-b.CICLO||a.PARALELO.localeCompare(b.PARALELO));
-}
-
-/* NUEVO: helper para construir tabla de paralelos filtrada por carrera */
-function buildParallelTableDataFiltered(assigns, secciones){
-  const idx = new Map();
-  secciones.forEach(s=>idx.set(`${s.MATERIA}¦${s.CICLO}¦${s.Paralelo}`, s));
-  const counts = new Map();
-  for(const a of assigns){
-    const k = `${a.MATERIA}¦${a.CICLO}¦${a.Paralelo}`;
-    counts.set(k,(counts.get(k)||0)+1);
-  }
-  const rows=[];
-  for(const [k,n] of counts){
-    const s = idx.get(k);
-    if(!s) continue;
-    rows.push({
-      MATERIA:s.MATERIA, CICLO:s.CICLO, PARALELO:s.Paralelo||"",
-      DOCENTE:s.NOMBRE_DOCENTE||"0", DIA:s.DIA||"0", HORA:s.HORA||"0",
-      ASIGNADOS:n, CAPACIDAD:Number(s.CAP||0),
-      OCUPACION:(s.CAP?Math.round((n/Number(s.CAP))*100):0)+"%"
-    });
-  }
-  return rows.sort((a,b)=> a.MATERIA.localeCompare(b.MATERIA)||a.CICLO-b.CICLO||a.PARALELO.localeCompare(b.PARALELO));
-}
-
 // Crea sección extra con fallback de días/horas si no existe disponibilidad declarada
 function ensureExtraSectionFinal(ciclo, materia, docentes, mallas, secciones) {
   const ex1 = ensureExtraSection(ciclo, materia, docentes, mallas, secciones);
@@ -1859,15 +1811,6 @@ function applyCareerFilterUI() {
   renderMatrizTable(filtered);
   document.getElementById('asignacionesCount').textContent = filtered.length;
   document.getElementById('matrizCount').textContent = filtered.length;
-
-  // NUEVO: actualizar tabla de "Estudiantes por Paralelo" según filtro
-  try{
-    const rows = buildParallelTableDataFiltered(filtered, (window.__SECC_FINAL__||[]));
-    renderTable(document.getElementById('tblParalelos'),
-      ["MATERIA","CICLO","PARALELO","DOCENTE","DIA","HORA","ASIGNADOS","CAPACIDAD","OCUPACION"],
-      rows, 200);
-    document.getElementById('paralelosCount').textContent = rows.length;
-  }catch(_e){}
   tag.textContent = (v==="__ALL__") ? "Sin filtro" : `Carrera: ${v}`;
 }
 
@@ -1936,8 +1879,6 @@ let OUT_SECC = [], OUT_COMB = [], OUT_CARGA = [], OUT_RES_MAT = [], OUT_NO = [];
 /* UIDE: nuevos datasets para exportación */
 let OUT_PLAN_DOC = [];   // Planificación-Docentes (matriz completa por docente)
 let OUT_PROY = [];       // Proyección estudiantes por materia
-/* NUEVO: dataset de estudiantes por paralelo */
-let OUT_PAR = [];
 
 document.addEventListener('DOMContentLoaded', function() {
   updateFileStatus('fileDoc', 'statusDoc', true);
@@ -2082,17 +2023,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
       }).sort((a,b)=> a.MATERIA.localeCompare(b.MATERIA) || a.CICLO-b.CICLO);
 
-      // NUEVO: construir dataset de paralelos (conteos por sección)
-      OUT_PAR = buildParallelTableData(seccFinal);
-      window.__SECC_FINAL__ = seccFinal; // para filtros dinámicos
-
       updateProgress(90);
       renderTable(document.getElementById('tblCombo'), COMBO9, OUT_COMB, 100);
-      renderTable(document.getElementById('tblParalelos'),
-        ["MATERIA","CICLO","PARALELO","DOCENTE","DIA","HORA","ASIGNADOS","CAPACIDAD","OCUPACION"],
-        OUT_PAR, 200);
-      document.getElementById('paralelosCount').textContent = OUT_PAR.length;
-
       renderTable(document.getElementById('tblCarga'), 
                  ["DOCENTE","DEDICACIÓN","MATERIA","Paralelo","DIA","HORA","ASIGNADOS","CAP"], 
                  OUT_CARGA, 100);
@@ -2141,8 +2073,6 @@ document.addEventListener('DOMContentLoaded', function() {
     /* UIDE: nuevas hojas */
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_PLAN_DOC), 'PLANIFICACION_DOCENTES');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_PROY), 'PROYECCION_POR_MATERIA');
-    /* NUEVO: export de estudiantes por paralelo */
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_PAR), 'ESTUDIANTES_PARALELO');
 
     XLSX.writeFile(wb, 'Planificacion_Asignacion_Docente.xlsx');
     showSuccess('Archivo descargado correctamente.');
