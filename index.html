@@ -629,7 +629,7 @@
       <li>El sistema asignará las materias según el <strong>ciclo al que va</strong> cada estudiante</li>
       <li>Se respetará la disponibilidad de días y horas de los docentes</li>
       <li>Máximo de materias por estudiante: 6</li>
-      <li>Máximo de estudiantes por paralelo: 25</li>
+      <li>Máximo de estudiantes por paralelo: 30</li>
       <li>Horarios disponibles: 7:00-10:00, 10:00-13:00, 13:00-16:00, 16:00-19:00, 19:00-22:00</li>
       <li><strong>Máximo de 2 materias por día</strong> para docentes y estudiantes; sin choques de día/hora</li>
       <li>Estudiantes con ciclo <strong>9</strong> (graduado) no se consideran</li>
@@ -1302,9 +1302,8 @@ function construirSecciones(docentes, mallas, estudiantes) {
       console.warn(`Sin docentes para ${materia.MATERIA}`); 
       continue; 
     }
-
-    const numParalelos = Math.ceil(numEstudiantes / capacidadPorParalelo);
-
+    // Regla UIDE: no abrir otro paralelo hasta llenar el actual
+    const numParalelos = numEstudiantes > 0 ? 1 : 0;
     // Correlativo de paralelos por materia + ciclo (evita repetir "A")
     const kMat = `${materia.MATERIA}¦${ciclo}`;
     const baseIndex = correlativoParalelo.get(kMat) || 0;
@@ -1486,6 +1485,13 @@ function ensureExtraSection(ciclo, materia, docentes, mallas, secciones) {
       for (const hora of d.HORA_DISPONIBLE) {
         if (usadosDiaDoc.has(hora)) continue;
         usadosDiaDoc.add(hora); slotsDoc.set(dia, usadosDiaDoc); __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc); incDocDayCount(nombreDoc, dia);
+        // Regla UIDE: no repetir día/hora de paralelos ya existentes de la MISMA materia y ciclo
+        if (secciones.some(s => Number(s.CICLO)===Number(ciclo) &&
+                                __norm(s.MATERIA)===__norm(materia) &&
+                                s.DIA===dia && s.HORA===hora)) {
+          continue; // busca otra hora
+        }
+
         const paralelo = String.fromCharCode(65 + (secciones.filter(s=>s.MATERIA===materia && s.CICLO===Number(ciclo)).length));
         const nueva = {
           MATERIA: materia,
@@ -1600,51 +1606,67 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
 
       // Si no se pudo, crear sección extra respetando disponibilidad y materia del docente
       if (!placed) {
-        const extra = ensureExtraSection(e.CICLO, mat, docentes, mallas, secciones);
-        if (extra && canPlace(e.ESTUDIANTE, extra.DIA, extra.HORA)) {
-          extra.ASIGNADOS = (extra.ASIGNADOS||0) + 1;
-          materiasAsignadas++;
-          ya.add(mat);
-          markPlace(e.ESTUDIANTE, extra.DIA, extra.HORA);
-          // anexar nueva sección al índice
-          const arr = idxPorMateria.get(k) || [];
-          arr.push(extra); idxPorMateria.set(k, arr);
-
-          const asignacion = {
-            ESTUDIANTE: e.ESTUDIANTE,
-            CICLO: e.CICLO,
-            NOMBRE_DOCENTE: extra.NOMBRE_DOCENTE || "0",
-            MATERIA: extra.MATERIA,
-            "CANTIDAD DE ALUMNOS ESPERADOS": extra.CAP || 0,
-            DIA: extra.DIA || "0",
-            HORA: extra.HORA || "0",
-            Modalidad: extra.Modalidad || "0",
-            Paralelo: extra.Paralelo || "0",
-            DEDICACIÓN: extra.DEDICACIÓN || "0",
-            "CÓDIGO ANTHOLOGY": extra.CODIGO || "0",
-            "CARRERAS QUE COMPARTEN": extra["CARRERAS QUE COMPARTEN"] || "0",
-            "PRE-REQUISITO": extra["PRE-REQUISITO"] || "0",
-            CODIGO: extra.CODIGO || "0",
-            "HORAS TEÓRICAS": Number(extra["HORAS TEÓRICAS"] || 0),
-            "HORAS PRÁCTICAS": Number(extra["HORAS PRÁCTICAS"] || 0),
-            "HORAS AUTÓNOMAS": Number(extra["HORAS AUTÓNOMAS"] || 0),
-            CREDITOS: Number(extra.CREDITOS || 0),
-            "CAMPO DE FORMACIÓN": extra["CAMPO DE FORMACIÓN"] || "0",
-            MALLA: extra.MALLA || "0",
-            "Nº ORDEN EN LA MALLA": Number(extra["Nº ORDEN EN LA MALLA"] || 0),
-            "Nro. HORAS": Number(extra["HORAS TEÓRICAS"] || 0) + Number(extra["HORAS PRÁCTICAS"] || 0),
-            "CARRERA DEL ESTUDIANTE": e.CARRERA || "0",
-            "CICLO DEL ESTUDIANTE": e.CICLO || 0,
-            "NIVEL INGLES": e["NIVEL INGLES"] || "0",
-            OBSERVACIONES: "0"
-          };
-          asignaciones.push(asignacion);
+        // Solo abrimos un nuevo paralelo si TODOS los existentes están llenos
+        const allFull = bucket.length === 0 || bucket.every(s => ((s.CAP || 0) - (s.ASIGNADOS || 0)) <= 0);
+      
+        if (allFull) {
+          const extra = ensureExtraSection(e.CICLO, mat, docentes, mallas, secciones);
+          if (extra && canPlace(e.ESTUDIANTE, extra.DIA, extra.HORA)) {
+            extra.ASIGNADOS = (extra.ASIGNADOS||0) + 1;
+            materiasAsignadas++;
+            ya.add(mat);
+            markPlace(e.ESTUDIANTE, extra.DIA, extra.HORA);
+      
+            const arr = idxPorMateria.get(k) || [];
+            arr.push(extra); 
+            idxPorMateria.set(k, arr);
+      
+            const asignacion = {
+              ESTUDIANTE: e.ESTUDIANTE,
+              CICLO: e.CICLO,
+              NOMBRE_DOCENTE: extra.NOMBRE_DOCENTE || "0",
+              MATERIA: extra.MATERIA,
+              "CANTIDAD DE ALUMNOS ESPERADOS": extra.CAP || 0,
+              DIA: extra.DIA || "0",
+              HORA: extra.HORA || "0",
+              Modalidad: extra.Modalidad || "0",
+              Paralelo: extra.Paralelo || "0",
+              DEDICACIÓN: extra.DEDICACIÓN || "0",
+              "CÓDIGO ANTHOLOGY": extra.CODIGO || "0",
+              "CARRERAS QUE COMPARTEN": extra["CARRERAS QUE COMPARTEN"] || "0",
+              "PRE-REQUISITO": extra["PRE-REQUISITO"] || "0",
+              CODIGO: extra.CODIGO || "0",
+              "HORAS TEÓRICAS": Number(extra["HORAS TEÓRICAS"] || 0),
+              "HORAS PRÁCTICAS": Number(extra["HORAS PRÁCTICAS"] || 0),
+              "HORAS AUTÓNOMAS": Number(extra["HORAS AUTÓNOMAS"] || 0),
+              CREDITOS: Number(extra.CREDITOS || 0),
+              "CAMPO DE FORMACIÓN": extra["CAMPO DE FORMACIÓN"] || "0",
+              MALLA: extra.MALLA || "0",
+              "Nº ORDEN EN LA MALLA": Number(extra["Nº ORDEN EN LA MALLA"] || 0),
+              "Nro. HORAS": Number(extra["HORAS TEÓRICAS"] || 0) + Number(extra["HORAS PRÁCTICAS"] || 0),
+              "CARRERA DEL ESTUDIANTE": e.CARRERA || "0",
+              "CICLO DEL ESTUDIANTE": e.CICLO || 0,
+              "NIVEL INGLES": e["NIVEL INGLES"] || "0",
+              OBSERVACIONES: "0"
+            };
+            asignaciones.push(asignacion);
+          } else {
+            noAsig.push({
+              ESTUDIANTE: e.ESTUDIANTE,
+              MATERIA: mat,
+              MOTIVO: "Sin cupo/horario compatible",
+              CICLO: Number(e.CICLO)||0,
+              "CARRERA DEL ESTUDIANTE": e.CARRERA||"0",
+              "NIVEL INGLES": e["NIVEL INGLES"]||"0"
+            });
+          }
         } else {
-          // En la práctica, con secciones extra no debería ocurrir, pero mantenemos registro.
-          noAsig.push({ 
-            ESTUDIANTE: e.ESTUDIANTE, 
-            MATERIA: mat, 
-            MOTIVO: "Sin cupo/horario compatible", 
+          // Hay cupo en un paralelo existente, pero no se pudo ubicar por restricciones del estudiante.
+          // Respetando la regla, NO se crea otro paralelo.
+          noAsig.push({
+            ESTUDIANTE: e.ESTUDIANTE,
+            MATERIA: mat,
+            MOTIVO: "Paralelo con cupo; no se abre otro hasta llenar",
             CICLO: Number(e.CICLO)||0,
             "CARRERA DEL ESTUDIANTE": e.CARRERA||"0",
             "NIVEL INGLES": e["NIVEL INGLES"]||"0"
