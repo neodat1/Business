@@ -693,6 +693,93 @@
     </div>
   </div>
 </div>
+/* ====== UI FIX: barra de filtros pulida ====== */
+.filter-bar{
+  position: sticky; top: 0; z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(220px, 340px) 1fr auto; /* select | search | acciones */
+  gap: 12px; align-items: center;
+  padding: 12px 14px; margin-top: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(4,19,108,.06), inset 0 -1px 0 var(--border);
+}
+
+/* Etiquetas compactas y consistentes */
+.filter-label{
+  font-size: 11px; font-weight: 600; color: var(--secondary);
+  margin-bottom: 6px; display: block;
+}
+
+/* Contenedores izquierdo/medio/derecho */
+.filter-left, .filter-middle, .filter-right{ display: flex; flex-direction: column; }
+.filter-right{ flex-direction: row; align-items: center; gap: 10px; justify-content: flex-end; }
+
+/* Controles con altura uniforme */
+.filter-select,
+.filter-search,
+.btn,
+.filter-chip{
+  height: 40px; border-radius: 12px;
+}
+
+/* Select elegante y accesible */
+.filter-select{
+  appearance: none; width: 100%;
+  padding: 10px 36px 10px 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg,#fff,#f9fafb);
+  font-size: 13px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23445168" viewBox="0 0 16 16"><path d="M3.2 5.5l4.8 4.8 4.8-4.8" stroke="%23445168" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+
+/* Input de búsqueda */
+.filter-search{
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: #fff; font-size: 13px;
+}
+.filter-search::placeholder{ color: #9aa3b2; }
+
+/* Estados de foco coherentes */
+.filter-search:focus, .filter-select:focus{
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(4,19,108,.12);
+}
+
+/* Pill de estado (“Sin filtro”/resumen) */
+.filter-chip{
+  padding: 0 12px;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 12px; white-space: nowrap;
+  background: rgba(4,19,108,.08);
+  color: var(--uide-blue);
+  border: 1px solid rgba(4,19,108,.15);
+}
+
+/* Botón limpiar coherente con altura */
+.btn-clear{
+  white-space: nowrap; padding: 0 14px;
+  border-radius: 12px; height: 40px;
+}
+
+/* Responsive mejorado */
+@media (max-width: 920px){
+  .filter-bar{ grid-template-columns: 1fr; }
+  .filter-right{ justify-content: flex-start; }
+}
+
+/* Zebra + hover suave en tabla (armoniza con la barra) */
+.table-container table tbody tr:nth-child(odd){ background: #fafbff; }
+.table-container table tbody tr:hover{ background: #eef4ff; }
+
+/* Pills y botones más nítidos en pantallas HiDPI */
+@media (min-resolution: 2dppx){
+  .filter-chip{ border-color: rgba(4,19,108,.18); }
+}
 
 </style>
 </head>
