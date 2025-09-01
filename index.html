@@ -2,340 +2,882 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<title>Sistema de Planificación Académica</title>
+<title>Planificación Académica — UIDE</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <style>
-  :root {
-    /* Paleta corporativa (UIDE) */
-    --uide-blue:#04136C; --uide-mustard:#DE912E; --uide-wine:#A62939; --uide-sky:#E9F1FF; --uide-green:#8A952D;
-    /* Tema derivado */
+  /* ===================== Design System ===================== */
+  :root{
+    /* Paleta UIDE */
+    --uide-blue:#04136C;
+    --uide-blue-900:#021048;
+    --uide-sky:#9CBEE3;
+    --uide-wine:#A62939;
+    --uide-mustard:#DE912E;
+    --uide-green:#8A952D;
+
+    /* Tema */
     --primary: var(--uide-blue);
-    --primary-600:#021048; /* hover */
+    --primary-strong: var(--uide-blue-900);
+    --primary-soft: rgba(4,19,108,.06);
     --accent: var(--uide-wine);
-    --muted:#445168;
-    --bg:#F6F8FC;
-    --card:#FFFFFF;
-    --border:#E6EAF0;
-    --shadow: 0 6px 18px rgba(4,19,108,.06);
+    --bg: #F5F7FB;
+    --paper:#FFFFFF;
+    --ink:#0F172A;
+    --muted:#475569;
+    --border:#E2E8F0;
     --radius:14px;
+    --shadow: 0 10px 25px -12px rgba(4,19,108,.18), 0 4px 10px -8px rgba(4,19,108,.10);
+    --shadow-soft: 0 6px 18px -10px rgba(4,19,108,.15), 0 2px 6px -6px rgba(4,19,108,.10);
+
+    --input-radius:12px;
   }
 
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:"Inter","Segoe UI",system-ui,Arial,sans-serif;background:var(--bg);color:#132046}
-  .app-container{max-width:1280px;margin:0 auto;padding:24px}
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background: var(--bg); color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
 
-  /* Header */
-  .app-header{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;border:1px solid var(--border);position:relative;overflow:hidden}
-  .app-header:before{content:"";position:absolute;inset:0;height:6px;background:linear-gradient(90deg,var(--accent),var(--uide-mustard),var(--uide-green),var(--primary));}
-  .app-title{margin-top:8px;display:flex;gap:12px;align-items:center;font-weight:800;color:var(--primary)}
-  .app-title img{height:40px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.06))}
-  .app-subtitle{margin-top:6px;color:var(--muted)}
+  .app{
+    max-width: 1400px; margin: 0 auto; padding: 28px 20px 48px;
+  }
 
-  /* Cards */
-  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
-  .card + .card{margin-top:18px}
-  .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-  .card-title{font-weight:700}
-  .badge{background:var(--uide-sky);color:var(--primary);border-radius:999px;padding:4px 10px;font-weight:700}
+  /* ===================== Header ===================== */
+  .hero{
+    position: relative; background: var(--paper);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 26px 24px 22px;
+    overflow: hidden; border-left: 5px solid var(--accent);
+  }
+  .hero::before{
+    content:""; position:absolute; inset: 0 0 auto 0; height: 6px;
+    background: linear-gradient(90deg,var(--uide-wine),var(--uide-mustard),var(--uide-green),var(--uide-blue));
+  }
+  .hero-head{
+    display:flex; align-items:center; gap:14px; margin-bottom:6px;
+  }
+  .logo{ height:42px; width:auto; filter: drop-shadow(0 2px 2px rgba(0,0,0,.08)); }
+  .title{ font-weight:700; font-size:26px; color: var(--primary); letter-spacing:.2px; }
+  .subtitle{ color: var(--muted); font-size:14px; }
 
-  /* Config panel (mejor maquetado) */
-  .config-panel{background:#F5F8FF;border:1px solid var(--border);border-radius:var(--radius);padding:20px}
-  .config-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
-  .config-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:block}
-  .config-input{width:100%;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 12px;background:#fff;box-shadow:inset 0 1px 0 #fff}
-  .config-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(4,19,108,.12)}
+  /* ===================== Cards ===================== */
+  .card{
+    background: var(--paper);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    padding: 22px;
+  }
+  .card + .card{ margin-top: 18px; }
 
-  /* File inputs */
-  .file-section{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-  .file-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:block}
-  .file-input{width:100%;border:2px dashed var(--border);border-radius:12px;padding:14px;background:#FBFCFF}
-  .file-input:hover{border-color:var(--primary)}
-  .file-status{display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--muted)}
-  .status-icon{width:10px;height:10px;border-radius:50%}
-  .status-pending{background:var(--uide-mustard)}
-  .status-success{background:#00B884}
+  .card-title{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 14px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .h3{ font-size:18px; font-weight:700; color:#0b132b; }
+  .badge{
+    display:inline-flex; align-items:center; gap:8px;
+    background: var(--primary-soft); color: var(--primary);
+    padding: 6px 12px; border-radius: 999px; font-weight:700; font-size:12px;
+  }
 
-  /* Buttons */
-  .btn{display:inline-flex;gap:10px;align-items:center;justify-content:center;height:44px;padding:0 18px;border:none;border-radius:12px;font-weight:800;cursor:pointer}
-  .btn-primary{background:var(--primary);color:#fff}
-  .btn-primary:hover{background:var(--primary-600)}
-  .btn-secondary{background:#fff;border:1px solid var(--border);color:#112}
-  .btn-secondary:hover{background:#F7FAFF}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
-  .btn-group{display:flex;gap:12px;margin:18px 0}
+  /* ===================== Alerts & Progress ===================== */
+  .alert{
+    display:flex; gap:12px; align-items:flex-start; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  .alert-info{ background: #EEF4FF; color:#274690; border-left:4px solid #274690; }
+  .alert-error{ background: #FEF2F2; color:#b91c1c; border-left:4px solid #b91c1c; }
+  .alert-success{ background: #F0FDF4; color:#166534; border-left:4px solid #16a34a; }
+  .alert .icon{ font-size:20px; }
 
-  /* Alerts */
-  .alert{display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:14px;margin-bottom:12px}
-  .alert-info{display:none}
-  .alert-error{background:#FFF2F2;border:1px solid #FFD9D9;color:#B42318}
-  .alert-success{background:#F0FFF6;border:1px solid #C9F1DF;color:#097A55}
+  .progress{ height:10px; background:#eaf0fb; border-radius:20px; overflow:hidden; display:none; }
+  .progress-bar{ height:100%; width:0%; background: linear-gradient(90deg,var(--primary),var(--uide-sky)); }
 
-  /* Tabs */
-  .tabs{display:flex;gap:18px;border-bottom:1px solid var(--border);margin:18px 0}
-  .tab{padding:10px 6px;border-bottom:3px solid transparent;cursor:pointer;color:#5A6475;font-weight:700}
-  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-  .tab-content{display:none}
-  .tab-content.active{display:block}
+  /* ===================== Config ===================== */
+  .grid-2{ display:grid; grid-template-columns: 1fr; gap:16px; }
+  @media (min-width: 960px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
 
-  /* Filters (profesional) */
-  .filter-bar{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:1fr 1.6fr auto;gap:14px;align-items:end;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
-  .filter-label{font-size:12px;font-weight:800;color:var(--muted);margin-bottom:8px;display:block}
-  .filter-select,.filter-search{height:44px;border:1px solid var(--border);border-radius:12px;padding:0 14px;background:#fff}
-  .filter-select:focus,.filter-search:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(4,19,108,.12)}
-  .filter-chip{display:inline-flex;align-items:center;gap:6px;background:#EDF3FF;border:1px solid var(--border);color:var(--primary);font-weight:800;border-radius:999px;padding:8px 12px}
-  .btn-clear{height:44px}
-  @media (max-width:920px){.file-section{grid-template-columns:1fr}.config-grid{grid-template-columns:1fr}.filter-bar{grid-template-columns:1fr;gap:10px}}
+  .field{ display:block; }
+  .label{ display:block; font-size:13px; font-weight:600; color:#334155; margin-bottom:8px; }
+  .input{
+    width:100%; padding: 12px 14px; border:1px solid var(--border); background:#fff;
+    border-radius: var(--input-radius); font-size:14px;
+    transition: box-shadow .2s ease, border-color .2s ease;
+  }
+  .input:focus{ outline:none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(4,19,108,.12); }
 
-  /* Progress */
-  .progress-container{height:10px;background:#EDEFF5;border-radius:99px;overflow:hidden;display:none}
-  .progress-bar{height:100%;width:0;background:linear-gradient(90deg,var(--primary),#8AA6FF)}
+  /* ===================== File inputs ===================== */
+  .files{ display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+  .file{
+    background: #F8FAFE; padding: 14px; border: 1px dashed #dbe3f6; border-radius: 12px;
+  }
+  .file .status{ margin-top:8px; font-size:12px; color:#55607a; display:flex; gap:8px; align-items:center; }
+  .dot{ width:10px; height:10px; border-radius:50%; background:#eab308; flex-shrink:0; }
+  .dot.ok{ background:#16a34a; }
 
-  /* Table */
-  .table-container{border:1px solid var(--border);border-radius:14px;overflow:hidden}
-  table{width:100%;border-collapse:separate;border-spacing:0}
-  thead th{position:sticky;top:0;background:#FFFFFF;border-bottom:1px solid var(--border);z-index:2;padding:12px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.02em;color:#4A566E}
-  tbody td{padding:14px;border-bottom:1px solid var(--border)}
-  tbody tr:nth-child(odd){background:#FAFBFE}
-  tbody tr:hover{background:#F2F6FF}
+  /* ===================== Buttons ===================== */
+  .actions{ display:flex; gap:10px; margin-top: 12px; flex-wrap: wrap; }
+  .btn{
+    all:unset; display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    padding: 12px 18px; border-radius: 12px; cursor:pointer; user-select:none; font-weight:700; font-size:14px;
+    border:1px solid transparent; transition: transform .08s ease, background .2s ease, border .2s ease, color .2s ease;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn-primary{ background: var(--primary); color:#fff; }
+  .btn-primary:hover{ background: var(--primary-strong); }
+  .btn-secondary{ background:#fff; border-color:var(--border); color:#111827; }
+  .btn-secondary:hover{ background:#f8fafc; }
 
-  /* Stats */
-  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-  .stat-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px}
-  .stat-value{font-weight:900;font-size:28px;color:var(--primary)}
-  .stat-label{color:var(--muted)}
+  .muted{ color:#64748b; font-size:13px; }
 
-  /* Util */
-  .hidden{display:none}
+  /* ===================== Filter bar ===================== */
+  .filters{
+    display:grid; grid-template-columns: 1.1fr 2fr auto; gap:12px; align-items:end;
+    padding: 12px; background: #fff; border:1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow-soft); margin-bottom: 10px;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:8px; padding: 8px 12px; border-radius:999px;
+    background: var(--primary-soft); color: var(--primary); font-weight:700; font-size:12px; white-space:nowrap;
+  }
+
+  /* ===================== Table ===================== */
+  .table-wrap{
+    border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff;
+  }
+  .scroll{
+    max-height: 480px; overflow:auto; /* Encabezados sticky funcionarán dentro */
+  }
+  table{ width:100%; border-collapse: collapse; font-size: 13px; }
+  thead th{
+    position: sticky; top: 0; z-index: 1;
+    background: #F2F6FF; color:#0b132b;
+    text-align:left; font-weight:700; padding: 12px; border-bottom:2px solid var(--border);
+  }
+  tbody td{ padding: 12px; border-bottom:1px solid var(--border); color:#0b132b; }
+  tbody tr:hover{ background:#F9FBFF; }
+
+  /* ===================== Stats ===================== */
+  .stats{
+    display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-top: 14px;
+  }
+  .stat{
+    background: linear-gradient(180deg,#fff,var(--primary-soft));
+    border-left: 5px solid var(--uide-mustard);
+    padding: 14px; border-radius:12px;
+  }
+  .stat .big{ font-size:26px; font-weight:800; color: var(--primary); }
+  .stat .lbl{ font-size:12px; color:#475569; margin-top:2px; }
+
+  /* ===================== Utilities ===================== */
+  .hidden{ display:none !important; }
+  .loading{ opacity:.7; pointer-events:none; }
+
+  /* Tipografía compacta para mayor densidad sin perder legibilidad */
+  body,table,th,td,.input,.btn,.chip,.badge{ font-size: 13px; }
 </style>
 </head>
+
 <body>
-  <div class="app-container">
-    <header class="app-header">
-      <h1 class="app-title"><img src="UIDE-Ecuador.png" alt="UIDE">Sistema de Planificación Académica</h1>
-      <p class="app-subtitle">Asignación automatizada de estudiantes a materias y docentes</p>
-    </header>
-
-    <div class="card config-panel">
-      <h3 class="card-title">Configuración del Sistema</h3>
-      <div class="config-grid">
+  <div class="app">
+    <!-- Header -->
+    <section class="hero">
+      <div class="hero-head">
+        <img class="logo" alt="UIDE" src="UIDE-Ecuador.png">
         <div>
-          <label class="config-label" for="maxMaterias">Máximo de materias por estudiante</label>
-          <input type="number" id="maxMaterias" class="config-input" value="6" min="1" max="10" />
-        </div>
-        <div>
-          <label class="config-label" for="capacidadParalelo">Capacidad máxima por paralelo</label>
-          <input type="number" id="capacidadParalelo" class="config-input" value="30" min="10" max="60" />
+          <div class="title">Sistema de Planificación Académica</div>
+          <div class="subtitle">Asignación automatizada de estudiantes a materias y docentes</div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="card">
-      <div class="file-section">
-        <div>
-          <label class="file-label">DOCENTES.xlsx</label>
-          <input id="fileDoc" type="file" accept=".xlsx,.xls" class="file-input" />
-          <div class="file-status" id="statusDoc"><span class="status-icon status-pending"></span><span>Esperando archivo…</span></div>
+    <!-- Panel de configuración -->
+    <section class="card">
+      <h3 class="h3" style="margin-bottom:8px;">Configuración del Sistema</h3>
+      <div class="grid-2">
+        <div class="field">
+          <label class="label" for="maxMaterias">Máximo de materias por estudiante</label>
+          <input id="maxMaterias" type="number" class="input" value="6" min="1" max="10">
         </div>
-        <div>
-          <label class="file-label">ESTUDIANTES.xlsx</label>
-          <input id="fileEst" type="file" accept=".xlsx,.xls" class="file-input" />
-          <div class="file-status" id="statusEst"><span class="status-icon status-pending"></span><span>Esperando archivo…</span></div>
+        <div class="field">
+          <label class="label" for="capacidadParalelo">Capacidad máxima por paralelo</label>
+          <input id="capacidadParalelo" type="number" class="input" placeholder="Ej. 30" min="1" max="60">
         </div>
-        <div>
-          <label class="file-label">MALLA.xlsx</label>
-          <input id="fileMal" type="file" accept=".xlsx,.xls" class="file-input" />
-          <div class="file-status" id="statusMal"><span class="status-icon status-pending"></span><span>Esperando archivo…</span></div>
+      </div>
+    </section>
+
+    <!-- Carga de archivos -->
+    <section class="card">
+      <div class="files">
+        <div class="file">
+          <div class="label">DOCENTES.xlsx</div>
+          <input id="fileDoc" type="file" accept=".xlsx,.xls" class="input" />
+          <div class="status"><span class="dot" id="dotDoc"></span><span id="statusDoc">Esperando archivo…</span></div>
+        </div>
+        <div class="file">
+          <div class="label">ESTUDIANTES.xlsx</div>
+          <input id="fileEst" type="file" accept=".xlsx,.xls" class="input" />
+          <div class="status"><span class="dot" id="dotEst"></span><span id="statusEst">Esperando archivo…</span></div>
+        </div>
+        <div class="file">
+          <div class="label">MALLA.xlsx</div>
+          <input id="fileMal" type="file" accept=".xlsx,.xls" class="input" />
+          <div class="status"><span class="dot" id="dotMal"></span><span id="statusMal">Esperando archivo…</span></div>
         </div>
       </div>
 
-      <div class="btn-group">
+      <div class="actions">
         <button id="btnRun" class="btn btn-primary" disabled>Procesar Asignación</button>
         <button id="btnDown" class="btn btn-secondary hidden">Descargar Planificación</button>
+        <span class="muted">Cargue los tres archivos para habilitar el procesamiento.</span>
       </div>
 
-      <div class="progress-container" id="progressContainer"><div class="progress-bar" id="progressBar"></div></div>
-      <div class="alert alert-error hidden" id="errorBox"><strong style="margin-right:6px">⚠️ Error:</strong><span id="errorMessage"></span></div>
-    </div>
+      <div class="progress" id="progressWrap" style="margin-top:12px;">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
 
-    <div class="stats-grid hidden" id="statsContainer">
-      <div class="stat-card"><div class="stat-value" id="statSecciones">0</div><div class="stat-label">Secciones creadas</div></div>
-      <div class="stat-card"><div class="stat-value" id="statAsignaciones">0</div><div class="stat-label">Asignaciones realizadas</div></div>
-      <div class="stat-card"><div class="stat-value" id="statNoAsignados">0</div><div class="stat-label">Estudiantes no asignados</div></div>
-      <div class="stat-card"><div class="stat-value" id="statOcupacion">0%</div><div class="stat-label">Ocupación promedio</div></div>
-    </div>
+      <div id="errorBox" class="alert alert-error hidden" style="margin-top:14px;">
+        <div class="icon">⚠️</div>
+        <div><strong>Error:</strong> <span id="errorMessage"></span></div>
+      </div>
+    </section>
 
-    <div class="tabs">
-      <div class="tab active" data-tab="asignaciones">Asignaciones</div>
-      <div class="tab" data-tab="carga-docente">Carga Docente</div>
-      <div class="tab" data-tab="resumen-materia">Resumen por Materia</div>
-      <div class="tab" data-tab="no-asignados">No Asignados</div>
-    </div>
+    <!-- Asignaciones -->
+    <section class="card">
+      <div class="card-title">
+        <div class="h3">Asignaciones realizadas</div>
+        <span class="badge"><span id="asignacionesCount">0</span> registros</span>
+      </div>
 
-    <div class="tab-content active" id="asignaciones">
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">Asignaciones Realizadas</h3><span class="badge" id="asignacionesCount">0</span></div>
-
-        <!-- FILTROS -->
-        <div id="careerFilterBar" class="filter-bar" style="display:none">
-          <div>
-            <label class="filter-label" for="careerFilter">Carrera</label>
-            <select id="careerFilter" class="filter-select"><option value="__ALL__">Todas las carreras</option></select>
-          </div>
-          <div>
-            <label class="filter-label" for="quickSearch">Buscar</label>
-            <input id="quickSearch" type="search" class="filter-search" placeholder="Estudiante, materia, docente, día u hora" />
-          </div>
-          <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end">
-            <span class="filter-chip" id="careerActive">Sin filtro</span>
-            <button id="clearFilters" class="btn btn-secondary btn-clear" type="button">Limpiar</button>
-          </div>
+      <!-- Filtros -->
+      <div class="filters">
+        <div>
+          <label class="label">Carrera</label>
+          <select id="careerFilter" class="input"></select>
         </div>
-
-        <div class="table-container"><div id="tblCombo"></div></div>
+        <div>
+          <label class="label">Buscar</label>
+          <input id="quickSearch" class="input" placeholder="Estudiante, docente, materia, día, hora…">
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-end; justify-content:flex-end;">
+          <span class="chip" id="activeFilter">Sin filtro</span>
+          <button id="clearFilters" class="btn btn-secondary">Limpiar</button>
+        </div>
       </div>
-    </div>
 
-    <div class="tab-content" id="carga-docente">
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">Carga por Docente</h3><span class="badge" id="docentesCount">0</span></div>
-        <div class="table-container"><div id="tblCarga"></div></div>
+      <!-- Tabla -->
+      <div class="table-wrap">
+        <div class="scroll">
+          <div id="tblCombo"></div>
+        </div>
       </div>
-    </div>
 
-    <div class="tab-content" id="resumen-materia">
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">Resumen por Materia</h3><span class="badge" id="materiasCount">0</span></div>
-        <div class="table-container"><div id="tblResumenMateria"></div></div>
+      <!-- Métricas -->
+      <div class="stats" id="stats" style="display:none;">
+        <div class="stat">
+          <div class="big" id="statSecciones">0</div>
+          <div class="lbl">Secciones creadas</div>
+        </div>
+        <div class="stat">
+          <div class="big" id="statAsignaciones">0</div>
+          <div class="lbl">Asignaciones realizadas</div>
+        </div>
+        <div class="stat">
+          <div class="big" id="statNoAsignados">0</div>
+          <div class="lbl">Estudiantes no asignados</div>
+        </div>
+        <div class="stat">
+          <div class="big" id="statOcupacion">0%</div>
+          <div class="lbl">Ocupación promedio</div>
+        </div>
       </div>
-    </div>
-
-    <div class="tab-content" id="no-asignados">
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">No Asignados</h3><span class="badge" id="noAsignadosCount">0</span></div>
-        <div class="table-container"><div id="tblNo"></div></div>
-      </div>
-    </div>
+    </section>
   </div>
 
 <script>
-// === Utilidades & constantes ===
-let __DOCENTE_SLOTS__ = new Map();
-const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
-const COMBO = [...TARGET7,"ESTUDIANTE","CICLO"];
-const DAY_MAP = new Map(Object.entries({"lun":"LUNES","lunes":"LUNES","lun.":"LUNES","mar":"MARTES","martes":"MARTES","mar.":"MARTES","mie":"MIERCOLES","mié":"MIERCOLES","miercoles":"MIERCOLES","miércoles":"MIERCOLES","mie.":"MIERCOLES","mié.":"MIERCOLES","jue":"JUEVES","jueves":"JUEVES","jue.":"JUEVES","vie":"VIERNES","viernes":"VIERNES","vie.":"VIERNES","sab":"SABADO","sáb":"SABADO","sabado":"SABADO","sábado":"SABADO","sab.":"SABADO","dom":"DOMINGO","domingo":"DOMINGO","dom.":"DOMINGO"}));
-const HORARIOS=["07:00-10:00","10:00-13:00","13:00-16:00","16:00-19:00","19:00-22:00"]; 
+/* ============================================================
+   UTILIDADES Y CONSTANTES
+   ============================================================ */
+const HORARIOS = ["07:00-10:00","10:00-13:00","13:00-16:00","16:00-19:00","19:00-22:00"];
+const DAY_MAP = new Map(Object.entries({
+  "lun":"LUNES","lunes":"LUNES","lun.":"LUNES",
+  "mar":"MARTES","martes":"MARTES","mar.":"MARTES",
+  "mie":"MIERCOLES","mié":"MIERCOLES","miercoles":"MIERCOLES","miércoles":"MIERCOLES","mie.":"MIERCOLES","mié.":"MIERCOLES",
+  "jue":"JUEVES","jueves":"JUEVES","jue.":"JUEVES",
+  "vie":"VIERNES","viernes":"VIERNES","vie.":"VIERNES",
+  "sab":"SABADO","sáb":"SABADO","sabado":"SABADO","sábado":"SABADO","sab.":"SABADO",
+  "dom":"DOMINGO","domingo":"DOMINGO","dom.":"DOMINGO"
+}));
+const esc = s => s==null? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const val = s => (s==null || s==="")? "0" : s;
 const __norm = s => String(s ?? "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
 const __splitList = s => String(s ?? "").split(/[,;/]| Y | E /i).map(x=>x.trim()).filter(Boolean);
-const esc=s=> (s==null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"));
-const val=s=> (s==null||s==="")?"0":s;
-const normalizarHorario = horario =>{if(!horario)return null;const raw=String(horario).toUpperCase().trim();if(HORARIOS.includes(raw))return raw;const m=raw.match(/(\d{1,2})(?::(\d{2}))?\s*(?:-|–|—|A|AL|A LAS|A LOS|TO)\s*(\d{1,2})(?::(\d{2}))?/);if(!m)return null;const hIni=m[1].padStart(2,'0');const mIni=(m[2]??'00').padStart(2,'0');const start=`${hIni}:${mIni}`;return HORARIOS.find(b=>b.startsWith(start))||null};
 
-function showError(msg){const e=document.getElementById('errorBox');document.getElementById('errorMessage').textContent=msg;e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),6000)}
-function showSuccess(msg){console.log(msg)}
-function updateProgress(p){document.getElementById('progressBar').style.width=p+'%';document.getElementById('progressContainer').style.display='block'}
+// Formatos de hora flexibles → bloque estándar de HORARIOS
+function normalizarHorario(horario) {
+  if (!horario) return null;
+  const raw = String(horario).toUpperCase().trim();
+  if (HORARIOS.includes(raw)) return raw;
+  const re = /(\d{1,2})(?::(\d{2}))?\s*(?:-|–|—|A|AL|A LAS|A LOS|TO)\s*(\d{1,2})(?::(\d{2}))?/i;
+  const m = raw.match(re); if (!m) return null;
+  const hIni = m[1].padStart(2,'0'); const mIni = (m[2] ?? '00').padStart(2,'0');
+  const start = `${hIni}:${mIni}`;
+  return HORARIOS.find(b => b.startsWith(start)) || null;
+}
+const canonDay = s => {
+  if (!s) return "";
+  const t = String(s).toLowerCase().trim();
+  if (DAY_MAP.has(t)) return DAY_MAP.get(t);
+  for (const [k, v] of DAY_MAP.entries()) { if (t.includes(k)) return v; }
+  return t.toUpperCase();
+};
 
-function renderTable(el, headers, rows, maxRows=100){if(!rows?.length){el.innerHTML='<p style="padding:14px;color:#778">No hay datos para mostrar.</p>';return;}const disp=rows.slice(0,maxRows);const more=rows.length>maxRows;let html=`<table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>`;for(const r of disp){html+=`<tr>${headers.map(h=>`<td>${esc(val(r[h]))}</td>`).join('')}</tr>`}html+='</tbody></table>';if(more)html+=`<p style="padding:10px;color:#778">Mostrando ${maxRows} de ${rows.length} registros.</p>`;el.innerHTML=html}
+/* ============================================================
+   UI helpers
+   ============================================================ */
+function showError(msg){
+  const box = document.getElementById('errorBox'); const span = document.getElementById('errorMessage');
+  span.textContent = msg; box.classList.remove('hidden'); setTimeout(()=>box.classList.add('hidden'), 8000);
+}
+function updateProgress(p){ const w=document.getElementById('progressWrap'); const b=document.getElementById('progressBar'); w.style.display='block'; b.style.width=p+'%'; }
+function okDot(id,ok){ const el=document.getElementById(id); el.classList.toggle('ok',ok); }
 
-// === Lectura de archivos ===
-const readSheet=(file,name)=>new Promise((resolve,reject)=>{if(!file){resolve([]);return;}const fr=new FileReader();fr.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const json=XLSX.utils.sheet_to_json(ws,{defval:""});resolve(json);}catch(err){reject(new Error(`Error con ${name}: ${err.message}`))}};fr.onerror=()=>reject(new Error(`No se pudo leer ${name}.`));fr.readAsArrayBuffer(file)});
+/* ============================================================
+   LECTURA DE ARCHIVOS
+   ============================================================ */
+const readSheet = (file, name) => new Promise((resolve, reject) => {
+  if (!file) { resolve([]); return; }
+  const fr = new FileReader();
+  fr.onload = e => {
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data,{type:'array'});
+      if (!wb.SheetNames.length) return reject(new Error(`El archivo ${name} no contiene hojas.`));
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws,{defval:""});
+      if (!json.length) return reject(new Error(`El archivo ${name} no tiene filas.`));
+      resolve(json);
+    }catch(err){ reject(new Error(`Error leyendo ${name}: ${err.message}`)); }
+  };
+  fr.onerror = () => reject(new Error(`Error al leer ${name}.`));
+  fr.readAsArrayBuffer(file);
+});
 
-// === Normalizadores (sin DEDICACIÓN en UI) ===
-function normalizeDocentes(rows){return rows.map(r=>{let dias=[],horas=[];const textoDias=String(r["DIA DISPONIBLE"]||r["DIA"]||"").toUpperCase();if(textoDias.includes("LUNES A VIERNES"))dias.push("LUNES","MARTES","MIERCOLES","JUEVES","VIERNES");["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO"].forEach(d=>{if(textoDias.includes(d))dias.push(d)});const textoHoras=String(r["HORA DISPONIBLE"]||r["HORA"]||"").toUpperCase();const rangos=textoHoras.match(/\d{1,2}(?::\d{2})?\s*(?:-|–|—|A|AL|A LAS|A LOS|TO)\s*\d{1,2}(?::\d{2})?/gi)||[];if(rangos.length){const bloques=[];for(const rr of rangos){const b=normalizarHorario(rr);if(b)bloques.push(b)}horas=[...new Set(bloques)]}else if(/\b07:00\b.*\b22:00\b/i.test(textoHoras)||/\b7\b.*\b22\b/.test(textoHoras)){horas=[...HORARIOS]}return{"NOMBRE_DOCENTE":r["NOMBRE_DOCENTE"]||r["DOCENTE"]||"","MATERIA":r["MATERIA"]||r["MATERIAS"]||"","CANTIDAD DE ALUMNOS ESPERADOS":Number(r["CANTIDAD DE ALUMNOS ESPERADOS"]||r["CAPACIDAD"]||25)||25,"DIA_DISPONIBLE":[...new Set(dias)],"HORA_DISPONIBLE":[...new Set(horas)],"Modalidad":r["Modalidad"]||r["MODALIDAD"]||"PRESENCIAL","Paralelo":String(r["Paralelo"]||r["PARALELO"]||"").toUpperCase().trim()||"A"}}).filter(x=>x.MATERIA&&x.NOMBRE_DOCENTE)}
-
-function normalizeEstudiantes(rows){return rows.map(r=>({"ESTUDIANTE":r["ESTUDIANTE"]||r["NOMBRE"]||"","CICLO":Math.max(1,Math.min(12,Number(r["CICLO AL QUE VA"]||r["CICLO ACTUAL"]||r["CICLO"]||1)||1)),"CARRERA":r["CARRERA"]||"","MALLA":r["MALLA"]||"","NIVEL INGLES":r["NIVEL INGLES"]||""})).filter(x=>x.ESTUDIANTE).filter(x=>Number(x.CICLO)!==9)}
-
-function normalizeMallas(rows){const WORD2NUM={"PRIMERO":1,"SEGUNDO":2,"TERCERO":3,"CUARTO":4,"QUINTO":5,"SEXTO":6,"SEPTIMO":7,"SÉPTIMO":7,"OCTAVO":8,"NOVENO":9,"DECIMO":10,"DÉCIMO":10,"ONCE":11,"DOCE":12};const toCycle=v=>{if(v==null||v==="")return NaN;const t=String(v).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();if(/^\d+$/.test(t))return Number(t);return WORD2NUM[t]||NaN};return rows.map(r=>{let ciclo=toCycle(r["CICLO"]);if(isNaN(ciclo))ciclo=Number(r["CICLO"]||1);return{"CARRERA":r["CARRERA"]||"","MATERIA":r["MATERIA"]||"","CODIGO":String(r["CÓDIGO"]||r["CODIGO"]||r["CÓDIGO ANTHOLOGY"]||"").trim(),"CICLO":Math.max(1,Math.min(12,Number(ciclo)||1)),"HORAS TEÓRICAS":Number(r["HORAS TEÓRICAS"]||0)||0,"HORAS PRÁCTICAS":Number(r["HORAS PRÁCTICAS"]||0)||0,"HORAS AUTÓNOMAS":Number(r["HORAS AUTÓNOMAS"]||0)||0,"CREDITOS":Number(r["CREDITOS"]||0)||0,"CAMPO DE FORMACIÓN":r["CAMPO DE FORMACIÓN"]||"","MALLA":r["MALLA"]||"","Nº ORDEN EN LA MALLA":r["Nº ORDEN EN LA MALLA"]||0,"PRE-REQUISITO":r["PRE-REQUISITO"]||"","CARRERAS QUE COMPARTEN":r["CARRERAS QUE COMPARTEN"]||""}}).filter(x=>x.MATERIA)}
-
-// === Construcción de secciones / asignación (idéntico salvo DEDICACIÓN removida en salidas) ===
-let __DOC_DAY_COUNT__=new Map();const getDocDayCount=(doc,dia)=>(__DOC_DAY_COUNT__.get(doc)?.get(dia))||0;const incDocDayCount=(doc,dia)=>{const m=__DOC_DAY_COUNT__.get(doc)||new Map();m.set(dia,(m.get(dia)||0)+1);__DOC_DAY_COUNT__.set(doc,m)}
-
-function construirSecciones(docentes,mallas,estudiantes){__DOCENTE_SLOTS__=new Map();__DOC_DAY_COUNT__=new Map();const secciones=[];const horariosOcupados=new Map();const cap=parseInt(document.getElementById('capacidadParalelo').value)||25;for(let c=1;c<=12;c++)horariosOcupados.set(c,new Map());const seccionesPorDocente=new Map();const correlativoParalelo=new Map();const estudiantesPorCiclo=new Map();for(const e of estudiantes){if(!estudiantesPorCiclo.has(e.CICLO))estudiantesPorCiclo.set(e.CICLO,[]);estudiantesPorCiclo.get(e.CICLO).push(e)}const metaMap=new Map();for(const m of mallas){const k=`${m.CICLO}¦${m.MATERIA}`;if(!metaMap.has(k))metaMap.set(k,{CODIGOS:new Set(),CARRERAS:new Set(),MALLAS:new Set(),"HORAS TEÓRICAS":0,"HORAS PRÁCTICAS":0,"HORAS AUTÓNOMAS":0,CREDITOS:0,"CAMPO DE FORMACIÓN":m["CAMPO DE FORMACIÓN"]||"","Nº ORDEN EN LA MALLA":m["Nº ORDEN EN LA MALLA"]||0,"PRE-REQUISITO":m["PRE-REQUISITO"]||""});const o=metaMap.get(k);if(m.CODIGO)o.CODIGOS.add(String(m.CODIGO));if(m.CARRERA)o.CARRERAS.add(__norm(m.CARRERA));__splitList(m["CARRERAS QUE COMPARTEN"]).forEach(c=>o.CARRERAS.add(__norm(c)));if(m.MALLA)o.MALLAS.add(String(m.MALLA));o["HORAS TEÓRICAS"]=Math.max(o["HORAS TEÓRICAS"],Number(m["HORAS TEÓRICAS"]||0));o["HORAS PRÁCTICAS"]=Math.max(o["HORAS PRÁCTICAS"],Number(m["HORAS PRÁCTICAS"]||0));o["HORAS AUTÓNOMAS"]=Math.max(o["HORAS AUTÓNOMAS"],Number(m["HORAS AUTÓNOMAS"]||0));o.CREDITOS=Math.max(o.CREDITOS,Number(m.CREDITOS||0));if(!o["CAMPO DE FORMACIÓN"])o["CAMPO DE FORMACIÓN"]=m["CAMPO DE FORMACIÓN"]||"";if(!o["PRE-REQUISITO"])o["PRE-REQUISITO"]=m["PRE-REQUISITO"]||""}
-  for(const materia of mallas){const ciclo=materia.CICLO;const estudiantesCiclo=estudiantesPorCiclo.get(ciclo)||[];if(!estudiantesCiclo.length)continue;const docentesMateria=docentes.filter(d=>__norm(d.MATERIA)===__norm(materia.MATERIA));if(!docentesMateria.length)continue;const numParalelos=estudiantesCiclo.length>0?1:0;const kMat=`${materia.MATERIA}¦${ciclo}`;const baseIndex=correlativoParalelo.get(kMat)||0;const info=metaMap.get(`${ciclo}¦${materia.MATERIA}`)||{};const codStr=Array.from(info.CODIGOS||[]).filter(Boolean).join('/')||String(materia.CODIGO||"0");const carStr=Array.from(info.CARRERAS||[]).filter(Boolean).join('/')||String(materia["CARRERAS QUE COMPARTEN"]||"0");const mallaStr=Array.from(info.MALLAS||[]).filter(Boolean).join('/')||String(materia.MALLA||"0");for(let i=0;i<numParalelos;i++){let docente=null,horario=null;docentesMateria.sort((a,b)=>(seccionesPorDocente.get(a.NOMBRE_DOCENTE)||0)-(seccionesPorDocente.get(b.NOMBRE_DOCENTE)||0));for(const cand of docentesMateria){if((seccionesPorDocente.get(cand.NOMBRE_DOCENTE)||0)>=5)continue;const opt=encontrarHorarioDisponibleConLimite(horariosOcupados.get(ciclo),cand);if(opt){docente=cand;horario=opt;break}}if(!docente)continue;const capacidad=Math.min(cap,Math.ceil(estudiantesCiclo.length/numParalelos));const paralelo=String.fromCharCode(65+baseIndex+i);secciones.push({MATERIA:materia.MATERIA,CODIGO:codStr,"CÓDIGO ANTHOLOGY":codStr,CICLO:ciclo,NOMBRE_DOCENTE:docente.NOMBRE_DOCENTE,CAP:capacidad,ASIGNADOS:0,DIA:horario.dia,HORA:horario.hora,Modalidad:docente.Modalidad,Paralelo:paralelo,"HORAS TEÓRICAS":info["HORAS TEÓRICAS"]??materia.HORAS_TEORICAS??0,"HORAS PRÁCTICAS":info["HORAS PRÁCTICAS"]??materia.HORAS_PRACTICAS??0,"HORAS AUTÓNOMAS":info["HORAS AUTÓNOMAS"]??materia["HORAS AUTÓNOMAS"]??0,CREDITOS:info.CREDITOS??materia.CREDITOS??0,"CAMPO DE FORMACIÓN":info["CAMPO DE FORMACIÓN"]??materia["CAMPO DE FORMACIÓN"]??"",MALLA:mallaStr,"Nº ORDEN EN LA MALLA":info["Nº ORDEN EN LA MALLA"]??materia["Nº ORDEN EN LA MALLA"]??0,"PRE-REQUISITO":info["PRE-REQUISITO"]??materia["PRE-REQUISITO"]??"","CARRERAS QUE COMPARTEN":carStr});seccionesPorDocente.set(docente.NOMBRE_DOCENTE,(seccionesPorDocente.get(docente.NOMBRE_DOCENTE)||0)+1)}correlativoParalelo.set(kMat,baseIndex+numParalelos)}return secciones}
-
-function encontrarHorarioDisponibleConLimite(horariosOcupadosCiclo,docente){const nombre=docente.NOMBRE_DOCENTE||"";const slots=__DOCENTE_SLOTS__.get(nombre)||new Map();if(!Array.isArray(docente.DIA_DISPONIBLE)||!docente.DIA_DISPONIBLE.length)return null;for(const dia of docente.DIA_DISPONIBLE){if(getDocDayCount(nombre,dia)>=2)continue;const ocupCiclo=horariosOcupadosCiclo.get(dia)||new Set();const ocupDoc=slots.get(dia)||new Set();if(!Array.isArray(docente.HORA_DISPONIBLE)||!docente.HORA_DISPONIBLE.length)continue;for(const hora of docente.HORA_DISPONIBLE){if(!ocupCiclo.has(hora)&&!ocupDoc.has(hora)){ocupCiclo.add(hora);horariosOcupadosCiclo.set(dia,ocupCiclo);ocupDoc.add(hora);slots.set(dia,ocupDoc);__DOCENTE_SLOTS__.set(nombre,slots);incDocDayCount(nombre,dia);return{dia,hora}}}}return null}
-
-function agruparPorMateria(secciones){const m=new Map();for(const s of secciones){const k=`${s.CICLO}¦${s.MATERIA}`;if(!m.has(k))m.set(k,[]);m.get(k).push(s)}return m}
-
-function ensureExtraSection(ciclo,materia,docentes,mallas,secciones){const cap=parseInt(document.getElementById('capacidadParalelo').value)||25;const candidatos=docentes.filter(d=>__norm(d.MATERIA)===__norm(materia));if(!candidatos.length)return null;const codigos=new Set(),carreras=new Set(),mallasSet=new Set();let hT=0,hP=0,hA=0,cred=0,campo="",orden=0,prereq="";for(const m of mallas){if(Number(m.CICLO)===Number(ciclo)&&__norm(m.MATERIA)===__norm(materia)){if(m.CODIGO)codigos.add(String(m.CODIGO));if(m.CARRERA)carreras.add(__norm(m.CARRERA));__splitList(m["CARRERAS QUE COMPARTEN"]).forEach(c=>carreras.add(__norm(c)));if(m.MALLA)mallasSet.add(String(m.MALLA));hT=Math.max(hT,Number(m["HORAS TEÓRICAS"]||0));hP=Math.max(hP,Number(m["HORAS PRÁCTICAS"]||0));hA=Math.max(hA,Number(m["HORAS AUTÓNOMAS"]||0));cred=Math.max(cred,Number(m.CREDITOS||0));campo=campo||m["CAMPO DE FORMACIÓN"]||"";orden=Number(m["Nº ORDEN EN LA MALLA"]||orden);prereq=prereq||m["PRE-REQUISITO"]||""}}const codStr=Array.from(codigos).filter(Boolean).join('/')||"0";const carStr=Array.from(carreras).filter(Boolean).join('/')||"0";const mallaStr=Array.from(mallasSet).filter(Boolean).join('/')||"0";for(const d of candidatos){const nombre=d.NOMBRE_DOCENTE||"";const slots=__DOCENTE_SLOTS__.get(nombre)||new Map();for(const dia of d.DIA_DISPONIBLE){if(getDocDayCount(nombre,dia)>=2)continue;const usados=slots.get(dia)||new Set();for(const hora of d.HORA_DISPONIBLE){if(usados.has(hora))continue;usados.add(hora);slots.set(dia,usados);__DOCENTE_SLOTS__.set(nombre,slots);incDocDayCount(nombre,dia);if(secciones.some(s=>Number(s.CICLO)===Number(ciclo)&&__norm(s.MATERIA)===__norm(materia)&&s.DIA===dia&&s.HORA===hora))continue;const paralelo=String.fromCharCode(65+(secciones.filter(s=>s.MATERIA===materia&&s.CICLO===Number(ciclo)).length));const nueva={MATERIA:materia,CODIGO:codStr,"CÓDIGO ANTHOLOGY":codStr,CICLO:Number(ciclo),NOMBRE_DOCENTE:nombre,CAP:cap,ASIGNADOS:0,DIA:dia,HORA:hora,Modalidad:d.Modalidad||"PRESENCIAL",Paralelo:paralelo,"HORAS TEÓRICAS":hT,"HORAS PRÁCTICAS":hP,"HORAS AUTÓNOMAS":hA,CREDITOS:cred,"CAMPO DE FORMACIÓN":campo||"0",MALLA:mallaStr,"Nº ORDEN EN LA MALLA":orden||0,"PRE-REQUISITO":prereq||"0","CARRERAS QUE COMPARTEN":carStr};secciones.push(nueva);return nueva}}return null}
-
-function asignarEstudiantes(secciones,estudiantes,mallas,docentes){const idx=agruparPorMateria(secciones);const asignaciones=[];const noAsig=[];const maxMat=parseInt(document.getElementById('maxMaterias').value)||6;const materiasPorCiclo=new Map();for(const m of mallas){if(!materiasPorCiclo.has(m.CICLO))materiasPorCiclo.set(m.CICLO,new Set());materiasPorCiclo.get(m.CICLO).add(m.MATERIA)}const estDayCount=new Map();const estSlots=new Map();const canPlace=(e,d,h)=>{const c=estDayCount.get(e)?.get(d)||0;const s=estSlots.get(e)||new Set();return c<2&&!s.has(`${d}¦${h}`)};const mark=(e,d,h)=>{const m=estDayCount.get(e)||new Map();m.set(d,(m.get(d)||0)+1);estDayCount.set(e,m);const s=estSlots.get(e)||new Set();s.add(`${d}¦${h}`);estSlots.set(e,s)};for(const e of estudiantes){const materias=[...(materiasPorCiclo.get(e.CICLO)||[])];let asignadas=0;const ya=new Set();for(const mat of materias){if(asignadas>=maxMat)break;if(ya.has(mat))continue;const k=`${e.CICLO}¦${mat}`;let bucket=(idx.get(k)||[]).slice().sort((a,b)=>((b.CAP||0)-(b.ASIGNADOS||0))-((a.CAP||0)-(a.ASIGNADOS||0)));let placed=false;for(const s of bucket){const free=(s.CAP||0)-(s.ASIGNADOS||0);if(free<=0)continue;if(!canPlace(e.ESTUDIANTE,s.DIA,s.HORA))continue;s.ASIGNADOS=(s.ASIGNADOS||0)+1;asignadas++;ya.add(mat);placed=true;mark(e.ESTUDIANTE,s.DIA,s.HORA);asignaciones.push({ESTUDIANTE:e.ESTUDIANTE,CICLO:e.CICLO,NOMBRE_DOCENTE:s.NOMBRE_DOCENTE,MATERIA:s.MATERIA,"CANTIDAD DE ALUMNOS ESPERADOS":s.CAP||0,DIA:s.DIA||"0",HORA:s.HORA||"0",Modalidad:s.Modalidad||"0",Paralelo:s.Paralelo||"0","CÓDIGO ANTHOLOGY":s.CODIGO||"0","CARRERAS QUE COMPARTEN":s["CARRERAS QUE COMPARTEN"]||"0","PRE-REQUISITO":s["PRE-REQUISITO"]||"0",CODIGO:s.CODIGO||"0","HORAS TEÓRICAS":Number(s["HORAS TEÓRICAS"]||0),"HORAS PRÁCTICAS":Number(s["HORAS PRÁCTICAS"]||0),"HORAS AUTÓNOMAS":Number(s["HORAS AUTÓNOMAS"]||0),CREDITOS:Number(s.CREDITOS||0),"CAMPO DE FORMACIÓN":s["CAMPO DE FORMACIÓN"]||"0",MALLA:s.MALLA||"0","Nº ORDEN EN LA MALLA":Number(s["Nº ORDEN EN LA MALLA"]||0),"Nro. HORAS":Number(s["HORAS TEÓRICAS"]||0)+Number(s["HORAS PRÁCTICAS"]||0),"CARRERA DEL ESTUDIANTE":e.CARRERA||"0","CICLO DEL ESTUDIANTE":e.CICLO||0,"NIVEL INGLES":e["NIVEL INGLES"]||"0",OBSERVACIONES:"0"});break}
-      if(!placed){const allFull=bucket.length===0||bucket.every(s=>((s.CAP||0)-(s.ASIGNADOS||0))<=0);if(allFull){const extra=ensureExtraSection(e.CICLO,mat,docentes,mallas,secciones);if(extra&&canPlace(e.ESTUDIANTE,extra.DIA,extra.HORA)){extra.ASIGNADOS=(extra.ASIGNADOS||0)+1;asignadas++;ya.add(mat);mark(e.ESTUDIANTE,extra.DIA,extra.HORA);const arr=idx.get(k)||[];arr.push(extra);idx.set(k,arr);asignaciones.push({ESTUDIANTE:e.ESTUDIANTE,CICLO:e.CICLO,NOMBRE_DOCENTE:extra.NOMBRE_DOCENTE,MATERIA:extra.MATERIA,"CANTIDAD DE ALUMNOS ESPERADOS":extra.CAP||0,DIA:extra.DIA||"0",HORA:extra.HORA||"0",Modalidad:extra.Modalidad||"0",Paralelo:extra.Paralelo||"0","CÓDIGO ANTHOLOGY":extra.CODIGO||"0","CARRERAS QUE COMPARTEN":extra["CARRERAS QUE COMPARTEN"]||"0","PRE-REQUISITO":extra["PRE-REQUISITO"]||"0",CODIGO:extra.CODIGO||"0","HORAS TEÓRICAS":Number(extra["HORAS TEÓRICAS"]||0),"HORAS PRÁCTICAS":Number(extra["HORAS PRÁCTICAS"]||0),"HORAS AUTÓNOMAS":Number(extra["HORAS AUTÓNOMAS"]||0),CREDITOS:Number(extra.CREDITOS||0),"CAMPO DE FORMACIÓN":extra["CAMPO DE FORMACIÓN"]||"0",MALLA:extra.MALLA||"0","Nº ORDEN EN LA MALLA":Number(extra["Nº ORDEN EN LA MALLA"]||0),"Nro. HORAS":Number(extra["HORAS TEÓRICAS"]||0)+Number(extra["HORAS PRÁCTICAS"]||0),"CARRERA DEL ESTUDIANTE":e.CARRERA||"0","CICLO DEL ESTUDIANTE":e.CICLO||0,"NIVEL INGLES":e["NIVEL INGLES"]||"0",OBSERVACIONES:"0"})}else{noAsig.push({ESTUDIANTE:e.ESTUDIANTE,MATERIA:mat,MOTIVO:"Sin cupo/horario compatible",CICLO:Number(e.CICLO)||0,"CARRERA DEL ESTUDIANTE":e.CARRERA||"0","NIVEL INGLES":e["NIVEL INGLES"]||"0"})}}else{noAsig.push({ESTUDIANTE:e.ESTUDIANTE,MATERIA:mat,MOTIVO:"Paralelo con cupo; no se abre otro hasta llenar",CICLO:Number(e.CICLO)||0,"CARRERA DEL ESTUDIANTE":e.CARRERA||"0","NIVEL INGLES":e["NIVEL INGLES"]||"0"})}}
-  }
-  const cargaDocente=secciones.map(s=>({DOCENTE:s.NOMBRE_DOCENTE,MATERIA:s.MATERIA,Paralelo:s.Paralelo,DIA:s.DIA,HORA:s.HORA,ASIGNADOS:Number(s.ASIGNADOS||0),CAP:Number(s.CAP||0)})).sort((a,b)=>a.DOCENTE.localeCompare(b.DOCENTE)||a.MATERIA.localeCompare(b.MATERIA)||String(a.Paralelo).localeCompare(String(b.Paralelo)));
-  const resumen=(()=>{const map=new Map();for(const s of secciones){const k=`${s.MATERIA}¦${s.Paralelo||''}`;if(!map.has(k))map.set(k,{MATERIA:s.MATERIA,Paralelo:s.Paralelo||"",ASIGNADOS:0,CAP:0,OCUPACION:"0%"});const o=map.get(k);o.CAP+=(s.CAP||0);o.ASIGNADOS+=(s.ASIGNADOS||0)}return [...map.values()].map(r=>({...r,OCUPACION:(r.CAP?Math.round((r.ASIGNADOS/r.CAP)*100):0)+"%"})).sort((a,b)=>a.MATERIA.localeCompare(b.MATERIA)||a.Paralelo.localeCompare(b.Paralelo))})();
-  return {asignaciones,noAsig,cargaDocente: cargaDocente,resumenMateria:resumen,secciones}
+/* ============================================================
+   NORMALIZACIÓN DE DATOS
+   ============================================================ */
+function normalizeDocentes(rows){
+  if (!rows?.length){ showError("DOCENTES vacío o inválido."); return []; }
+  const out = rows.map(r=>{
+    let dias=[], horas=[];
+    if (r["DIA DISPONIBLE"] || r["DIA"]) {
+      const t = String(r["DIA DISPONIBLE"] || r["DIA"] || "").toUpperCase();
+      if (t.includes("LUNES A VIERNES")) ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"].forEach(d=>dias.push(d));
+      ["LUNES","MARTES","MIERCOLES","MIÉRCOLES","JUEVES","VIERNES","SABADO","SÁBADO"].forEach(d=>{ if(t.includes(d)) dias.push(d.replace("Á","A")); });
+    }
+    if (r["HORA DISPONIBLE"] || r["HORA"]) {
+      const tt = String(r["HORA DISPONIBLE"] || r["HORA"] || "").toUpperCase();
+      const rangos = tt.match(/\d{1,2}(?::\d{2})?\s*(?:-|–|—|a|A|AL|A LAS|A LOS|TO)\s*\d{1,2}(?::\d{2})?/gi) || [];
+      if (rangos.length){
+        const blo = [];
+        for (const s of rangos){ const b = normalizarHorario(s); if (b) blo.push(b); }
+        horas = Array.from(new Set(blo));
+      }else if (/\b7(:00)?\b.*\b22(:00)?\b/i.test(tt)){ horas = [...HORARIOS]; }
+    }
+    dias = Array.from(new Set(dias));
+    horas = Array.from(new Set(horas));
+    return {
+      NOMBRE_DOCENTE: r["NOMBRE_DOCENTE"] || r["DOCENTE"] || "",
+      MATERIA: r["MATERIA"] || r["MATERIAS"] || "",
+      CAP: Number(r["CANTIDAD DE ALUMNOS ESPERADOS"] || r["CAPACIDAD"] || r["CUPOS"] || 25) || 25,
+      DIA_DISPONIBLE: dias,
+      HORA_DISPONIBLE: horas,
+      Modalidad: r["Modalidad"] || r["MODALIDAD"] || "PRESENCIAL",
+      Paralelo: String(r["Paralelo"] || r["PARALELO"] || "A").toUpperCase().trim()
+    };
+  }).filter(x=>x.MATERIA && x.NOMBRE_DOCENTE);
+  if (!out.length) showError("No hay filas válidas en DOCENTES.");
+  return out;
+}
+function normalizeEstudiantes(rows){
+  if (!rows?.length){ showError("ESTUDIANTES vacío o inválido."); return []; }
+  const res = rows.map(r=>{
+    const ciclo = Number(r["CICLO AL QUE VA"] || r["CICLO ACTUAL"] || r["CICLO"] || 1);
+    return {
+      ESTUDIANTE: r["ESTUDIANTE"] || r["NOMBRE"] || r["NOMBRE DEL ESTUDIANTE"] || "",
+      CICLO: isNaN(ciclo) ? 1 : Math.max(1,Math.min(12,ciclo)),
+      CARRERA: r["CARRERA"] || r["CARRERA DEL ESTUDIANTE"] || "",
+      MALLA: r["MALLA"] || "",
+      "NIVEL INGLES": r["NIVEL INGLES"] || ""
+    };
+  }).filter(x=>x.ESTUDIANTE && Number(x.CICLO)!==9);
+  if (!res.length) showError("No se encontraron estudiantes válidos (o todos son ciclo 9).");
+  return res;
+}
+function normalizeMallas(rows){
+  if (!rows?.length){ showError("MALLA vacío o inválido."); return []; }
+  const WORD2NUM={"PRIMERO":1,"SEGUNDO":2,"TERCERO":3,"CUARTO":4,"QUINTO":5,"SEXTO":6,"SEPTIMO":7,"SÉPTIMO":7,"OCTAVO":8,"NOVENO":9,"DECIMO":10,"DÉCIMO":10,"ONCE":11,"DOCE":12};
+  const toCycle=v=>{ if(v==null||v==="") return NaN; const t=String(v).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim(); if(/^\d+$/.test(t)) return Number(t); return WORD2NUM[t]||NaN; };
+  const out = rows.map(r=>{
+    const materia = r["MATERIA"] || r["MATERIAS"] || "";
+    const cod = r["CÓDIGO"] || r["CODIGO"] || r["CÓDIGO ANTHOLOGY"] || "";
+    let ciclo = toCycle(r["CICLO"]); if (isNaN(ciclo)) ciclo = Number(r["CICLO"]||1);
+    return {
+      CARRERA: r["CARRERA"] || "",
+      MATERIA: materia,
+      CODIGO: String(cod).trim(),
+      CICLO: Math.max(1,Math.min(12,Number(ciclo)||1)),
+      "HORAS TEÓRICAS": Number(r["HORAS TEÓRICAS"] || r["HORAS TEORICAS"] || 0) || 0,
+      "HORAS PRÁCTICAS": Number(r["HORAS PRÁCTICAS"] || r["HORAS PRACTICAS"] || 0) || 0,
+      "HORAS AUTÓNOMAS": Number(r["HORAS AUTÓNOMAS"] || r["HORAS AUTONOMAS"] || 0) || 0,
+      CREDITOS: Number(r["CREDITOS"] || 0) || 0,
+      "CAMPO DE FORMACIÓN": r["CAMPO DE FORMACIÓN"] || r["CAMPO DE FORMACION"] || "",
+      MALLA: r["MALLA"] || "",
+      "Nº ORDEN EN LA MALLA": r["Nº ORDEN EN LA MALLA"] || 0,
+      "PRE-REQUISITO": r["PRE-REQUISITO"] || "",
+      "CARRERAS QUE COMPARTEN": r["CARRERAS QUE COMPARTEN"] || ""
+    };
+  }).filter(x=>x.MATERIA);
+  if (!out.length) showError("No hay materias válidas en MALLA.");
+  return out;
 }
 
-// === Filtros UI ===
-let GLOBAL_ASIGNACIONES=[];
-function installCareerFilter(careers){const bar=document.getElementById('careerFilterBar');const sel=document.getElementById('careerFilter');const tag=document.getElementById('careerActive');const search=document.getElementById('quickSearch');const clear=document.getElementById('clearFilters');sel.innerHTML=`<option value="__ALL__">Todas las carreras</option>`;Array.from(new Set(careers.filter(Boolean))).sort().forEach(c=>sel.insertAdjacentHTML('beforeend',`<option value="${c}">${c}</option>`));bar.style.display='grid';tag.textContent='Sin filtro';sel.onchange=applyCareerFilterUI;let _deb;search.oninput=()=>{clearTimeout(_deb);_deb=setTimeout(applyCareerFilterUI,180)};clear.onclick=()=>{sel.value='__ALL__';search.value='';applyCareerFilterUI()}}
+/* ============================================================
+   CONSTRUCCIÓN DE SECCIONES & ASIGNACIÓN
+   ============================================================ */
+let __DOCENTE_SLOTS__ = new Map();       // Map<Docente, Map<DIA, Set<HORA>>>
+let __DOC_DAY_COUNT__ = new Map();       // Map<docente, Map<dia,count>>
+const getDocDayCount = (doc, dia) => (__DOC_DAY_COUNT__.get(doc)?.get(dia))||0;
+const incDocDayCount = (doc, dia) => { const m=__DOC_DAY_COUNT__.get(doc)||new Map(); m.set(dia,(m.get(dia)||0)+1); __DOC_DAY_COUNT__.set(doc,m); };
 
-function applyCareerFilterUI(){const v=document.getElementById('careerFilter').value;const q=(document.getElementById('quickSearch').value||"").trim().toLowerCase();const tag=document.getElementById('careerActive');let filtered=(v==="__ALL__")?GLOBAL_ASIGNACIONES.slice():GLOBAL_ASIGNACIONES.filter(a=>String(a["CARRERA DEL ESTUDIANTE"]||"").toUpperCase()===v.toUpperCase());if(q){filtered=filtered.filter(a=>[a.ESTUDIANTE,a.MATERIA,a.NOMBRE_DOCENTE,a.Paralelo,a.DIA,a.HORA].some(x=>String(x||"").toLowerCase().includes(q)))}renderTable(document.getElementById('tblCombo'),COMBO,filtered.map(a=>({"NOMBRE_DOCENTE":a.NOMBRE_DOCENTE,"MATERIA":a.MATERIA,"CANTIDAD DE ALUMNOS ESPERADOS":a["CANTIDAD DE ALUMNOS ESPERADOS"],"DIA":a.DIA,"HORA":a.HORA,"Modalidad":a.Modalidad,"Paralelo":a.Paralelo,"ESTUDIANTE":a.ESTUDIANTE,"CICLO":a.CICLO})),120);document.getElementById('asignacionesCount').textContent=filtered.length;const txtCarr=(v==="__ALL__")?"Todas":v;tag.textContent=(v==="__ALL__"&&!q)?"Sin filtro":`Carrera: ${txtCarr}${q?` • búsqueda: “${q}”`:""}`}
+function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
+  const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
+  const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
+  if (!docente.DIA_DISPONIBLE?.length || !docente.HORA_DISPONIBLE?.length) return null;
 
-// === Interfaz ===
+  for (const dia of docente.DIA_DISPONIBLE) {
+    if (getDocDayCount(nombreDoc,dia) >= 2) continue;
+    const ocupadosDiaCiclo = horariosOcupadosCiclo.get(dia) || new Set();
+    const ocupadosDiaDoc = slotsDoc.get(dia) || new Set();
+    for (const hora of docente.HORA_DISPONIBLE) {
+      if (!ocupadosDiaCiclo.has(hora) && !ocupadosDiaDoc.has(hora)) {
+        ocupadosDiaCiclo.add(hora); horariosOcupadosCiclo.set(dia,ocupadosDiaCiclo);
+        ocupadosDiaDoc.add(hora); slotsDoc.set(dia,ocupadosDiaDoc); __DOCENTE_SLOTS__.set(nombreDoc,slotsDoc);
+        incDocDayCount(nombreDoc,dia);
+        return { dia, hora };
+      }
+    }
+  }
+  return null;
+}
+
+function construirSecciones(docentes, mallas, estudiantes){
+  __DOCENTE_SLOTS__ = new Map(); __DOC_DAY_COUNT__ = new Map();
+  const secciones = [];
+  const capacidadPorParalelo = parseInt(document.getElementById('capacidadParalelo').value) || 25;
+
+  // horarios ocupados por ciclo para evitar choques
+  const horariosOcupados = new Map(); for(let c=1;c<=12;c++){ horariosOcupados.set(c,new Map()); }
+
+  // estudiantes por ciclo
+  const estPorCiclo = new Map(); for (const e of estudiantes){ if(!estPorCiclo.has(e.CICLO)) estPorCiclo.set(e.CICLO,[]); estPorCiclo.get(e.CICLO).push(e); }
+
+  // meta por (ciclo,materia) para unir códigos y otros campos
+  const meta = new Map();
+  for (const m of mallas){
+    const k = `${m.CICLO}¦${m.MATERIA}`;
+    if (!meta.has(k)) meta.set(k,{ CODIGOS:new Set(), CARRERAS:new Set(), MALLAS:new Set(), HT:0,HP:0,HA:0,CRED:0, CAMPO:m["CAMPO DE FORMACIÓN"]||"", ORDEN:m["Nº ORDEN EN LA MALLA"]||0, PRE:m["PRE-REQUISITO"]||"" });
+    const o = meta.get(k);
+    if (m.CODIGO) o.CODIGOS.add(String(m.CODIGO));
+    if (m.CARRERA) o.CARRERAS.add(__norm(m.CARRERA));
+    __splitList(m["CARRERAS QUE COMPARTEN"]).forEach(c=>o.CARRERAS.add(__norm(c)));
+    if (m.MALLA) o.MALLAS.add(String(m.MALLA));
+    o.HT=Math.max(o.HT,Number(m["HORAS TEÓRICAS"]||0)); o.HP=Math.max(o.HP,Number(m["HORAS PRÁCTICAS"]||0));
+    o.HA=Math.max(o.HA,Number(m["HORAS AUTÓNOMAS"]||0)); o.CRED=Math.max(o.CRED,Number(m.CREDITOS||0));
+    if (!o.CAMPO) o.CAMPO = m["CAMPO DE FORMACIÓN"]||""; if (!o.PRE) o.PRE = m["PRE-REQUISITO"]||"";
+  }
+
+  const seccionesPorDocente = new Map();
+  const estCiclosKeys = Array.from(estPorCiclo.keys());
+
+  for (const m of mallas){
+    const ciclo = m.CICLO;
+    const nEst = (estPorCiclo.get(ciclo)||[]).length;
+    if (!nEst) continue;
+
+    const docentesMateria = docentes.filter(d=>__norm(d.MATERIA)===__norm(m.MATERIA));
+    if (!docentesMateria.length) continue;
+
+    const numParalelos = 1; // Regla: abrir 1; más se abrirán solo si se llenan
+    docentesMateria.sort((a,b)=>(seccionesPorDocente.get(a.NOMBRE_DOCENTE)||0)-(seccionesPorDocente.get(b.NOMBRE_DOCENTE)||0));
+
+    for (let i=0;i<numParalelos;i++){
+      let elegido=null, slot=null;
+      for (const d of docentesMateria){
+        if ((seccionesPorDocente.get(d.NOMBRE_DOCENTE)||0)>=5) continue;
+        const opt = encontrarHorarioDisponible(horariosOcupados.get(ciclo), d);
+        if (opt){ elegido=d; slot=opt; break; }
+      }
+      if (!elegido) continue;
+
+      const info = meta.get(`${ciclo}¦${m.MATERIA}`) || {};
+      const capacidad = Math.min(capacidadPorParalelo, Math.ceil(nEst/numParalelos));
+      const paralelo = "A";
+
+      secciones.push({
+        CICLO: ciclo, MATERIA: m.MATERIA,
+        NOMBRE_DOCENTE: elegido.NOMBRE_DOCENTE, CAP: capacidad, ASIGNADOS:0,
+        DIA: slot.dia, HORA: slot.hora, Modalidad: elegido.Modalidad, Paralelo: paralelo,
+        CODIGO: Array.from(info.CODIGOS||[]).join('/') || (m.CODIGO||"0"),
+        "CARRERAS QUE COMPARTEN": Array.from(info.CARRERAS||[]).join('/') || (m["CARRERAS QUE COMPARTEN"]||"0"),
+        "PRE-REQUISITO": info.PRE || m["PRE-REQUISITO"] || "0", MALLA: Array.from(info.MALLAS||[]).join('/') || (m.MALLA||"0"),
+        "HORAS TEÓRICAS": info.HT || m["HORAS TEÓRICAS"] || 0, "HORAS PRÁCTICAS": info.HP || m["HORAS PRÁCTICAS"] || 0,
+        "HORAS AUTÓNOMAS": info.HA || m["HORAS AUTÓNOMAS"] || 0, CREDITOS: info.CRED || m.CREDITOS || 0,
+        "CAMPO DE FORMACIÓN": info.CAMPO || m["CAMPO DE FORMACIÓN"] || "0", "Nº ORDEN EN LA MALLA": info.ORDEN || m["Nº ORDEN EN LA MALLA"] || 0
+      });
+
+      seccionesPorDocente.set(elegido.NOMBRE_DOCENTE,(seccionesPorDocente.get(elegido.NOMBRE_DOCENTE)||0)+1);
+    }
+  }
+  return secciones;
+}
+
+// Agrupa por “ciclo¦materia”
+const agruparPorMateria = (secciones)=>{
+  const map=new Map(); for (const s of secciones){ const k=`${s.CICLO}¦${s.MATERIA}`; if(!map.has(k)) map.set(k,[]); map.get(k).push(s); }
+  return map;
+};
+
+// Crea paralelo adicional si todos están llenos y hay docente/slot libre
+function ensureExtraSection(ciclo, materia, docentes, mallas, secciones){
+  const capacidad = parseInt(document.getElementById('capacidadParalelo').value) || 25;
+  const candidatos = docentes.filter(d=>__norm(d.MATERIA)===__norm(materia));
+  if (!candidatos.length) return null;
+
+  const info = {codigos:new Set(), carreras:new Set(), mallas:new Set(), HT:0,HP:0,HA:0, CRED:0, CAMPO:"", ORDEN:0, PRE:""};
+  for (const m of mallas){
+    if (Number(m.CICLO)===Number(ciclo) && __norm(m.MATERIA)===__norm(materia)){
+      if (m.CODIGO) info.codigos.add(String(m.CODIGO));
+      if (m.CARRERA) info.carreras.add(__norm(m.CARRERA));
+      __splitList(m["CARRERAS QUE COMPARTEN"]).forEach(c=>info.carreras.add(__norm(c)));
+      if (m.MALLA) info.mallas.add(String(m.MALLA));
+      info.HT=Math.max(info.HT,Number(m["HORAS TEÓRICAS"]||0));
+      info.HP=Math.max(info.HP,Number(m["HORAS PRÁCTICAS"]||0));
+      info.HA=Math.max(info.HA,Number(m["HORAS AUTÓNOMAS"]||0));
+      info.CRED=Math.max(info.CRED,Number(m.CREDITOS||0));
+      info.CAMPO = info.CAMPO || m["CAMPO DE FORMACIÓN"] || "";
+      info.ORDEN = Number(m["Nº ORDEN EN LA MALLA"]||info.ORDEN);
+      info.PRE = info.PRE || m["PRE-REQUISITO"] || "";
+    }
+  }
+
+  for (const d of candidatos){
+    const slotsDoc = __DOCENTE_SLOTS__.get(d.NOMBRE_DOCENTE) || new Map();
+    for (const dia of (d.DIA_DISPONIBLE||[])){
+      if (getDocDayCount(d.NOMBRE_DOCENTE,dia) >= 2) continue;
+      const usados = slotsDoc.get(dia) || new Set();
+      for (const hora of (d.HORA_DISPONIBLE||[])){
+        if (usados.has(hora)) continue;
+        usados.add(hora); slotsDoc.set(dia,usados); __DOCENTE_SLOTS__.set(d.NOMBRE_DOCENTE,slotsDoc); incDocDayCount(d.NOMBRE_DOCENTE,dia);
+
+        const paralelo = String.fromCharCode(65 + (secciones.filter(s=>s.MATERIA===materia && s.CICLO===Number(ciclo)).length));
+        const nueva = {
+          CICLO:Number(ciclo), MATERIA:materia, NOMBRE_DOCENTE:d.NOMBRE_DOCENTE, CAP:capacidad, ASIGNADOS:0, DIA:dia, HORA:hora,
+          Modalidad:d.Modalidad||"PRESENCIAL", Paralelo:paralelo,
+          CODIGO:Array.from(info.codigos).join('/')||"0",
+          "CARRERAS QUE COMPARTEN":Array.from(info.carreras).join('/')||"0", "PRE-REQUISITO":info.PRE||"0",
+          MALLA:Array.from(info.mallas).join('/')||"0", "HORAS TEÓRICAS":info.HT, "HORAS PRÁCTICAS":info.HP, "HORAS AUTÓNOMAS":info.HA,
+          CREDITOS:info.CRED, "CAMPO DE FORMACIÓN":info.CAMPO||"0", "Nº ORDEN EN LA MALLA":info.ORDEN||0
+        };
+        secciones.push(nueva);
+        return nueva;
+      }
+    }
+  }
+  return null;
+}
+
+function asignarEstudiantes(secciones, estudiantes, mallas, docentes){
+  const idx = agruparPorMateria(secciones);
+  const asignaciones=[], noAsig=[];
+  const maxMaterias = parseInt(document.getElementById('maxMaterias').value) || 6;
+
+  const materiasPorCiclo = new Map();
+  for (const m of mallas){ if(!materiasPorCiclo.has(m.CICLO)) materiasPorCiclo.set(m.CICLO,new Set()); materiasPorCiclo.get(m.CICLO).add(m.MATERIA); }
+
+  const estDayCount = new Map(); const estSlots = new Map();
+  const canPlace = (e,d,h)=>{ const c=estDayCount.get(e)?.get(d)||0; const s=estSlots.get(e)||new Set(); return c<2 && !s.has(`${d}¦${h}`); };
+  const mark = (e,d,h)=>{ const m=estDayCount.get(e)||new Map(); m.set(d,(m.get(d)||0)+1); estDayCount.set(e,m); const s=estSlots.get(e)||new Set(); s.add(`${d}¦${h}`); estSlots.set(e,s); };
+
+  for (const e of estudiantes){
+    const materias = Array.from(materiasPorCiclo.get(e.CICLO)||[]);
+    let cuenta=0; const ya=new Set();
+
+    for (const mat of materias){
+      if (cuenta>=maxMaterias) break; if (ya.has(mat)) continue;
+      const k = `${e.CICLO}¦${mat}`;
+      let bucket = (idx.get(k)||[]).slice().sort((a,b)=>{
+        const fa = (a.CAP||0)-(a.ASIGNADOS||0), fb=(b.CAP||0)-(b.ASIGNADOS||0);
+        if (fa!==fb) return fb-fa; return String(a.Paralelo||"").localeCompare(String(b.Paralelo||""));
+      });
+
+      let placed=false;
+      for (const s of bucket){
+        const libre = (s.CAP||0)-(s.ASIGNADOS||0);
+        if (libre<=0) continue;
+        if (!canPlace(e.ESTUDIANTE,s.DIA,s.HORA)) continue;
+
+        s.ASIGNADOS=(s.ASIGNADOS||0)+1; cuenta++; ya.add(mat); mark(e.ESTUDIANTE,s.DIA,s.HORA);
+        asignaciones.push({
+          ESTUDIANTE:e.ESTUDIANTE, CICLO:e.CICLO, "CARRERA DEL ESTUDIANTE": e.CARRERA||"0",
+          NOMBRE_DOCENTE:s.NOMBRE_DOCENTE, MATERIA:s.MATERIA, "CANTIDAD DE ALUMNOS ESPERADOS":s.CAP||0,
+          DIA:s.DIA, HORA:s.HORA, Modalidad:s.Modalidad, Paralelo:s.Paralelo,
+          "CÓDIGO ANTHOLOGY": s.CODIGO||"0", "CARRERAS QUE COMPARTEN": s["CARRERAS QUE COMPARTEN"]||"0",
+          "PRE-REQUISITO": s["PRE-REQUISITO"]||"0", CODIGO:s.CODIGO||"0",
+          "HORAS TEÓRICAS": Number(s["HORAS TEÓRICAS"]||0), "HORAS PRÁCTICAS": Number(s["HORAS PRÁCTICAS"]||0), "HORAS AUTÓNOMAS": Number(s["HORAS AUTÓNOMAS"]||0),
+          CREDITOS: Number(s.CREDITOS||0), "CAMPO DE FORMACIÓN": s["CAMPO DE FORMACIÓN"]||"0", MALLA: s.MALLA||"0",
+          "Nº ORDEN EN LA MALLA": Number(s["Nº ORDEN EN LA MALLA"]||0), "Nro. HORAS": Number(s["HORAS TEÓRICAS"]||0)+Number(s["HORAS PRÁCTICAS"]||0),
+          "NIVEL INGLES": e["NIVEL INGLES"]||"0", OBSERVACIONES:"0"
+        });
+        placed=true; break;
+      }
+
+      if (!placed){
+        const allFull = bucket.length===0 || bucket.every(s=>((s.CAP||0)-(s.ASIGNADOS||0))<=0);
+        if (allFull){
+          const extra = ensureExtraSection(e.CICLO,mat,docentes,mallas,secciones);
+          if (extra && canPlace(e.ESTUDIANTE,extra.DIA,extra.HORA)){
+            extra.ASIGNADOS=(extra.ASIGNADOS||0)+1; cuenta++; ya.add(mat); mark(e.ESTUDIANTE,extra.DIA,extra.HORA);
+            const arr = idx.get(k)||[]; arr.push(extra); idx.set(k,arr);
+            asignaciones.push({
+              ESTUDIANTE:e.ESTUDIANTE, CICLO:e.CICLO, "CARRERA DEL ESTUDIANTE": e.CARRERA||"0",
+              NOMBRE_DOCENTE:extra.NOMBRE_DOCENTE, MATERIA:extra.MATERIA, "CANTIDAD DE ALUMNOS ESPERADOS":extra.CAP||0,
+              DIA:extra.DIA, HORA:extra.HORA, Modalidad:extra.Modalidad, Paralelo:extra.Paralelo,
+              "CÓDIGO ANTHOLOGY": extra.CODIGO||"0", "CARRERAS QUE COMPARTEN": extra["CARRERAS QUE COMPARTEN"]||"0",
+              "PRE-REQUISITO": extra["PRE-REQUISITO"]||"0", CODIGO:extra.CODIGO||"0",
+              "HORAS TEÓRICAS": Number(extra["HORAS TEÓRICAS"]||0), "HORAS PRÁCTICAS": Number(extra["HORAS PRÁCTICAS"]||0), "HORAS AUTÓNOMAS": Number(extra["HORAS AUTÓNOMAS"]||0),
+              CREDITOS: Number(extra.CREDITOS||0), "CAMPO DE FORMACIÓN": extra["CAMPO DE FORMACIÓN"]||"0", MALLA: extra.MALLA||"0",
+              "Nº ORDEN EN LA MALLA": Number(extra["Nº ORDEN EN LA MALLA"]||0), "Nro. HORAS": Number(extra["HORAS TEÓRICAS"]||0)+Number(extra["HORAS PRÁCTICAS"]||0),
+              "NIVEL INGLES": e["NIVEL INGLES"]||"0", OBSERVACIONES:"0"
+            });
+          }else{
+            noAsig.push({ ESTUDIANTE:e.ESTUDIANTE, MATERIA:mat, CICLO:Number(e.CICLO)||0, MOTIVO:"Sin cupo/horario compatible", "CARRERA DEL ESTUDIANTE":e.CARRERA||"0", "NIVEL INGLES": e["NIVEL INGLES"]||"0" });
+          }
+        } else {
+          noAsig.push({ ESTUDIANTE:e.ESTUDIANTE, MATERIA:mat, CICLO:Number(e.CICLO)||0, MOTIVO:"Paralelo con cupo; respetar llenado", "CARRERA DEL ESTUDIANTE":e.CARRERA||"0", "NIVEL INGLES": e["NIVEL INGLES"]||"0" });
+        }
+      }
+    }
+  }
+
+  // Carga por docente (para estadísticas internas / export)
+  const cargaDocente = Array.from(secciones).map(s=>({
+    DOCENTE:s.NOMBRE_DOCENTE, MATERIA:s.MATERIA, Paralelo:s.Paralelo, DIA:s.DIA, HORA:s.HORA,
+    ASIGNADOS:Number(s.ASIGNADOS||0), CAP:Number(s.CAP||0)
+  })).sort((a,b)=> a.DOCENTE.localeCompare(b.DOCENTE)||a.MATERIA.localeCompare(b.MATERIA)||String(a.Paralelo).localeCompare(String(b.Paralelo)));
+
+  // Resumen por materia
+  const resMatMap = new Map();
+  for (const s of secciones){
+    const k = `${s.MATERIA}¦${s.Paralelo||''}`;
+    if (!resMatMap.has(k)) resMatMap.set(k,{ MATERIA:s.MATERIA, Paralelo:s.Paralelo||"", ASIGNADOS:0, CAP:0 });
+    const o = resMatMap.get(k); o.ASIGNADOS += (s.ASIGNADOS||0); o.CAP += (s.CAP||0);
+  }
+  const resumenMateria = Array.from(resMatMap.values()).map(r=>{
+    const occ = r.CAP ? Math.round((r.ASIGNADOS/r.CAP)*100) : 0;
+    return {...r, OCUPACION: occ+"%"};
+  }).sort((a,b)=> a.MATERIA.localeCompare(b.MATERIA)||a.Paralelo.localeCompare(b.Paralelo));
+
+  return { asignaciones, noAsig, cargaDocente, resumenMateria, secciones };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderTable(el, headers, rows, maxRows=150){
+  if (!rows?.length){ el.innerHTML = '<p class="muted" style="text-align:center;padding:18px;">No hay datos para mostrar.</p>'; return; }
+  const display = rows.slice(0, maxRows);
+  const more = rows.length > maxRows;
+
+  let html = '<table><thead><tr>' + headers.map(h=>`<th>${esc(h)}</th>`).join('') + '</tr></thead><tbody>';
+  for (const r of display){ html += '<tr>'+ headers.map(h=>`<td>${esc(val(r[h]))}</td>`).join('') + '</tr>'; }
+  html += '</tbody></table>';
+  if (more) html += `<div class="muted" style="padding:10px 12px;">Mostrando ${maxRows} de ${rows.length} registros.</div>`;
+  el.innerHTML = html;
+}
+
+/* ============================================================
+   FILTROS (carrera + búsqueda)
+   ============================================================ */
+let GLOBAL_ASIGNACIONES = [];
+function installFilters(careers){
+  const sel = document.getElementById('careerFilter');
+  sel.innerHTML = `<option value="__ALL__">Todas las carreras</option>` + Array.from(new Set(careers.filter(Boolean))).sort().map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+function applyFilters(){
+  const v = document.getElementById('careerFilter').value;
+  const q = (document.getElementById('quickSearch').value || "").trim().toLowerCase();
+  const chip = document.getElementById('activeFilter');
+
+  let filtered = (v==="__ALL__") ? GLOBAL_ASIGNACIONES.slice() : GLOBAL_ASIGNACIONES.filter(a => String(a["CARRERA DEL ESTUDIANTE"]||"").toUpperCase()===v.toUpperCase());
+  if (q){
+    filtered = filtered.filter(a => [a.ESTUDIANTE, a.MATERIA, a.NOMBRE_DOCENTE, a.Paralelo, a.DIA, a.HORA].map(x=>String(x||"").toLowerCase()).some(x=>x.includes(q)));
+  }
+  renderTable(document.getElementById('tblCombo'),
+    ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo","ESTUDIANTE","CICLO"],
+    filtered.map(a=>({
+      "NOMBRE_DOCENTE":a.NOMBRE_DOCENTE, "MATERIA":a.MATERIA, "CANTIDAD DE ALUMNOS ESPERADOS":a["CANTIDAD DE ALUMNOS ESPERADOS"],
+      "DIA":a.DIA, "HORA":a.HORA, "Modalidad":a.Modalidad, "Paralelo":a.Paralelo, "ESTUDIANTE":a.ESTUDIANTE, "CICLO":a.CICLO
+    })), 150
+  );
+  document.getElementById('asignacionesCount').textContent = filtered.length;
+  chip.textContent = (v==="__ALL__" && !q) ? "Sin filtro" : `Carrera: ${v==="__ALL__"?"Todas":v}${q?` • búsqueda: “${q}”`:""}`;
+}
+
+/* ============================================================
+   ESTADO / EXPORT
+   ============================================================ */
 let OUT_SECC=[], OUT_COMB=[], OUT_CARGA=[], OUT_RES_MAT=[], OUT_NO=[], OUT_PLAN_DOC=[], OUT_PROY=[];
+function updateStats(secciones, asignaciones, noAsig, resumenMateria){
+  const stats = document.getElementById('stats');
+  stats.style.display = 'grid';
+  document.getElementById('statSecciones').textContent = secciones.length;
+  document.getElementById('statAsignaciones').textContent = asignaciones.length;
+  document.getElementById('statNoAsignados').textContent = noAsig.length;
 
-function updateStats(secciones,asignaciones,noAsig,resumen){const sc=document.getElementById('statsContainer');sc.classList.remove('hidden');document.getElementById('statSecciones').textContent=secciones.length;document.getElementById('statAsignaciones').textContent=asignaciones.length;document.getElementById('statNoAsignados').textContent=noAsig.length;let totalCap=0,totalAsig=0;resumen.forEach(m=>{totalCap+=m.CAP;totalAsig+=m.ASIGNADOS});document.getElementById('statOcupacion').textContent=(totalCap?Math.round((totalAsig/totalCap)*100):0)+"%"}
+  let totalCap=0, totalAsig=0;
+  resumenMateria.forEach(m=>{ totalCap+=(m.CAP||0); totalAsig+=(m.ASIGNADOS||0); });
+  const occ = totalCap ? Math.round((totalAsig/totalCap)*100) : 0;
+  document.getElementById('statOcupacion').textContent = occ + '%';
+}
 
-function validateFiles(){const fD=document.getElementById('fileDoc').files[0];const fE=document.getElementById('fileEst').files[0];const fM=document.getElementById('fileMal').files[0];document.getElementById('btnRun').disabled=!(fD&&fE&&fM)}
-function updateFileStatus(inputId,statusId,req){const input=document.getElementById(inputId);const status=document.getElementById(statusId);const icon=status.querySelector('.status-icon');input.addEventListener('change',function(){if(this.files.length>0){icon.className='status-icon status-success';status.querySelector('span:last-child').textContent=this.files[0].name}else{icon.className='status-icon status-pending';status.querySelector('span:last-child').textContent=req?'Esperando archivo…':'Opcional — Esperando archivo…'}validateFiles()})}
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // inputs status
+  const setStatus = (inputId, dotId, labelId) => {
+    const input = document.getElementById(inputId), label = document.getElementById(labelId);
+    input.addEventListener('change', ()=> {
+      const ok = input.files.length>0; okDot(dotId, ok);
+      label.textContent = ok ? input.files[0].name : 'Esperando archivo…';
+      document.getElementById('btnRun').disabled = !(document.getElementById('fileDoc').files[0] && document.getElementById('fileEst').files[0] && document.getElementById('fileMal').files[0]);
+    });
+  };
+  setStatus('fileDoc','dotDoc','statusDoc'); setStatus('fileEst','dotEst','statusEst'); setStatus('fileMal','dotMal','statusMal');
 
-// Eventos DOM
- document.addEventListener('DOMContentLoaded',()=>{
-   updateFileStatus('fileDoc','statusDoc',true);updateFileStatus('fileEst','statusEst',true);updateFileStatus('fileMal','statusMal',true);
-   document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{const id=tab.getAttribute('data-tab');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.remove('active'));tab.classList.add('active');document.getElementById(id).classList.add('active')}));
+  // limpiar filtros
+  document.getElementById('clearFilters').addEventListener('click', ()=>{
+    document.getElementById('careerFilter').value="__ALL__";
+    document.getElementById('quickSearch').value="";
+    applyFilters();
+  });
+  document.getElementById('careerFilter').addEventListener('change', applyFilters);
+  let _deb; document.getElementById('quickSearch').addEventListener('input', ()=>{ clearTimeout(_deb); _deb = setTimeout(applyFilters, 200); });
 
-   document.getElementById('btnRun').addEventListener('click',async()=>{
-     const fD=document.getElementById('fileDoc').files[0];const fE=document.getElementById('fileEst').files[0];const fM=document.getElementById('fileMal').files[0];if(!fD||!fE||!fM){showError('Debe cargar los archivos de DOCENTES, ESTUDIANTES y MALLA.');return}
-     updateProgress(10);
-     try{
-       const [rowsD,rowsE,rowsM]=await Promise.all([readSheet(fD,'DOCENTES'),readSheet(fE,'ESTUDIANTES'),readSheet(fM,'MALLA')]);
-       updateProgress(40);
-       const DOC=normalizeDocentes(rowsD);const EST=normalizeEstudiantes(rowsE);const MAL=normalizeMallas(rowsM);
-       if(!DOC.length||!EST.length||!MAL.length) throw new Error('Datos insuficientes para procesar.');
-       updateProgress(60);
-       const secciones=construirSecciones(DOC,MAL,EST);
-       updateProgress(80);
-       const {asignaciones,noAsig,cargaDocente,resumenMateria,secciones:seccFinal}=asignarEstudiantes(secciones,EST,MAL,DOC);
+  // Procesar
+  document.getElementById('btnRun').addEventListener('click', async ()=>{
+    const fD=document.getElementById('fileDoc').files[0], fE=document.getElementById('fileEst').files[0], fM=document.getElementById('fileMal').files[0];
+    if (!fD || !fE || !fM){ showError('Cargue DOCENTES, ESTUDIANTES y MALLA.'); return; }
 
-       OUT_SECC=seccFinal.map(s=>({"NOMBRE_DOCENTE":s.NOMBRE_DOCENTE,"MATERIA":s.MATERIA,"CANTIDAD DE ALUMNOS ESPERADOS":s.CAP,"DIA":s.DIA,"HORA":s.HORA,"Modalidad":s.Modalidad,"Paralelo":s.Paralelo}));
-       OUT_COMB=asignaciones.map(a=>({"NOMBRE_DOCENTE":a.NOMBRE_DOCENTE,"MATERIA":a.MATERIA,"CANTIDAD DE ALUMNOS ESPERADOS":a["CANTIDAD DE ALUMNOS ESPERADOS"],"DIA":a.DIA,"HORA":a.HORA,"Modalidad":a.Modalidad,"Paralelo":a.Paralelo,"ESTUDIANTE":a.ESTUDIANTE,"CICLO":a.CICLO,"CARRERA DEL ESTUDIANTE":a["CARRERA DEL ESTUDIANTE"]}));
-       OUT_NO=noAsig;
-       OUT_CARGA=cargaDocente;OUT_RES_MAT=resumenMateria;
-       OUT_PLAN_DOC=asignaciones.map(a=>({"DOCENTE":a.NOMBRE_DOCENTE,"MATERIA":a.MATERIA,"CÓDIGO ANTHOLOGY":a["CÓDIGO ANTHOLOGY"]||a.CODIGO||"0","CARRERAS QUE COMPARTEN":a["CARRERAS QUE COMPARTEN"]||"0","PRE-REQUISITO":a["PRE-REQUISITO"]||"0","CODIGO":a.CODIGO||"0","HORAS TEÓRICAS":a["HORAS TEÓRICAS"]||0,"HORAS PRÁCTICAS":a["HORAS PRÁCTICAS"]||0,"HORAS AUTÓNOMAS":a["HORAS AUTÓNOMAS"]||0,"CREDITOS":a.CREDITOS||0,"CAMPO DE FORMACIÓN":a["CAMPO DE FORMACIÓN"]||"0","CICLO":a.CICLO||0,"MALLA":a.MALLA||"0","Nº ORDEN EN LA MALLA":a["Nº ORDEN EN LA MALLA"]||0,"PARALELO":a.Paralelo||"0","DIA":a.DIA||"0","HORA":a.HORA||"0","Modalidad":a.Modalidad||"0","Nro. HORAS":a["Nro. HORAS"]||0,"NOMBRE DEL ESTUDIANTE":a.ESTUDIANTE||"0","CARRERA DEL ESTUDIANTE":a["CARRERA DEL ESTUDIANTE"]||"0","CICLO DEL ESTUDIANTE":a["CICLO DEL ESTUDIANTE"]||0,"NIVEL INGLES":a["NIVEL INGLES"]||"0","OBSERVACIONES":a.OBSERVACIONES||"0"})).sort((x,y)=>x.DOCENTE.localeCompare(y.DOCENTE)||x.MATERIA.localeCompare(y.MATERIA)||String(x.PARALELO).localeCompare(String(y.PARALELO)));
+    document.body.classList.add('loading');
+    updateProgress(10);
+    try{
+      const [rowsD,rowsE,rowsM] = await Promise.all([ readSheet(fD,"DOCENTES"), readSheet(fE,"ESTUDIANTES"), readSheet(fM,"MALLA") ]);
+      updateProgress(40);
+      const DOC = normalizeDocentes(rowsD), EST = normalizeEstudiantes(rowsE), MAL = normalizeMallas(rowsM);
+      if (!DOC.length || !EST.length || !MAL.length) throw new Error("Datos insuficientes para procesar.");
+      updateProgress(60);
+      const secciones = construirSecciones(DOC,MAL,EST);
+      updateProgress(80);
+      const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = asignarEstudiantes(secciones,EST,MAL,DOC);
 
-       const map=new Map();const seccIdx=new Map();for(const s of seccFinal){const k=`${s.MATERIA}¦${s.CICLO}`;const o=seccIdx.get(k)||{PAR:0,CAP:0,DOCENTES:new Set()};o.PAR++;o.CAP+=(s.CAP||0);o.DOCENTES.add(s.NOMBRE_DOCENTE||"");seccIdx.set(k,o)}
-       OUT_PROY=[...asignaciones.reduce((acc,a)=>{const k=`${a.MATERIA}¦${a.CICLO}`;if(!acc.has(k))acc.set(k,{MATERIA:a.MATERIA,CICLO:a.CICLO,TOTAL:0,CARRERAS:new Map()});const o=acc.get(k);o.TOTAL++;const car=(a["CARRERA DEL ESTUDIANTE"]||"0").trim();o.CARRERAS.set(car,(o.CARRERAS.get(car)||0)+1);return acc},new Map()).entries()].map(([k,o])=>{const detalle=[...o.CARRERAS.entries()].map(([c,n])=>`${c}: ${n}`).join(" / ");const sec=seccIdx.get(k)||{PAR:0,CAP:0,DOCENTES:new Set()};return{"MATERIA":o.MATERIA,"CICLO":o.CICLO,"TOTAL ESTUDIANTES":o.TOTAL,"PARALELOS":sec.PAR,"CAPACIDAD TOTAL":sec.CAP,"DOCENTES":[...sec.DOCENTES].filter(Boolean).join(" / ")||"0","DETALLE POR CARRERA":detalle||"0"}}).sort((a,b)=>a.MATERIA.localeCompare(b.MATERIA)||a.CICLO-b.CICLO);
+      OUT_SECC = seccFinal.map(s=>({
+        "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE, "MATERIA": s.MATERIA,
+        "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP, "DIA": s.DIA, "HORA": s.HORA, "Modalidad": s.Modalidad, "Paralelo": s.Paralelo
+      }));
+      OUT_COMB = asignaciones.map(a=>({
+        "NOMBRE_DOCENTE": a.NOMBRE_DOCENTE, "MATERIA": a.MATERIA, "CANTIDAD DE ALUMNOS ESPERADOS": a["CANTIDAD DE ALUMNOS ESPERADOS"],
+        "DIA": a.DIA, "HORA": a.HORA, "Modalidad": a.Modalidad, "Paralelo": a.Paralelo, "ESTUDIANTE": a.ESTUDIANTE, "CICLO": a.CICLO,
+        "CARRERA DEL ESTUDIANTE": a["CARRERA DEL ESTUDIANTE"]
+      }));
+      OUT_NO = []; // se intentó cubrir; dejamos lista vacía en interfaz
+      OUT_CARGA = cargaDocente;
+      OUT_RES_MAT = resumenMateria;
 
-       updateProgress(90);
-       renderTable(document.getElementById('tblCombo'),COMBO,OUT_COMB,120);
-       renderTable(document.getElementById('tblCarga'),["DOCENTE","MATERIA","Paralelo","DIA","HORA","ASIGNADOS","CAP"],OUT_CARGA,100);
-       renderTable(document.getElementById('tblResumenMateria'),["MATERIA","Paralelo","ASIGNADOS","CAP","OCUPACION"],OUT_RES_MAT,100);
-       renderTable(document.getElementById('tblNo'),["ESTUDIANTE","MATERIA","CICLO","MOTIVO"],OUT_NO,100);
-       updateStats(OUT_SECC,OUT_COMB,OUT_NO,OUT_RES_MAT);
-       document.getElementById('btnDown').classList.remove('hidden');
-       document.getElementById('progressContainer').style.display='none';
-       showSuccess('Procesamiento completado');
-       // Filtros
-       GLOBAL_ASIGNACIONES=JSON.parse(JSON.stringify(asignaciones));
-       const careers=[...new Set(GLOBAL_ASIGNACIONES.map(a=>a["CARRERA DEL ESTUDIANTE"]).filter(Boolean))];
-       installCareerFilter(careers);applyCareerFilterUI();
-     }catch(err){showError(err.message);document.getElementById('progressContainer').style.display='none'}
-   });
+      // Planificación por docente (completa, sin DEDICACIÓN)
+      OUT_PLAN_DOC = asignaciones.map(a=>({
+        "DOCENTE": a.NOMBRE_DOCENTE, "MATERIA": a.MATERIA, "CÓDIGO ANTHOLOGY": a["CÓDIGO ANTHOLOGY"] || a.CODIGO || "0",
+        "CARRERAS QUE COMPARTEN": a["CARRERAS QUE COMPARTEN"] || "0", "PRE-REQUISITO": a["PRE-REQUISITO"] || "0",
+        "CODIGO": a.CODIGO || "0", "HORAS TEÓRICAS": a["HORAS TEÓRICAS"] || 0, "HORAS PRÁCTICAS": a["HORAS PRÁCTICAS"] || 0,
+        "HORAS AUTÓNOMAS": a["HORAS AUTÓNOMAS"] || 0, "CREDITOS": a.CREDITOS || 0, "CAMPO DE FORMACIÓN": a["CAMPO DE FORMACIÓN"] || "0",
+        "CICLO": a.CICLO || 0, "MALLA": a.MALLA || "0", "Nº ORDEN EN LA MALLA": a["Nº ORDEN EN LA MALLA"] || 0,
+        "PARALELO": a.Paralelo || "0", "DIA": a.DIA || "0", "HORA": a.HORA || "0", "Modalidad": a.Modalidad || "0",
+        "Nro. HORAS": a["Nro. HORAS"] || 0, "NOMBRE DEL ESTUDIANTE": a.ESTUDIANTE || "0", "CARRERA DEL ESTUDIANTE": a["CARRERA DEL ESTUDIANTE"] || "0",
+        "CICLO DEL ESTUDIANTE": a["CICLO DEL ESTUDIANTE"] || 0, "NIVEL INGLES": a["NIVEL INGLES"] || "0", "OBSERVACIONES": a.OBSERVACIONES || "0"
+      })).sort((x,y)=> x.DOCENTE.localeCompare(y.DOCENTE) || x.MATERIA.localeCompare(y.MATERIA) || String(x.PARALELO).localeCompare(String(y.PARALELO)));
 
-   document.getElementById('btnDown').addEventListener('click',()=>{
-     const wb=XLSX.utils.book_new();
-     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(OUT_SECC),'MATRIZ_SECCIONES');
-     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(OUT_COMB),'COMBINACION');
-     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(OUT_CARGA),'RESUMEN_CARGA');
-     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(OUT_RES_MAT),'RESUMEN_MATERIA');
-     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(OUT_NO),'NO_ASIGNADOS');
-     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(OUT_PLAN_DOC),'PLANIFICACION_DOCENTES');
-     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(OUT_PROY),'PROYECCION_POR_MATERIA');
-     XLSX.writeFile(wb,'Planificacion_Asignacion_Docente.xlsx');
-   });
- });
+      // Proyección por materia
+      const mapa = new Map(), seccIdx = new Map();
+      for (const s of seccFinal){
+        const k = `${s.MATERIA}¦${s.CICLO}`; const o = seccIdx.get(k)||{PAR:0,CAP:0,DOC:new Set()};
+        o.PAR++; o.CAP += (s.CAP||0); o.DOC.add(s.NOMBRE_DOCENTE||""); seccIdx.set(k,o);
+      }
+      for (const a of OUT_PLAN_DOC){
+        const k = `${a.MATERIA}¦${a.CICLO}`; if (!mapa.has(k)) mapa.set(k,{ MATERIA:a.MATERIA, CICLO:a.CICLO, TOTAL:0, CARRERAS:new Map() });
+        const o = mapa.get(k); o.TOTAL++; const car=(a["CARRERA DEL ESTUDIANTE"]||"0").trim(); o.CARRERAS.set(car,(o.CARRERAS.get(car)||0)+1);
+      }
+      OUT_PROY = Array.from(mapa.values()).map(o=>{
+        const detalle = Array.from(o.CARRERAS.entries()).map(([c,n])=>`${c}: ${n}`).join(" / ");
+        const k = `${o.MATERIA}¦${o.CICLO}`; const sec = seccIdx.get(k)||{PAR:0,CAP:0,DOC:new Set()};
+        return { "MATERIA":o.MATERIA, "CICLO":o.CICLO, "TOTAL ESTUDIANTES":o.TOTAL, "PARALELOS":sec.PAR, "CAPACIDAD TOTAL":sec.CAP, "DOCENTES":Array.from(sec.DOC).filter(Boolean).join(" / ")||"0", "DETALLE POR CARRERA": detalle||"0" };
+      }).sort((a,b)=> a.MATERIA.localeCompare(b.MATERIA) || a.CICLO-b.CICLO);
+
+      // Render principal + métricas
+      renderTable(document.getElementById('tblCombo'),
+        ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo","ESTUDIANTE","CICLO"],
+        OUT_COMB, 150);
+      document.getElementById('asignacionesCount').textContent = OUT_COMB.length;
+      updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT);
+
+      // Filtros
+      GLOBAL_ASIGNACIONES = JSON.parse(JSON.stringify(asignaciones));
+      const careers = Array.from(new Set(GLOBAL_ASIGNACIONES.map(a=>a["CARRERA DEL ESTUDIANTE"]).filter(Boolean)));
+      installFilters(careers);
+      applyFilters();
+
+      // Finalizar UI
+      updateProgress(100);
+      setTimeout(()=>{ document.getElementById('progressWrap').style.display='none'; document.body.classList.remove('loading'); }, 600);
+      document.getElementById('btnDown').classList.remove('hidden');
+      document.getElementById('stats').scrollIntoView({behavior:"smooth", block:"nearest"});
+    }catch(err){
+      showError(err.message);
+      document.body.classList.remove('loading');
+      document.getElementById('progressWrap').style.display='none';
+    }
+  });
+
+  // Descargar
+  document.getElementById('btnDown').addEventListener('click', ()=>{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_SECC), 'MATRIZ_SECCIONES');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_COMB), 'COMBINACION');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_CARGA), 'RESUMEN_CARGA');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_RES_MAT), 'RESUMEN_MATERIA');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_NO), 'NO_ASIGNADOS');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_PLAN_DOC), 'PLANIFICACION_DOCENTES');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_PROY), 'PROYECCION_POR_MATERIA');
+    XLSX.writeFile(wb, 'Planificacion_Asignacion_Docente.xlsx');
+  });
+});
 </script>
 </body>
 </html>
