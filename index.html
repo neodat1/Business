@@ -780,6 +780,105 @@
 @media (min-resolution: 2dppx){
   .filter-chip{ border-color: rgba(4,19,108,.18); }
 }
+  /* ====== SIMETRÍA DE BARRA DE FILTROS ====== */
+
+/* Caja: misma respiración arriba/abajo y radio consistente */
+.filter-bar{
+  grid-template-columns: minmax(260px, 340px) 1fr auto;
+  padding: 14px 16px;          /* ↑↓ iguales -> apariencia centrada */
+  margin-top: 12px;
+  border-radius: 12px;
+}
+
+/* Etiquetas con altura fija => columnas quedan a la misma línea */
+.filter-label{
+  height: 16px;                /* asegura alto idéntico en ambas columnas */
+  line-height: 16px;
+  margin-bottom: 6px;
+}
+
+/* Contenedores: los campos quedan “apoyados” en la misma línea base */
+.filter-left, .filter-middle{
+  display: flex; flex-direction: column;
+  justify-content: flex-end;   /* alinea controles en el mismo eje */
+}
+
+/* Acciones a la misma altura que los campos (compensa la ausencia de etiqueta) */
+.filter-right{
+  display: flex; flex-direction: row; align-items: center; gap: 10px;
+  justify-content: flex-end;
+  padding-top: 22px;           /* = height(label)+margin-bottom -> simetría */
+}
+
+/* Alturas uniformes en todos los controles visibles */
+.filter-select, .filter-search, .btn, .filter-chip{
+  height: 42px;                /* unifica alto */
+  border-radius: 12px;
+}
+
+/* Mejor foco y aspecto general (coherente con la tarjeta) */
+.filter-select{
+  padding: 10px 36px 10px 12px;
+}
+.filter-search{
+  padding: 10px 12px;
+}
+
+/* “Pill” más nítido y centrado visualmente */
+.filter-chip{
+  padding: 0 12px;
+  display: inline-flex; align-items: center; font-weight: 600; font-size: 12px;
+  background: rgba(4,19,108,.08); color: var(--uide-blue);
+  border: 1px solid rgba(4,19,108,.14);
+}
+
+/* Badge del header (contador) centrado verticalmente con el título */
+.card-header{
+  align-items: center !important;   /* fuerza centrado vertical del badge */
+}
+
+/* Tabla: mejoras sutiles para cohesión visual (opcional) */
+.table-container table tbody tr:nth-child(odd){ background:#fafbff; }
+.table-container table tbody tr:hover{ background:#eef4ff; }
+
+/* === Corrección definitiva de alineación en la barra de filtros === */
+/* 1) Definimos la altura real de la etiqueta y su separación */
+:root{
+  --filter-label-h: 16px;   /* alto visual de .filter-label */
+  --filter-label-gap: 8px;  /* margen inferior de la etiqueta */
+}
+
+/* 2) Etiquetas con alto y línea fijos (coherentes con las columnas 1 y 2) */
+.filter-label{
+  font-size: 12px;
+  line-height: var(--filter-label-h);
+  margin-bottom: var(--filter-label-gap);
+}
+
+/* 3) Altura uniforme de controles (inputs, select, chip y botones) */
+.filter-select, .filter-search, .filter-chip, .btn{
+  height: 42px;
+  border-radius: 12px;
+}
+
+/* 4) La columna de acciones “simula” su etiqueta ausente:
+      empujamos TODOS sus hijos exactamente la suma etiqueta+gap */
+.filter-right{
+  display: flex; flex-direction: row;
+  gap: 10px; align-items: center; justify-content: flex-end;
+}
+.filter-right > *{
+  margin-top: calc(var(--filter-label-h) + var(--filter-label-gap));
+}
+
+/* 5) Micro-ajuste: misma respiración en la tarjeta del filtro */
+.filter-bar{
+  padding: 14px 16px;
+  grid-template-columns: minmax(260px, 340px) 1fr auto;
+}
+
+/* (Opcional) Si prefiere los controles un poquito más altos, cambie 42px por 44px arriba */
+
 
 </style>
 </head>
