@@ -911,8 +911,6 @@ function updateStats(secciones, asignaciones, noAsig, resumenMateria) {
   document.getElementById('docentesCount').textContent = new Set(asignaciones.map(a => a.NOMBRE_DOCENTE)).size;
   document.getElementById('materiasCount').textContent = new Set(asignaciones.map(a => a.MATERIA)).size;
   document.getElementById('noAsignadosCount').textContent = noAsig.length;
-  document.getElementById('matrizCount').textContent = asignaciones.length;
-  
   // Calcular ocupación promedio
   let totalCap = 0;
   let totalAsig = 0;
@@ -971,55 +969,6 @@ function renderTable(el, headers, rows, maxRows = 100) {
     html += `<p class="text-muted text-center">Mostrando ${maxRows} de ${rows.length} registros. Descargue el archivo para ver todos.</p>`;
   }
   el.innerHTML = html;
-}
-
-// Función para renderizar la matriz completa
-function renderMatrizTable(asignaciones) {
-  const el = document.getElementById('tblMatriz');
-  const tbody = el.querySelector('tbody');
-  if (!asignaciones || !asignaciones.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="25" style="text-align: center; padding: 20px; color: var(--secondary);">
-          No hay datos para mostrar
-        </td>
-      </tr>
-    `;
-    return;
-  }
-  let html = '';
-  for (const r of asignaciones) {
-    html += `
-      <tr>
-        <td>${esc(val(r.NOMBRE_DOCENTE))}</td>
-        <td>${esc(val(r.DEDICACIÓN))}</td>
-        <td>${esc(val(r.MATERIA))}</td>
-        <td>${esc(val(r['CÓDIGO ANTHOLOGY']))}</td>
-        <td>${esc(val(r['CARRERAS QUE COMPARTEN']))}</td>
-        <td>${esc(val(r['PRE-REQUISITO']))}</td>
-        <td>${esc(val(r.CODIGO))}</td>
-        <td>${esc(val(r['HORAS TEÓRICAS']))}</td>
-        <td>${esc(val(r['HORAS PRÁCTICAS']))}</td>
-        <td>${esc(val(r['HORAS AUTÓNOMAS']))}</td>
-        <td>${esc(val(r.CREDITOS))}</td>
-        <td>${esc(val(r['CAMPO DE FORMACIÓN']))}</td>
-        <td>${esc(val(r.CICLO))}</td>
-        <td>${esc(val(r.MALLA))}</td>
-        <td>${esc(val(r['Nº ORDEN EN LA MALLA']))}</td>
-        <td>${esc(val(r.Paralelo))}</td>
-        <td>${esc(val(r.DIA))}</td>
-        <td>${esc(val(r.HORA))}</td>
-        <td>${esc(val(r.Modalidad))}</td>
-        <td>${esc(val(r['Nro. HORAS']))}</td>
-        <td>${esc(val(r.ESTUDIANTE))}</td>
-        <td>${esc(val(r['CARRERA DEL ESTUDIANTE']))}</td>
-        <td>${esc(val(r['CICLO DEL ESTUDIANTE']))}</td>
-        <td>${esc(val(r['NIVEL INGLES']))}</td>
-        <td>${esc(val(r.OBSERVACIONES))}</td>
-      </tr>
-    `;
-  }
-  tbody.innerHTML = html;
 }
 
 // Leer archivo Excel con mejor manejo de errores
@@ -1763,9 +1712,7 @@ function applyCareerFilterUI() {
                 "CANTIDAD DE ALUMNOS ESPERADOS":a["CANTIDAD DE ALUMNOS ESPERADOS"],"DIA":a.DIA,"HORA":a.HORA,
                 "Modalidad":a.Modalidad,"Paralelo":a.Paralelo,"ESTUDIANTE":a.ESTUDIANTE,"CICLO":a.CICLO
               })), 100);
-  renderMatrizTable(filtered);
   document.getElementById('asignacionesCount').textContent = filtered.length;
-  document.getElementById('matrizCount').textContent = filtered.length;
   tag.textContent = (v==="__ALL__") ? "Sin filtro" : `Carrera: ${v}`;
 }
 
@@ -1989,7 +1936,6 @@ document.addEventListener('DOMContentLoaded', function() {
       renderTable(document.getElementById('tblNo'), 
                  ["ESTUDIANTE", "MATERIA", "CICLO", "MOTIVO"], 
                  OUT_NO, 100);
-      renderMatrizTable(asignaciones);
       updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT);
       document.getElementById('btnDown').classList.remove('hidden');
       updateProgress(100);
