@@ -742,13 +742,53 @@
     <div class="tab" data-tab="no-asignados">No Asignados</div>
   </div>
 
-  <!-- UIDE: Filtro por carrera (se muestra después de procesar) -->
-  <div id="careerFilterBar" class="btn-group">
-    <select id="careerFilter" class="config-input">
-      <option value="__ALL__">Todas las carreras</option>
-    </select>
-    <span class="badge badge-primary" id="careerActive">Sin filtro</span>
-  </div>
+/* ===== Filtros mejorados ===== */
+.filter-bar{
+  position: sticky; top: 0; z-index: 20;
+  display: grid; grid-template-columns: 1fr 1.2fr auto; gap: 12px;
+  align-items: end; padding: 10px 12px; margin-top: 8px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow);
+}
+
+.filter-label{ font-size: 11px; font-weight: 600; color: var(--secondary); display:block; margin-bottom: 6px; }
+
+.filter-select{
+  appearance: none; width: 100%;
+  padding: 10px 36px 10px 12px; border:1px solid var(--border);
+  border-radius: 10px; background:
+    linear-gradient(180deg,#fff,#f9fafb);
+  font-size: 13px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23445168" viewBox="0 0 16 16"><path d="M3.2 5.5l4.8 4.8 4.8-4.8" stroke="%23445168" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+
+.filter-search{
+  width: 100%; padding: 10px 12px; border:1px solid var(--border);
+  border-radius: 10px; font-size: 13px;
+  background: #fff;
+}
+
+.filter-search:focus, .filter-select:focus{
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(4,19,108,.12);
+}
+
+.filter-chip{
+  display: inline-flex; align-items:center; gap:8px;
+  padding: 6px 10px; border-radius: 999px; font-weight: 600; font-size: 12px;
+  background: rgba(4,19,108,.08); color: var(--uide-blue);
+  white-space: nowrap;
+}
+
+.btn-clear{ white-space: nowrap; padding: 10px 14px; }
+
+@media (max-width: 720px){
+  .filter-bar{ grid-template-columns: 1fr; gap: 8px; }
+  .filter-right{ display:flex; gap:8px; align-items:center; }
+}
+
+
 
   <div class="tab-content active" id="asignaciones">
     <div class="card">
@@ -1690,30 +1730,74 @@ function installCareerFilter(careers) {
   const bar = document.getElementById('careerFilterBar');
   const sel = document.getElementById('careerFilter');
   const tag = document.getElementById('careerActive');
+  const search = document.getElementById('quickSearch');
+  const clear = document.getElementById('clearFilters');
+
   if (!bar || !sel) return;
+
+  // Opciones de carrera
   sel.innerHTML = `<option value="__ALL__">Todas las carreras</option>`;
   Array.from(new Set(careers.filter(Boolean))).sort()
     .forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`));
-  bar.style.display = 'flex';
-  sel.onchange = () => applyCareerFilterUI();
+
+  // Mostrar barra
+  bar.style.display = 'grid';
   tag.textContent = 'Sin filtro';
+
+  // Eventos
+  sel.onchange = () => applyCareerFilterUI();
+  let _deb;
+  search.oninput = () => {
+    clearTimeout(_deb);
+    _deb = setTimeout(applyCareerFilterUI, 200); // debounce suave
+  };
+  clear.onclick = () => {
+    sel.value = "__ALL__";
+    search.value = "";
+    applyCareerFilterUI();
+  };
 }
 
 function applyCareerFilterUI() {
   const v = document.getElementById('careerFilter').value;
+  const q = (document.getElementById('quickSearch').value || "").trim().toLowerCase();
   const tag = document.getElementById('careerActive');
-  const filtered = (v==="__ALL__") ? GLOBAL_ASIGNACIONES
-                  : GLOBAL_ASIGNACIONES.filter(a => (__norm(a["CARRERA DEL ESTUDIANTE"])===__norm(v)));
-  // tablas visibles
-  renderTable(document.getElementById('tblCombo'),
-              ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo","DEDICACIÓN","ESTUDIANTE","CICLO"],
-              filtered.map(a=>({
-                "NOMBRE_DOCENTE":a.NOMBRE_DOCENTE,"DEDICACIÓN":a.DEDICACIÓN||"0","MATERIA":a.MATERIA,
-                "CANTIDAD DE ALUMNOS ESPERADOS":a["CANTIDAD DE ALUMNOS ESPERADOS"],"DIA":a.DIA,"HORA":a.HORA,
-                "Modalidad":a.Modalidad,"Paralelo":a.Paralelo,"ESTUDIANTE":a.ESTUDIANTE,"CICLO":a.CICLO
-              })), 100);
+
+  // 1) Filtrado por carrera
+  let filtered = (v==="__ALL__")
+    ? GLOBAL_ASIGNACIONES.slice()
+    : GLOBAL_ASIGNACIONES.filter(a => (String(a["CARRERA DEL ESTUDIANTE"]||"").toUpperCase() === v.toUpperCase()));
+
+  // 2) Búsqueda rápida (estudiante | materia | docente | paralelo | día | hora)
+  if (q) {
+    filtered = filtered.filter(a => {
+      const hay = [
+        a.ESTUDIANTE, a.MATERIA, a.NOMBRE_DOCENTE,
+        a.Paralelo, a.DIA, a.HORA
+      ].map(x => String(x||"").toLowerCase());
+      return hay.some(x => x.includes(q));
+    });
+  }
+
+  // Render tablas visibles
+  renderTable(
+    document.getElementById('tblCombo'),
+    ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo","DEDICACIÓN","ESTUDIANTE","CICLO"],
+    filtered.map(a=>({
+      "NOMBRE_DOCENTE":a.NOMBRE_DOCENTE, "DEDICACIÓN":a.DEDICACIÓN||"0", "MATERIA":a.MATERIA,
+      "CANTIDAD DE ALUMNOS ESPERADOS":a["CANTIDAD DE ALUMNOS ESPERADOS"], "DIA":a.DIA, "HORA":a.HORA,
+      "Modalidad":a.Modalidad, "Paralelo":a.Paralelo, "ESTUDIANTE":a.ESTUDIANTE, "CICLO":a.CICLO
+    })),
+    100
+  );
+
+  // Counters
   document.getElementById('asignacionesCount').textContent = filtered.length;
-  tag.textContent = (v==="__ALL__") ? "Sin filtro" : `Carrera: ${v}`;
+
+  // Chip de estado
+  const txtCarr = (v==="__ALL__") ? "Todas" : v;
+  const txtBusq = q ? ` • búsqueda: “${q}”` : "";
+  tag.textContent = (v==="__ALL__" && !q) ? "Sin filtro" : `Carrera: ${txtCarr}${txtBusq}`;
 }
 
 // Garantía final: no quedan no asignados
