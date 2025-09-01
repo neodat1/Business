@@ -1364,14 +1364,15 @@ function updateFileStatus(inputId, statusId, isRequired) {
   });
 }
 
-// Función para renderizar tablas con mejoras
-function renderTable(el, headers, rows, maxRows = 100) {
+// Renderiza TODAS las filas sin limitar a 100
+function renderTable(el, headers, rows, maxRows = Infinity) {
   if (!rows || !rows.length) {
     el.innerHTML = '<p class="text-muted text-center">No hay datos para mostrar.</p>';
     return;
   }
-  const displayRows = rows.slice(0, maxRows);
-  const hasMore = rows.length > maxRows;
+  const displayRows = rows.slice(0, Math.min(rows.length, maxRows));
+
+  // Construcción eficiente para muchas filas
   let html = `
     <table>
       <thead>
@@ -1379,17 +1380,20 @@ function renderTable(el, headers, rows, maxRows = 100) {
       </thead>
       <tbody>
   `;
-  for (const r of displayRows) {
+  for (let i = 0; i < displayRows.length; i++) {
+    const r = displayRows[i];
     html += `<tr>${headers.map(h => `<td>${esc(val(r[h]))}</td>`).join('')}</tr>`;
   }
   html += `</tbody></table>`;
-  if (hasMore) {
-    html += `<p class="text-muted text-center">Mostrando ${maxRows} de ${rows.length} registros. Descargue el archivo para ver todos.</p>`;
-  }
+  // Pie con conteo total
+  html += `<p class="text-muted text-center">Total: ${rows.length} registro(s).</p>`;
+
   el.innerHTML = html;
 }
 
+
 // Leer archivo Excel con mejor manejo de errores
+// Leer TODAS las hojas del Excel y concatenar
 const readSheet = (file, fileName) => new Promise((resolve, reject) => {
   if (!file) { resolve([]); return; }
   const fr = new FileReader();
@@ -1397,22 +1401,36 @@ const readSheet = (file, fileName) => new Promise((resolve, reject) => {
     try {
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, { type: 'array' });
+
       if (!wb.SheetNames || wb.SheetNames.length === 0) {
         reject(new Error(`El archivo ${fileName} no contiene hojas válidas.`));
         return;
       }
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      if (!ws || !ws['!ref']) {
-        reject(new Error(`La hoja del archivo ${fileName} está vacía.`));
-        return;
+
+      const allRows = [];
+      for (const sn of wb.SheetNames) {
+        const ws = wb.Sheets[sn];
+        if (!ws || !ws['!ref']) continue;
+
+        // Lee sin perder filas con celdas vacías y sin cortar por huecos
+        const jsonData = XLSX.utils.sheet_to_json(ws, {
+          defval: "",
+          raw: true,
+          blankrows: true,
+        });
+
+        if (Array.isArray(jsonData) && jsonData.length) {
+          allRows.push(...jsonData);
+        }
       }
-      const jsonData = XLSX.utils.sheet_to_json(ws, { defval: "" });
-      if (!jsonData || jsonData.length === 0) {
+
+      if (!allRows.length) {
         reject(new Error(`No se pudieron extraer datos del archivo ${fileName}. Verifique el formato.`));
         return;
       }
-      console.log(`Datos leídos de ${fileName}:`, jsonData);
-      resolve(jsonData);
+
+      console.log(`Datos leídos de ${fileName} (todas las hojas):`, allRows.length);
+      resolve(allRows);
     } catch (error) {
       console.error(`Error leyendo archivo ${fileName}:`, error);
       reject(new Error(`Error al leer el archivo ${fileName}: ${error.message}`));
@@ -1421,6 +1439,7 @@ const readSheet = (file, fileName) => new Promise((resolve, reject) => {
   fr.onerror = () => { reject(new Error(`Error al leer el archivo ${fileName}.`)); };
   fr.readAsArrayBuffer(file);
 });
+
 
 // ===================== Normalización =====================
 function normalizeDocentes(rows) {
@@ -2054,16 +2073,16 @@ function applyCareerFilterUI() {
     });
   }
 
-  renderTable(
-    document.getElementById('tblCombo'),
-    ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo","DEDICACIÓN","ESTUDIANTE","CICLO"],
-    filtered.map(a=>({
-      "NOMBRE_DOCENTE":a.NOMBRE_DOCENTE, "DEDICACIÓN":a.DEDICACIÓN||"0", "MATERIA":a.MATERIA,
-      "CANTIDAD DE ALUMNOS ESPERADOS":a["CANTIDAD DE ALUMNOS ESPERADOS"], "DIA":a.DIA, "HORA":a.HORA,
-      "Modalidad":a.Modalidad, "Paralelo":a.Paralelo, "ESTUDIANTE":a.ESTUDIANTE, "CICLO":a.CICLO
-    })),
-    100
-  );
+renderTable(
+  document.getElementById('tblCombo'),
+  ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo","DEDICACIÓN","ESTUDIANTE","CICLO"],
+  filtered.map(a=>({
+    "NOMBRE_DOCENTE":a.NOMBRE_DOCENTE, "DEDICACIÓN":a.DEDICACIÓN||"0", "MATERIA":a.MATERIA,
+    "CANTIDAD DE ALUMNOS ESPERADOS":a["CANTIDAD DE ALUMNOS ESPERADOS"], "DIA":a.DIA, "HORA":a.HORA,
+    "PARALELO":a.Paralelo, "ESTUDIANTE":a.ESTUDIANTE, "CICLO":a.CICLO
+  })),
+  Infinity
+);
 
   document.getElementById('asignacionesCount').textContent = filtered.length;
   const txtCarr = (v==="__ALL__") ? "Todas" : v;
@@ -2371,16 +2390,17 @@ document.addEventListener('DOMContentLoaded', function() {
       }).sort((a,b)=> a.MATERIA.localeCompare(b.MATERIA) || a.CICLO-b.CICLO);
 
       updateProgress(90);
-      renderTable(document.getElementById('tblCombo'), COMBO9, OUT_COMB, 100);
-      renderTable(document.getElementById('tblCarga'), 
-                 ["DOCENTE","DEDICACIÓN","MATERIA","Paralelo","DIA","HORA","ASIGNADOS","CAP"], 
-                 OUT_CARGA, 100);
-      renderTable(document.getElementById('tblResumenMateria'), 
-                 ["MATERIA", "Paralelo", "ASIGNADOS", "CAP", "OCUPACION"], 
-                 OUT_RES_MAT, 100);
-      renderTable(document.getElementById('tblNo'), 
-                 ["ESTUDIANTE", "MATERIA", "CICLO", "MOTIVO"], 
-                 OUT_NO, 100);
+renderTable(document.getElementById('tblCombo'), COMBO9, OUT_COMB, Infinity);
+renderTable(document.getElementById('tblCarga'),
+            ["DOCENTE","DEDICACIÓN","MATERIA","Paralelo","DIA","HORA","ASIGNADOS","CAP"],
+            OUT_CARGA, Infinity);
+renderTable(document.getElementById('tblResumenMateria'),
+            ["MATERIA","Paralelo","ASIGNADOS","CAP","OCUPACION"],
+            OUT_RES_MAT, Infinity);
+renderTable(document.getElementById('tblNo'),
+            ["ESTUDIANTE","MATERIA","CICLO","MOTIVO"],
+            OUT_NO, Infinity);
+
       updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT);
       document.getElementById('btnDown').classList.remove('hidden');
       document.getElementById('btnEdit').classList.remove('hidden');
