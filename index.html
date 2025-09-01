@@ -311,6 +311,7 @@
     margin: 16px 0;
     max-height: 400px;
     overflow: auto;
+    position: relative; /* para sticky header */
   }
   
   table {
@@ -328,6 +329,13 @@
     position: sticky;
     top: 0;
     border-bottom: 2px solid var(--border);
+  }
+
+  /* Encabezado sticky sin superposición */
+  .table-container thead th{
+    position: sticky; top: 0; z-index: 5;
+    background: #fff;
+    box-shadow: 0 1px 0 0 var(--border);
   }
   
   td {
@@ -602,6 +610,43 @@
   #carga-docente,
   #resumen-materia,
   #no-asignados { display: none !important; }
+
+  /* ===== Filtros mejorados (MOVIDO AQUÍ desde el body) ===== */
+  .filter-bar{
+    position: sticky; top: 0; z-index: 20;
+    display: grid; grid-template-columns: 1fr 1.2fr auto; gap: 12px;
+    align-items: end; padding: 10px 12px; margin-top: 8px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--shadow);
+  }
+  .filter-label{ font-size: 11px; font-weight: 600; color: var(--secondary); display:block; margin-bottom: 6px; }
+  .filter-select{
+    appearance: none; width: 100%;
+    padding: 10px 36px 10px 12px; border:1px solid var(--border);
+    border-radius: 10px; background: linear-gradient(180deg,#fff,#f9fafb);
+    font-size: 13px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23445168" viewBox="0 0 16 16"><path d="M3.2 5.5l4.8 4.8 4.8-4.8" stroke="%23445168" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .filter-search{
+    width: 100%; padding: 10px 12px; border:1px solid var(--border);
+    border-radius: 10px; font-size: 13px; background: #fff;
+  }
+  .filter-search:focus, .filter-select:focus{
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(4,19,108,.12);
+  }
+  .filter-chip{
+    display: inline-flex; align-items:center; gap:8px;
+    padding: 6px 10px; border-radius: 999px; font-weight: 600; font-size: 12px;
+    background: rgba(4,19,108,.08); color: var(--uide-blue);
+    white-space: nowrap;
+  }
+  .btn-clear{ white-space: nowrap; padding: 10px 14px; }
+  @media (max-width: 720px){
+    .filter-bar{ grid-template-columns: 1fr; gap: 8px; }
+    .filter-right{ display:flex; gap:8px; align-items:center; }
+  }
 </style>
 </head>
 <body>
@@ -742,60 +787,31 @@
     <div class="tab" data-tab="no-asignados">No Asignados</div>
   </div>
 
-/* ===== Filtros mejorados ===== */
-.filter-bar{
-  position: sticky; top: 0; z-index: 20;
-  display: grid; grid-template-columns: 1fr 1.2fr auto; gap: 12px;
-  align-items: end; padding: 10px 12px; margin-top: 8px;
-  background: #fff; border: 1px solid var(--border);
-  border-radius: 10px; box-shadow: var(--shadow);
-}
-
-.filter-label{ font-size: 11px; font-weight: 600; color: var(--secondary); display:block; margin-bottom: 6px; }
-
-.filter-select{
-  appearance: none; width: 100%;
-  padding: 10px 36px 10px 12px; border:1px solid var(--border);
-  border-radius: 10px; background:
-    linear-gradient(180deg,#fff,#f9fafb);
-  font-size: 13px;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23445168" viewBox="0 0 16 16"><path d="M3.2 5.5l4.8 4.8 4.8-4.8" stroke="%23445168" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
-  background-repeat: no-repeat; background-position: right 10px center;
-}
-
-.filter-search{
-  width: 100%; padding: 10px 12px; border:1px solid var(--border);
-  border-radius: 10px; font-size: 13px;
-  background: #fff;
-}
-
-.filter-search:focus, .filter-select:focus{
-  outline: none; border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(4,19,108,.12);
-}
-
-.filter-chip{
-  display: inline-flex; align-items:center; gap:8px;
-  padding: 6px 10px; border-radius: 999px; font-weight: 600; font-size: 12px;
-  background: rgba(4,19,108,.08); color: var(--uide-blue);
-  white-space: nowrap;
-}
-
-.btn-clear{ white-space: nowrap; padding: 10px 14px; }
-
-@media (max-width: 720px){
-  .filter-bar{ grid-template-columns: 1fr; gap: 8px; }
-  .filter-right{ display:flex; gap:8px; align-items:center; }
-}
-
-
-
   <div class="tab-content active" id="asignaciones">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Asignaciones Realizadas</h3>
         <span class="badge badge-primary" id="asignacionesCount">0</span>
       </div>
+
+      <!-- Barra de filtros (nueva, conectada al JS existente) -->
+      <div id="careerFilterBar" class="filter-bar" style="display:none">
+        <div class="filter-left">
+          <label for="careerFilter" class="filter-label">Carrera</label>
+          <select id="careerFilter" class="filter-select">
+            <option value="__ALL__">Todas las carreras</option>
+          </select>
+        </div>
+        <div class="filter-middle">
+          <label for="quickSearch" class="filter-label">Buscar</label>
+          <input id="quickSearch" type="search" class="filter-search" placeholder="Estudiante, materia o docente…"/>
+        </div>
+        <div class="filter-right">
+          <span class="filter-chip" id="careerActive">Sin filtro</span>
+          <button id="clearFilters" class="btn btn-secondary btn-clear" type="button">Limpiar</button>
+        </div>
+      </div>
+
       <div class="table-container">
         <div id="tblCombo"></div>
       </div>
@@ -829,7 +845,7 @@
   <div class="tab-content" id="no-asignados">
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">No Asignados</div>
+        <h3 class="card-title">No Asignados</h3>
         <span class="badge badge-danger" id="noAsignadosCount">0</span>
       </div>
       <div class="table-container">
@@ -867,32 +883,20 @@ const __norm = s => String(s ?? "").toUpperCase().normalize("NFD").replace(/[\u0
 const __splitList = s => String(s ?? "").split(/[,;/]| Y | E /i).map(x=>x.trim()).filter(Boolean);
 
 // CAMBIO GENERAL: interpretar rangos como "19:00 A 22:00", "19:00-22:00", "7-10", etc.
-// Devuelve un bloque EXACTO de HORARIOS si el inicio coincide. Si no puede interpretar, devuelve null.
 function normalizarHorario(horario) {
   if (!horario) return null;
-
   const raw = String(horario).toUpperCase().trim();
-
-  // Si ya coincide con un bloque permitido, úselo
   if (HORARIOS.includes(raw)) return raw;
-
-  // Aceptar separadores y minutos opcionales
-  // Ej: "07:00-10:00", "07:00 – 10:00", "07:00 A 10:00", "7-10", "7 a 10"
   const re = /(\d{1,2})(?::(\d{2}))?\s*(?:-|–|—|A|AL|A LAS|A LOS|TO)\s*(\d{1,2})(?::(\d{2}))?/i;
   const m = raw.match(re);
   if (!m) return null;
-
   const hIni = m[1].padStart(2,'0');
   const mIni = (m[2] ?? '00').padStart(2,'0');
   const start = `${hIni}:${mIni}`;
-
-  // Solo si el inicio coincide exactamente con un bloque válido
   const bloque = HORARIOS.find(b => b.startsWith(start));
   return bloque || null;
 }
 
-
-// Utilidades mejoradas
 const canonDay = s => {
   if (!s) return "";
   const t = String(s).toLowerCase().trim();
@@ -1342,31 +1346,6 @@ function encontrarHorarioDisponibleConLimite(horariosOcupadosCiclo, docente) {
   }
   return null; // no hay slot compatible
 }
-
-// (Se conserva la versión original por compatibilidad; no se usa aquí, pero no se elimina)
-/* function encontrarHorarioDisponible(horariosOcupadosCiclo, docente) {
-  const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
-  const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
-
-  for (const dia of docente.DIA_DISPONIBLE) {
-    const ocupadosDiaCiclo = horariosOcupadosCiclo.get(dia) || new Set();
-    const ocupadosDiaDoc = slotsDoc.get(dia) || new Set();
-
-    for (const hora of docente.HORA_DISPONIBLE) {
-      if (!ocupadosDiaCiclo.has(hora) && !ocupadosDiaDoc.has(hora)) {
-        ocupadosDiaCiclo.add(hora);
-        horariosOcupadosCiclo.set(dia, ocupadosDiaCiclo);
-
-        ocupadosDiaDoc.add(hora);
-        slotsDoc.set(dia, ocupadosDiaDoc);
-        __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc);
-
-        return { dia, hora };
-      }
-    }
-  }
-  return null;
-} */
 
 function agruparPorMateria(secciones) {
   const map = new Map();
