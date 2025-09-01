@@ -878,6 +878,42 @@
 }
 
 /* (Opcional) Si prefiere los controles un poquito más altos, cambie 42px por 44px arriba */
+/* ==== Alineación simétrica y estable en la barra de filtros ==== */
+
+/* 1) Todas las columnas se alinean por la base (bottom) */
+.filter-bar{
+  align-items: end !important;               /* fuerza alineación inferior uniforme */
+  grid-template-columns: minmax(260px,340px) 1fr auto;
+  padding: 14px 16px;
+}
+
+/* 2) Columnas izquierda y media: pila vertical normal */
+.filter-left, .filter-middle{
+  display: flex; flex-direction: column;
+}
+
+/* 3) Columna derecha (acciones): SIN compensaciones verticales */
+.filter-right{
+  display: flex; flex-direction: row;
+  align-items: center; justify-content: flex-end;
+  gap: 10px;
+  padding-top: 0 !important;
+}
+.filter-right > *{
+  margin-top: 0 !important;                 /* anulamos el empuje anterior */
+}
+
+/* 4) Alturas uniformes de controles */
+.filter-select, .filter-search, .filter-chip, .btn{
+  height: 42px; border-radius: 12px;
+}
+
+/* 5) Etiquetas compactas — no afectan la línea base gracias a align-items:end */
+.filter-label{
+  font-size: 12px; line-height: 16px; margin-bottom: 8px;
+}
+
+/* (Opcional) si prefiere un look más robusto, cambie 42px por 44px arriba */
 
 
 </style>
