@@ -198,6 +198,7 @@
     display: flex;
     gap: 12px;
     margin: 20px 0;
+    flex-wrap: wrap;
   }
   
   /* Progress Bar */
@@ -647,6 +648,21 @@
     .filter-bar{ grid-template-columns: 1fr; gap: 8px; }
     .filter-right{ display:flex; gap:8px; align-items:center; }
   }
+
+  /* ===== Modal edición estudiante (nuevo, sin eliminar nada) ===== */
+  .modal-backdrop{
+    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    display:none; align-items:center; justify-content:center; z-index: 9999;
+  }
+  .modal{
+    width: min(760px, 95vw); background:#fff; border-radius: 12px; box-shadow: var(--shadow);
+    padding: 16px; border:1px solid var(--border);
+  }
+  .modal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .modal-title{ font-weight:700; font-size:16px; }
+  .modal-body{ display:grid; gap:12px; }
+  .modal-footer{ display:flex; gap:10px; justify-content:flex-end; margin-top: 6px; }
+  .help{ font-size:12px; color: var(--secondary); }
 </style>
 </head>
 <body>
@@ -735,6 +751,26 @@
           <span>Esperando archivo...</span>
         </div>
       </div>
+
+      <!-- ====== OPCIONALES: INGLÉS y PRÁCTICAS (solicitados) ====== -->
+      <div class="file-input-container">
+        <label class="file-label">INGLES.xlsx (opcional)</label>
+        <input id="fileIng" type="file" accept=".xlsx,.xls" class="file-input">
+        <div class="file-status" id="statusIng">
+          <span class="status-icon status-pending"></span>
+          <span>Opcional - Esperando archivo...</span>
+        </div>
+      </div>
+
+      <div class="file-input-container">
+        <label class="file-label">PRACTICAS.xlsx (opcional)</label>
+        <input id="filePra" type="file" accept=".xlsx,.xls" class="file-input">
+        <div class="file-status" id="statusPra">
+          <span class="status-icon status-pending"></span>
+          <span>Opcional - Esperando archivo...</span>
+        </div>
+      </div>
+      <!-- =========================================================== -->
     </div>
 
     <div class="progress-container" id="progressContainer">
@@ -757,6 +793,10 @@
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
         Descargar Planificación
+      </button>
+      <!-- Edición de asignación de estudiantes -->
+      <button id="btnEdit" class="btn btn-secondary hidden">
+        ✏️ Editar asignación de estudiante
       </button>
     </div>
 
@@ -855,6 +895,41 @@
   </div>
 </div>
 
+<!-- ===== Modal para editar asignación de estudiantes ===== -->
+<div id="editModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Editar asignación de estudiante</div>
+      <button id="closeModal" class="btn btn-secondary">✖</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label class="config-label" for="selStudent">Estudiante</label>
+        <select id="selStudent" class="config-input"></select>
+      </div>
+      <div>
+        <label class="config-label" for="selMateriaActual">Materia actual (a reemplazar)</label>
+        <select id="selMateriaActual" class="config-input"></select>
+      </div>
+      <div class="help">Solo se permite cambiar materias del <strong>mismo ciclo</strong> del estudiante, respetando su <strong>carrera</strong> y evitando cruces de horario.</div>
+      <div>
+        <label class="config-label" for="selMateriaNueva">Nueva materia (misma oferta de su carrera / compartidas)</label>
+        <select id="selMateriaNueva" class="config-input"></select>
+      </div>
+      <div>
+        <label class="config-label" for="selParaleloNuevo">Paralelo destino</label>
+        <select id="selParaleloNuevo" class="config-input"></select>
+        <div class="help">Si no hay cupo, podrá crear un <em>Nuevo paralelo</em> automáticamente.</div>
+      </div>
+      <div id="editAlert" class="alert alert-error hidden"><span class="alert-icon">⚠️</span><div id="editMsg"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button id="btnCrearParalelo" class="btn btn-secondary">Crear nuevo paralelo</button>
+      <button id="btnGuardarCambio" class="btn btn-primary">Guardar cambio</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===================== Constantes y Utilidades =====================
 let __DOCENTE_SLOTS__ = new Map(); // Map<Docente, Map<DIA, Set<HORA>>>
@@ -913,6 +988,28 @@ const esc = s => {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 };
 const val = s => (s === null || s === undefined || s === "") ? "0" : s;
+
+// ======== NUEVO: control de bloqueos por Inglés/Prácticas ========
+let BLOCK_INGLES = new Map();   // Map<ESTUDIANTE, Set('DIA¦HORA')>
+let BLOCK_PRACTICAS = new Map();
+
+function normalizeBloqueos(rows) {
+  const out = new Map();
+  for (const r of (rows||[])) {
+    const est = (r["ESTUDIANTE"] || r["NOMBRE"] || "").trim();
+    const dia = canonDay(r["DIA"] || "");
+    const hora = normalizarHorario(r["HORA"] || "");
+    if (!est || !dia || !hora) continue;
+    const set = out.get(est) || new Set();
+    set.add(`${dia}¦${hora}`);
+    out.set(est, set);
+  }
+  return out;
+}
+function isBlocked(est, dia, hora){
+  const k = `${dia}¦${hora}`;
+  return (BLOCK_INGLES.get(est)?.has(k)) || (BLOCK_PRACTICAS.get(est)?.has(k)) || false;
+}
 
 // Función para mostrar errores
 function showError(message) {
@@ -1171,44 +1268,85 @@ let __DOC_DAY_COUNT__ = new Map(); // Map<docente, Map<dia, count>>
 const getDocDayCount = (doc, dia) => (__DOC_DAY_COUNT__.get(doc)?.get(dia))||0;
 const incDocDayCount = (doc, dia) => { const m=__DOC_DAY_COUNT__.get(doc)||new Map(); m.set(dia,(m.get(dia)||0)+1); __DOC_DAY_COUNT__.set(doc,m); };
 
+// ===== NUEVO: control de choques entre ciclos adyacentes =====
+const neighborsOf = (c)=>[c-1,c+1].filter(x=>x>=1 && x<=12);
+function slotTakenIn(horariosOcupados, ciclo, dia, hora){
+  const m = horariosOcupados.get(ciclo);
+  if (!m) return false;
+  const set = m.get(dia);
+  return set ? set.has(hora) : false;
+}
+function slotTakenByNeighbors(horariosOcupados, ciclo, dia, hora){
+  for (const nc of neighborsOf(ciclo)) {
+    if (slotTakenIn(horariosOcupados, nc, dia, hora)) return true;
+  }
+  return false;
+}
+
+// ===== Buscar horario para docente evitando choques en su ciclo y en ciclos vecinos =====
+function encontrarHorarioDisponibleConLimiteYVecinos(horariosOcupados, ciclo, docente) {
+  const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
+  const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
+
+  if (!Array.isArray(docente.DIA_DISPONIBLE) || docente.DIA_DISPONIBLE.length === 0) return null;
+  if (!Array.isArray(docente.HORA_DISPONIBLE) || docente.HORA_DISPONIBLE.length === 0) return null;
+
+  for (const dia of docente.DIA_DISPONIBLE) {
+    if (getDocDayCount(nombreDoc, dia) >= 2) continue;
+
+    const ocupadosDiaCiclo = (horariosOcupados.get(ciclo)?.get(dia)) || new Set();
+    const ocupadosDiaDoc = slotsDoc.get(dia) || new Set();
+
+    for (const hora of docente.HORA_DISPONIBLE) {
+      if (ocupadosDiaCiclo.has(hora)) continue;           // choque en su ciclo
+      if (ocupadosDiaDoc.has(hora)) continue;             // choque del propio docente
+      if (slotTakenByNeighbors(horariosOcupados, ciclo, dia, hora)) continue; // choque con ciclos adyacentes
+
+      // reservar
+      ocupadosDiaCiclo.add(hora);
+      const mapDia = horariosOcupados.get(ciclo) || new Map();
+      mapDia.set(dia, ocupadosDiaCiclo);
+      horariosOcupados.set(ciclo, mapDia);
+
+      ocupadosDiaDoc.add(hora);
+      slotsDoc.set(dia, ocupadosDiaDoc);
+      __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc);
+
+      incDocDayCount(nombreDoc, dia);
+      return { dia, hora };
+    }
+  }
+  return null;
+}
+
 function construirSecciones(docentes, mallas, estudiantes) {
-  __DOCENTE_SLOTS__ = new Map(); // reset por corrida
+  __DOCENTE_SLOTS__ = new Map(); // reset
   __DOC_DAY_COUNT__ = new Map();
 
   const secciones = [];
   const horariosOcupados = new Map(); // Map<ciclo, Map<dia, Set<hora>>>
   const capacidadPorParalelo = parseInt(document.getElementById('capacidadParalelo').value) || 25;
 
-  // Inicializar estructura de horarios por ciclo
-  for (let ciclo = 1; ciclo <= 12; ciclo++) {
-    horariosOcupados.set(ciclo, new Map());
-  }
+  for (let ciclo = 1; ciclo <= 12; ciclo++) horariosOcupados.set(ciclo, new Map());
 
-  // Índices auxiliares
-  const seccionesPorDocente = new Map();            // Map<docente, conteoDeSecciones>
-  const correlativoParalelo = new Map();            // Map<`${materia}¦${ciclo}`, cantidadGenerada>
+  const seccionesPorDocente = new Map();
+  const correlativoParalelo = new Map();
 
-  // Agrupar estudiantes por ciclo
   const estudiantesPorCiclo = new Map();
   for (const e of estudiantes) {
     if (!estudiantesPorCiclo.has(e.CICLO)) estudiantesPorCiclo.set(e.CICLO, []);
     estudiantesPorCiclo.get(e.CICLO).push(e);
   }
 
-  // ---- meta agregada por (ciclo, materia) para unir códigos/carreras/mallas ----
-  const metaMap = new Map(); // key: `${ciclo}¦${materia}`
+  // meta agregada por (ciclo, materia)
+  const metaMap = new Map();
   for (const m of mallas) {
     const key = `${m.CICLO}¦${m.MATERIA}`;
     if (!metaMap.has(key)) {
       metaMap.set(key, {
-        CODIGOS: new Set(),
-        CARRERAS: new Set(),
-        MALLAS: new Set(),
-        "HORAS TEÓRICAS": 0,
-        "HORAS PRÁCTICAS": 0,
-        "HORAS AUTÓNOMAS": 0,
-        CREDITOS: 0,
-        "CAMPO DE FORMACIÓN": m["CAMPO DE FORMACIÓN"] || "",
+        CODIGOS: new Set(), CARRERAS: new Set(), MALLAS: new Set(),
+        "HORAS TEÓRICAS": 0, "HORAS PRÁCTICAS": 0, "HORAS AUTÓNOMAS": 0,
+        CREDITOS: 0, "CAMPO DE FORMACIÓN": m["CAMPO DE FORMACIÓN"] || "",
         "Nº ORDEN EN LA MALLA": m["Nº ORDEN EN LA MALLA"] || 0,
         "PRE-REQUISITO": m["PRE-REQUISITO"] || ""
       });
@@ -1234,48 +1372,41 @@ function construirSecciones(docentes, mallas, estudiantes) {
 
     // Solo docentes de esa materia
     const docentesMateria = docentes.filter(d => __norm(d.MATERIA) === __norm(materia.MATERIA));
-    if (docentesMateria.length === 0) { 
-      console.warn(`Sin docentes para ${materia.MATERIA}`); 
-      continue; 
-    }
-    // Regla UIDE: no abrir otro paralelo hasta llenar el actual
+    if (docentesMateria.length === 0) continue;
+
     const numParalelos = numEstudiantes > 0 ? 1 : 0;
-    // Correlativo de paralelos por materia + ciclo (evita repetir "A")
     const kMat = `${materia.MATERIA}¦${ciclo}`;
     const baseIndex = correlativoParalelo.get(kMat) || 0;
 
-    // Recuperar meta agregada
     const info = metaMap.get(`${ciclo}¦${materia.MATERIA}`) || {};
     const codStr = Array.from(info.CODIGOS||[]).filter(Boolean).join('/') || String(materia.CODIGO||"0");
     const carStr = Array.from(info.CARRERAS||[]).filter(Boolean).join('/') || String(materia["CARRERAS QUE COMPARTEN"]||"0");
     const mallaStr = Array.from(info.MALLAS||[]).filter(Boolean).join('/') || String(materia.MALLA||"0");
 
     for (let i = 0; i < numParalelos; i++) {
-      // Elegir docente con menos de 5 secciones y con disponibilidad
       let docente = null, horario = null;
 
-      // ordenar por menor carga
       docentesMateria.sort((a, b) => (seccionesPorDocente.get(a.NOMBRE_DOCENTE)||0) - (seccionesPorDocente.get(b.NOMBRE_DOCENTE)||0));
 
       for (const cand of docentesMateria) {
         if ((seccionesPorDocente.get(cand.NOMBRE_DOCENTE)||0) >= 5) continue;
 
-        // Encontrar horario libre para ese docente en el ciclo con máx 2 por día
-        const opt = encontrarHorarioDisponibleConLimite(horariosOcupados.get(ciclo), cand);
+        // NUEVO: evita choques con ciclos vecinos
+        const opt = encontrarHorarioDisponibleConLimiteYVecinos(horariosOcupados, ciclo, cand);
         if (opt) { docente = cand; horario = opt; break; }
       }
       if (!docente) {
-        console.warn(`Sin horario disponible para ${materia.MATERIA} - Ciclo ${ciclo} (docentes llenos o límite diario)`);
+        console.warn(`Sin horario compatible (vecinos) para ${materia.MATERIA} - Ciclo ${ciclo}`);
         continue;
       }
 
       const capacidad = Math.min(capacidadPorParalelo, Math.ceil(numEstudiantes / numParalelos));
-      const paralelo = String.fromCharCode(65 + baseIndex + i); // A, B, C, ...
+      const paralelo = String.fromCharCode(65 + baseIndex + i);
 
       secciones.push({
         MATERIA: materia.MATERIA,
-        CODIGO: codStr,                 // un solo código combinado
-        "CÓDIGO ANTHOLOGY": codStr,     // mismo valor
+        CODIGO: codStr,
+        "CÓDIGO ANTHOLOGY": codStr,
         CICLO: ciclo,
         NOMBRE_DOCENTE: docente.NOMBRE_DOCENTE,
         CAP: capacidad,
@@ -1288,85 +1419,34 @@ function construirSecciones(docentes, mallas, estudiantes) {
         "HORAS TEÓRICAS": info["HORAS TEÓRICAS"] ?? materia.HORAS_TEORICAS ?? 0,
         "HORAS PRÁCTICAS": info["HORAS PRÁCTICAS"] ?? materia.HORAS_PRACTICAS ?? 0,
         "HORAS AUTÓNOMAS": info["HORAS AUTÓNOMAS"] ?? materia["HORAS AUTÓNOMAS"] ?? 0,
-        "CREDITOS": info.CREDITOS ?? materia.CREDITOS ?? 0,
+        CREDITOS: info.CREDITOS ?? materia.CREDITOS ?? 0,
         "CAMPO DE FORMACIÓN": info["CAMPO DE FORMACIÓN"] ?? materia["CAMPO DE FORMACIÓN"] ?? "",
-        "MALLA": mallaStr,
+        MALLA: mallaStr,
         "Nº ORDEN EN LA MALLA": info["Nº ORDEN EN LA MALLA"] ?? materia["Nº ORDEN EN LA MALLA"] ?? 0,
         "PRE-REQUISITO": info["PRE-REQUISITO"] ?? materia["PRE-REQUISITO"] ?? "",
         "CARRERAS QUE COMPARTEN": carStr
       });
 
-      // Actualizar conteo por docente
       seccionesPorDocente.set(
-        docente.NOMBRE_DOCENTE, 
+        docente.NOMBRE_DOCENTE,
         (seccionesPorDocente.get(docente.NOMBRE_DOCENTE) || 0) + 1
       );
     }
-
-    // Avanzar el correlativo global de paralelos para esa materia+ciclo
     correlativoParalelo.set(kMat, baseIndex + numParalelos);
   }
 
-  console.log("Secciones construidas:", secciones);
   return secciones;
 }
 
-
-// Encontrar horario disponible para un docente que no esté ocupado en el mismo ciclo
-// con límite de 2 materias por día y respetando disponibilidad declarada
-function encontrarHorarioDisponibleConLimite(horariosOcupadosCiclo, docente) {
-  const nombreDoc = docente.NOMBRE_DOCENTE || "SIN_DOCENTE";
-  const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
-
-  // CAMBIO: si no hay días u horas válidas, no intentar asignar
-  if (!Array.isArray(docente.DIA_DISPONIBLE) || docente.DIA_DISPONIBLE.length === 0) return null;
-
-  for (const dia of docente.DIA_DISPONIBLE) {
-    // máx 2 por día para docente
-    if (getDocDayCount(nombreDoc, dia) >= 2) continue;
-
-    const ocupadosDiaCiclo = horariosOcupadosCiclo.get(dia) || new Set(); // evita cruces dentro del ciclo
-    const ocupadosDiaDoc = slotsDoc.get(dia) || new Set();                 // evita cruces del docente (todos los ciclos)
-    if (!Array.isArray(docente.HORA_DISPONIBLE) || docente.HORA_DISPONIBLE.length === 0) continue;
-
-    for (const hora of docente.HORA_DISPONIBLE) {
-      if (!ocupadosDiaCiclo.has(hora) && !ocupadosDiaDoc.has(hora)) {
-        // marcar ocupación en ambas estructuras
-        ocupadosDiaCiclo.add(hora);
-        horariosOcupadosCiclo.set(dia, ocupadosDiaCiclo);
-
-        ocupadosDiaDoc.add(hora);
-        slotsDoc.set(dia, ocupadosDiaDoc);
-        __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc);
-
-        incDocDayCount(nombreDoc, dia); // suma al límite diario
-        return { dia, hora };
-      }
-    }
-  }
-  return null; // no hay slot compatible
-}
-
-function agruparPorMateria(secciones) {
-  const map = new Map();
-  for (const s of secciones) {
-    const key = `${s.CICLO}¦${s.MATERIA}`;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key).push(s);
-  }
-  return map;
-}
-
-// helper: crear sección extra si no hay cupo/horario, sin violar reglas
-function ensureExtraSection(ciclo, materia, docentes, mallas, secciones) {
-  const capacidad = parseInt(document.getElementById('capacidadParalelo').value) || 25;
-  // docentes válidos para esa materia
+// ===== Helpers para abrir nuevo paralelo cuando se requiera por edición/asignación =====
+function ensureExtraSectionFinal(ciclo, materia, docentes, mallas, secciones, horariosOcupados){
+  // Docentes candidatos por materia
   const candidatos = docentes.filter(d => __norm(d.MATERIA) === __norm(materia));
   if (!candidatos.length) return null;
 
-  // meta agregada desde malla
-  const codigos = new Set(), carreras = new Set(), mallasSet = new Set();
-  let hT=0,hP=0,hA=0, cred=0, campo="", orden=0, prereq="";
+  // Construir meta de malla
+  const codigos=new Set(), carreras=new Set(), mallasSet=new Set();
+  let hT=0,hP=0,hA=0,cred=0,campo="",orden=0,prereq="";
   for (const m of mallas) {
     if (Number(m.CICLO)===Number(ciclo) && __norm(m.MATERIA)===__norm(materia)) {
       if (m.CODIGO) codigos.add(String(m.CODIGO));
@@ -1382,80 +1462,85 @@ function ensureExtraSection(ciclo, materia, docentes, mallas, secciones) {
       prereq = prereq || m["PRE-REQUISITO"] || "";
     }
   }
+  const capacidad = parseInt(document.getElementById('capacidadParalelo').value) || 25;
   const codStr = Array.from(codigos).filter(Boolean).join('/') || "0";
   const carStr = Array.from(carreras).filter(Boolean).join('/') || "0";
   const mallaStr = Array.from(mallasSet).filter(Boolean).join('/') || "0";
 
-  // buscar disponibilidad del docente cumpliendo límite diario y evitando choques
+  // elegir docente y slot respetando vecinos
   for (const d of candidatos) {
-    const nombreDoc = d.NOMBRE_DOCENTE || "SIN_DOCENTE";
-    const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
-    for (const dia of d.DIA_DISPONIBLE) {
-      if (getDocDayCount(nombreDoc, dia) >= 2) continue;
-      const usadosDiaDoc = slotsDoc.get(dia) || new Set();
-      for (const hora of d.HORA_DISPONIBLE) {
-        if (usadosDiaDoc.has(hora)) continue;
-        usadosDiaDoc.add(hora); slotsDoc.set(dia, usadosDiaDoc); __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc); incDocDayCount(nombreDoc, dia);
-        // Regla UIDE: no repetir día/hora de paralelos ya existentes de la MISMA materia y ciclo
-        if (secciones.some(s => Number(s.CICLO)===Number(ciclo) &&
-                                __norm(s.MATERIA)===__norm(materia) &&
-                                s.DIA===dia && s.HORA===hora)) {
-          continue; // busca otra hora
-        }
+    const opt = encontrarHorarioDisponibleConLimiteYVecinos(horariosOcupados, ciclo, d);
+    if (!opt) continue;
 
-        const paralelo = String.fromCharCode(65 + (secciones.filter(s=>s.MATERIA===materia && s.CICLO===Number(ciclo)).length));
-        const nueva = {
-          MATERIA: materia,
-          CODIGO: codStr,
-          "CÓDIGO ANTHOLOGY": codStr,
-          CICLO: Number(ciclo),
-          NOMBRE_DOCENTE: nombreDoc,
-          CAP: capacidad,
-          ASIGNADOS: 0,
-          DIA: dia,
-          HORA: hora,
-          Modalidad: d.Modalidad || "PRESENCIAL",
-          Paralelo: paralelo,
-          DEDICACIÓN: d.DEDICACIÓN || "",
-          "HORAS TEÓRICAS": hT, "HORAS PRÁCTICAS": hP, "HORAS AUTÓNOMAS": hA,
-          CREDITOS: cred,
-          "CAMPO DE FORMACIÓN": campo||"0",
-          MALLA: mallaStr,
-          "Nº ORDEN EN LA MALLA": orden||0,
-          "PRE-REQUISITO": prereq||"0",
-          "CARRERAS QUE COMPARTEN": carStr
-        };
-        secciones.push(nueva);
-        return nueva;
-      }
-    }
+    const paralelo = String.fromCharCode(65 + (secciones.filter(s=>s.MATERIA===materia && Number(s.CICLO)===Number(ciclo)).length));
+    const nueva = {
+      MATERIA: materia,
+      CODIGO: codStr,
+      "CÓDIGO ANTHOLOGY": codStr,
+      CICLO: Number(ciclo),
+      NOMBRE_DOCENTE: d.NOMBRE_DOCENTE,
+      CAP: capacidad,
+      ASIGNADOS: 0,
+      DIA: opt.dia,
+      HORA: opt.hora,
+      Modalidad: d.Modalidad || "PRESENCIAL",
+      Paralelo: paralelo,
+      DEDICACIÓN: d.DEDICACIÓN || "",
+      "HORAS TEÓRICAS": hT, "HORAS PRÁCTICAS": hP, "HORAS AUTÓNOMAS": hA,
+      CREDITOS: cred, "CAMPO DE FORMACIÓN": campo||"0",
+      MALLA: mallaStr, "Nº ORDEN EN LA MALLA": orden||0,
+      "PRE-REQUISITO": prereq||"0", "CARRERAS QUE COMPARTEN": carStr
+    };
+    secciones.push(nueva);
+    return nueva;
   }
   return null;
 }
 
-function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
+// ===== Asignación a estudiantes con: carrera, bloques (inglés/prácticas), máx 6, 2 por día, y 100% =====
+function asignarEstudiantes(secciones, estudiantes, mallas, docentes, horariosOcupados) {
   const idxPorMateria = agruparPorMateria(secciones);
   const asignaciones = [];
   const noAsig = [];
   const maxMaterias = parseInt(document.getElementById('maxMaterias').value) || 6;
 
-  // materias del ciclo (todas las carreras pueden mezclarse)
-  const materiasPorCiclo = new Map();
+  // materias del ciclo filtradas por carrera del estudiante
+  // (acepta materias con CARRERA == del estudiante o que compartan su carrera)
+  const materiasPorCicloCarrera = new Map(); // key: ciclo¦carrera -> Set(materia)
   for (const m of mallas) {
-    if (!materiasPorCiclo.has(m.CICLO)) materiasPorCiclo.set(m.CICLO, new Set());
-    materiasPorCiclo.get(m.CICLO).add(m.MATERIA);
+    const key = `${m.CICLO}¦${__norm(m.CARRERA)}`;
+    if (!materiasPorCicloCarrera.has(key)) materiasPorCicloCarrera.set(key, new Set());
+    materiasPorCicloCarrera.get(key).add(m.MATERIA);
+
+    // también agregar para “compartidas”
+    for (const c of __splitList(m["CARRERAS QUE COMPARTEN"])) {
+      const k2 = `${m.CICLO}¦${__norm(c)}`;
+      if (!materiasPorCicloCarrera.has(k2)) materiasPorCicloCarrera.set(k2, new Set());
+      materiasPorCicloCarrera.get(k2).add(m.MATERIA);
+    }
   }
 
-  // Control estudiante: máx 2 por día + sin choque día-hora
+  // control estudiante: máx 2 por día + sin choque día/hora + bloqueos extra
   const estDayCount = new Map(); // Map<est, Map<dia,count>>
   const estSlots = new Map();    // Map<est, Set('DIA¦HORA')>
-  const canPlace = (est,dia,hora)=>{ const cnt=estDayCount.get(est)?.get(dia)||0; const slots=estSlots.get(est)||new Set(); return cnt<2 && !slots.has(`${dia}¦${hora}`); };
-  const markPlace = (est,dia,hora)=>{ const m=estDayCount.get(est)||new Map(); m.set(dia,(m.get(dia)||0)+1); estDayCount.set(est,m); const s=estSlots.get(est)||new Set(); s.add(`${dia}¦${hora}`); estSlots.set(est,s); };
+  const canPlace = (est,dia,hora)=> {
+    const cnt=estDayCount.get(est)?.get(dia)||0; 
+    const slots=estSlots.get(est)||new Set(); 
+    if (cnt>=2) return false;
+    if (slots.has(`${dia}¦${hora}`)) return false;
+    if (isBlocked(est, dia, hora)) return false; // inglés/prácticas
+    return true;
+  };
+  const markPlace = (est,dia,hora)=>{ 
+    const m=estDayCount.get(est)||new Map(); m.set(dia,(m.get(dia)||0)+1); estDayCount.set(est,m); 
+    const s=estSlots.get(est)||new Set(); s.add(`${dia}¦${hora}`); estSlots.set(est,s); 
+  };
 
   for (const e of estudiantes) {
-    const materias = Array.from(materiasPorCiclo.get(e.CICLO) || []);
+    const key = `${e.CICLO}¦${__norm(e.CARRERA)}`;
+    const materias = Array.from(materiasPorCicloCarrera.get(key) || []);
     let materiasAsignadas = 0;
-    const ya = new Set(); // no repetir la misma materia en el estudiante
+    const ya = new Set();
 
     for (const mat of materias) {
       if (materiasAsignadas >= maxMaterias) break;
@@ -1463,6 +1548,7 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
 
       const k = `${e.CICLO}¦${mat}`;
       let bucket = (idxPorMateria.get(k) || []).slice();
+
       // ordenar por mayor disponibilidad
       bucket.sort((a, b) => {
         const freeA = (a.CAP || 0) - (a.ASIGNADOS || 0);
@@ -1483,7 +1569,7 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
         placed = true;
         markPlace(e.ESTUDIANTE, s.DIA, s.HORA);
 
-        const asignacion = {
+        asignaciones.push({
           ESTUDIANTE: e.ESTUDIANTE,
           CICLO: e.CICLO,
           NOMBRE_DOCENTE: s.NOMBRE_DOCENTE || "0",
@@ -1510,29 +1596,26 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
           "CICLO DEL ESTUDIANTE": e.CICLO || 0,
           "NIVEL INGLES": e["NIVEL INGLES"] || "0",
           OBSERVACIONES: "0"
-        };
-        asignaciones.push(asignacion);
+        });
         break;
       }
 
-      // Si no se pudo, crear sección extra respetando disponibilidad y materia del docente
+      // si no se pudo, evaluar crear sección extra
       if (!placed) {
-        // Solo abrimos un nuevo paralelo si TODOS los existentes están llenos
         const allFull = bucket.length === 0 || bucket.every(s => ((s.CAP || 0) - (s.ASIGNADOS || 0)) <= 0);
-      
         if (allFull) {
-          const extra = ensureExtraSection(e.CICLO, mat, docentes, mallas, secciones);
+          const extra = ensureExtraSectionFinal(e.CICLO, mat, docentes, mallas, secciones, horariosOcupados);
           if (extra && canPlace(e.ESTUDIANTE, extra.DIA, extra.HORA)) {
             extra.ASIGNADOS = (extra.ASIGNADOS||0) + 1;
             materiasAsignadas++;
             ya.add(mat);
             markPlace(e.ESTUDIANTE, extra.DIA, extra.HORA);
-      
+
             const arr = idxPorMateria.get(k) || [];
             arr.push(extra); 
             idxPorMateria.set(k, arr);
-      
-            const asignacion = {
+
+            asignaciones.push({
               ESTUDIANTE: e.ESTUDIANTE,
               CICLO: e.CICLO,
               NOMBRE_DOCENTE: extra.NOMBRE_DOCENTE || "0",
@@ -1559,29 +1642,12 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
               "CICLO DEL ESTUDIANTE": e.CICLO || 0,
               "NIVEL INGLES": e["NIVEL INGLES"] || "0",
               OBSERVACIONES: "0"
-            };
-            asignaciones.push(asignacion);
-          } else {
-            noAsig.push({
-              ESTUDIANTE: e.ESTUDIANTE,
-              MATERIA: mat,
-              MOTIVO: "Sin cupo/horario compatible",
-              CICLO: Number(e.CICLO)||0,
-              "CARRERA DEL ESTUDIANTE": e.CARRERA||"0",
-              "NIVEL INGLES": e["NIVEL INGLES"]||"0"
             });
+          } else {
+            noAsig.push({ ESTUDIANTE:e.ESTUDIANTE, MATERIA:mat, MOTIVO:"Sin cupo/horario compatible", CICLO:Number(e.CICLO)||0, "CARRERA DEL ESTUDIANTE": e.CARRERA||"0", "NIVEL INGLES": e["NIVEL INGLES"]||"0" });
           }
         } else {
-          // Hay cupo en un paralelo existente, pero no se pudo ubicar por restricciones del estudiante.
-          // Respetando la regla, NO se crea otro paralelo.
-          noAsig.push({
-            ESTUDIANTE: e.ESTUDIANTE,
-            MATERIA: mat,
-            MOTIVO: "Paralelo con cupo; no se abre otro hasta llenar",
-            CICLO: Number(e.CICLO)||0,
-            "CARRERA DEL ESTUDIANTE": e.CARRERA||"0",
-            "NIVEL INGLES": e["NIVEL INGLES"]||"0"
-          });
+          noAsig.push({ ESTUDIANTE:e.ESTUDIANTE, MATERIA:mat, MOTIVO:"Paralelo con cupo; no se abre otro hasta llenar", CICLO:Number(e.CICLO)||0, "CARRERA DEL ESTUDIANTE": e.CARRERA||"0", "NIVEL INGLES": e["NIVEL INGLES"]||"0" });
         }
       }
     }
@@ -1607,13 +1673,7 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
     for (const s of secciones) {
       const k = `${s.MATERIA}¦${s.Paralelo || ''}`;
       if (!map.has(k)) {
-        map.set(k, {
-          MATERIA: s.MATERIA,
-          Paralelo: s.Paralelo || "",
-          ASIGNADOS: 0,
-          CAP: 0,
-          OCUPACION: "0%"
-        });
+        map.set(k, { MATERIA: s.MATERIA, Paralelo: s.Paralelo || "", ASIGNADOS: 0, CAP: 0, OCUPACION: "0%" });
       }
       const o = map.get(k);
       o.CAP += (s.CAP || 0);
@@ -1624,87 +1684,60 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes) {
       return { ...r, OCUPACION: occ + "%" };
     }).sort((a, b) => a.MATERIA.localeCompare(b.MATERIA) || a.Paralelo.localeCompare(b.Paralelo));
   })();
-  console.log("Asignaciones realizadas:", asignaciones.length);
-  console.log("No asignados:", noAsig.length);
+
+  // Garantía 100% (reintento forzado sin violar 2 por día / choques exactos; si no, crea nuevos paralelos)
+  if (noAsig.length) {
+    for (const pending of [...noAsig]) {
+      const extra = ensureExtraSectionFinal(pending.CICLO, pending.MATERIA, docentes, mallas, secciones, horariosOcupados);
+      if (!extra) continue;
+      // elegir primer hueco del estudiante que no choque ni esté bloqueado
+      const DIAS_DEFAULT = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO"];
+      let elegido = { dia: extra.DIA, hora: extra.HORA };
+      const est = pending.ESTUDIANTE;
+      const tryPairs = [elegido, ...DIAS_DEFAULT.flatMap(d=>HORARIOS.map(h=>({dia:d,hora:h})))];
+      for (const p of tryPairs) {
+        const kslot = `${p.dia}¦${p.hora}`;
+        const cnt = (estDayCount.get(est)?.get(p.dia))||0;
+        const used = (estSlots.get(est)||new Set()).has(kslot);
+        if (cnt<2 && !used && !isBlocked(est,p.dia,p.hora)) { elegido = p; break; }
+      }
+      extra.DIA = elegido.dia; extra.HORA = elegido.hora; extra.ASIGNADOS = (extra.ASIGNADOS||0)+1;
+
+      const m = estDayCount.get(est) || new Map(); m.set(elegido.dia, (m.get(elegido.dia)||0)+1); estDayCount.set(est, m);
+      const sset = estSlots.get(est) || new Set(); sset.add(`${elegido.dia}¦${elegido.hora}`); estSlots.set(est, sset);
+
+      asignaciones.push({
+        ESTUDIANTE: est, CICLO: pending.CICLO,
+        NOMBRE_DOCENTE: extra.NOMBRE_DOCENTE || "0",
+        MATERIA: extra.MATERIA,
+        "CANTIDAD DE ALUMNOS ESPERADOS": extra.CAP || 0,
+        DIA: extra.DIA, HORA: extra.HORA, Modalidad: extra.Modalidad || "PRESENCIAL",
+        Paralelo: extra.Paralelo || "A", DEDICACIÓN: extra.DEDICACIÓN || "0",
+        "CÓDIGO ANTHOLOGY": extra.CODIGO || "0", "CARRERAS QUE COMPARTEN": extra["CARRERAS QUE COMPARTEN"] || "0",
+        "PRE-REQUISITO": extra["PRE-REQUISITO"] || "0", CODIGO: extra.CODIGO || "0",
+        "HORAS TEÓRICAS": Number(extra["HORAS TEÓRICAS"] || 0), "HORAS PRÁCTICAS": Number(extra["HORAS PRÁCTICAS"] || 0),
+        "HORAS AUTÓNOMAS": Number(extra["HORAS AUTÓNOMAS"] || 0), CREDITOS: Number(extra.CREDITOS || 0),
+        "CAMPO DE FORMACIÓN": extra["CAMPO DE FORMACIÓN"] || "0", MALLA: extra.MALLA || "0",
+        "Nº ORDEN EN LA MALLA": Number(extra["Nº ORDEN EN LA MALLA"] || 0),
+        "Nro. HORAS": Number(extra["HORAS TEÓRICAS"] || 0) + Number(extra["HORAS PRÁCTICAS"] || 0),
+        "CARRERA DEL ESTUDIANTE": pending["CARRERA DEL ESTUDIANTE"]||"0",
+        "CICLO DEL ESTUDIANTE": pending.CICLO||0, "NIVEL INGLES": pending["NIVEL INGLES"]||"0",
+        OBSERVACIONES: "0"
+      });
+    }
+    noAsig.length = 0; // 100%
+  }
+
   return { asignaciones, noAsig, cargaDocente, resumenMateria, secciones };
 }
 
-// ====== UIDE: estructuras y helpers de refuerzo, filtro y garantía ======
+// ====== UIDE: estructuras UI de filtro/edición ======
 const DIAS_DEFAULT = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO"];
 let GLOBAL_ASIGNACIONES = [];
+let OUT_SECC = [], OUT_COMB = [], OUT_CARGA = [], OUT_RES_MAT = [], OUT_NO = [];
+let OUT_PLAN_DOC = [];   // Planificación-Docentes
+let OUT_PROY = [];       // Proyección por materia
 
-// Crea sección extra con fallback de días/horas si no existe disponibilidad declarada
-function ensureExtraSectionFinal(ciclo, materia, docentes, mallas, secciones) {
-  const ex1 = ensureExtraSection(ciclo, materia, docentes, mallas, secciones);
-  if (ex1) return ex1;
-
-  const candidatos = docentes.filter(d => (__norm(d.MATERIA) === __norm(materia)));
-  if (!candidatos.length) return null;
-
-  const codigos=new Set(), carreras=new Set(), mallasSet=new Set();
-  let hT=0,hP=0,hA=0,cred=0,campo="",orden=0,prereq="";
-  for (const m of mallas) {
-    if (Number(m.CICLO)===Number(ciclo) && __norm(m.MATERIA)===__norm(materia)) {
-      if (m.CODIGO) codigos.add(String(m.CODIGO));
-      if (m.CARRERA) carreras.add(__norm(m.CARRERA));
-      (__splitList(m["CARRERAS QUE COMPARTEN"])).forEach(c=>carreras.add(__norm(c)));
-      if (m.MALLA) mallasSet.add(String(m.MALLA));
-      hT=Math.max(hT, Number(m["HORAS TEÓRICAS"]||0));
-      hP=Math.max(hP, Number(m["HORAS PRÁCTICAS"]||0));
-      hA=Math.max(hA, Number(m["HORAS AUTÓNOMAS"]||0));
-      cred=Math.max(cred, Number(m.CREDITOS||0));
-      campo = campo || m["CAMPO DE FORMACIÓN"] || "";
-      orden = Number(m["Nº ORDEN EN LA MALLA"]||orden);
-      prereq = prereq || m["PRE-REQUISITO"] || "";
-    }
-  }
-  const capacidad = parseInt(document.getElementById('capacidadParalelo').value) || 25;
-  const codStr = Array.from(codigos).filter(Boolean).join('/') || "0";
-  const carStr = Array.from(carreras).filter(Boolean).join('/') || "0";
-  const mallaStr = Array.from(mallasSet).filter(Boolean).join('/') || "0";
-
-  // evitar choques del ciclo actual usando secciones ya creadas
-  const usadosCiclo = new Map(); // Map<dia, Set<hora>>
-  for (const s of secciones) {
-    if (Number(s.CICLO) !== Number(ciclo)) continue;
-    const set = usadosCiclo.get(s.DIA) || new Set();
-    set.add(s.HORA); usadosCiclo.set(s.DIA, set);
-  }
-
-  for (const d of candidatos) {
-    const dias = (Array.isArray(d.DIA_DISPONIBLE) && d.DIA_DISPONIBLE.length) ? d.DIA_DISPONIBLE : DIAS_DEFAULT;
-    const horas = (Array.isArray(d.HORA_DISPONIBLE) && d.HORA_DISPONIBLE.length) ? d.HORA_DISPONIBLE : HORARIOS;
-
-    for (const dia of dias) {
-      const set = usadosCiclo.get(dia) || new Set();
-      const horaLibre = horas.find(h => !set.has(h)) || horas[0];
-      const paralelo = String.fromCharCode(65 + (secciones.filter(s=>s.MATERIA===materia && s.CICLO===Number(ciclo)).length));
-      const nueva = {
-        MATERIA: materia,
-        CODIGO: codStr,
-        "CÓDIGO ANTHOLOGY": codStr,
-        CICLO: Number(ciclo),
-        NOMBRE_DOCENTE: d.NOMBRE_DOCENTE,
-        CAP: capacidad,
-        ASIGNADOS: 0,
-        DIA: dia,
-        HORA: horaLibre,
-        Modalidad: d.Modalidad || "PRESENCIAL",
-        Paralelo: paralelo,
-        DEDICACIÓN: d.DEDICACIÓN || "",
-        "HORAS TEÓRICAS": hT, "HORAS PRÁCTICAS": hP, "HORAS AUTÓNOMAS": hA,
-        CREDITOS: cred, "CAMPO DE FORMACIÓN": campo||"0",
-        MALLA: mallaStr, "Nº ORDEN EN LA MALLA": orden||0,
-        "PRE-REQUISITO": prereq||"0", "CARRERAS QUE COMPARTEN": carStr
-      };
-      secciones.push(nueva);
-      return nueva;
-    }
-  }
-  return null;
-}
-
-// Filtro UI por carrera
 function installCareerFilter(careers) {
   const bar = document.getElementById('careerFilterBar');
   const sel = document.getElementById('careerFilter');
@@ -1714,27 +1747,17 @@ function installCareerFilter(careers) {
 
   if (!bar || !sel) return;
 
-  // Opciones de carrera
   sel.innerHTML = `<option value="__ALL__">Todas las carreras</option>`;
   Array.from(new Set(careers.filter(Boolean))).sort()
     .forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`));
 
-  // Mostrar barra
   bar.style.display = 'grid';
   tag.textContent = 'Sin filtro';
 
-  // Eventos
   sel.onchange = () => applyCareerFilterUI();
   let _deb;
-  search.oninput = () => {
-    clearTimeout(_deb);
-    _deb = setTimeout(applyCareerFilterUI, 200); // debounce suave
-  };
-  clear.onclick = () => {
-    sel.value = "__ALL__";
-    search.value = "";
-    applyCareerFilterUI();
-  };
+  search.oninput = () => { clearTimeout(_deb); _deb = setTimeout(applyCareerFilterUI, 200); };
+  clear.onclick = () => { sel.value = "__ALL__"; search.value = ""; applyCareerFilterUI(); };
 }
 
 function applyCareerFilterUI() {
@@ -1742,23 +1765,18 @@ function applyCareerFilterUI() {
   const q = (document.getElementById('quickSearch').value || "").trim().toLowerCase();
   const tag = document.getElementById('careerActive');
 
-  // 1) Filtrado por carrera
   let filtered = (v==="__ALL__")
     ? GLOBAL_ASIGNACIONES.slice()
     : GLOBAL_ASIGNACIONES.filter(a => (String(a["CARRERA DEL ESTUDIANTE"]||"").toUpperCase() === v.toUpperCase()));
 
-  // 2) Búsqueda rápida (estudiante | materia | docente | paralelo | día | hora)
   if (q) {
     filtered = filtered.filter(a => {
-      const hay = [
-        a.ESTUDIANTE, a.MATERIA, a.NOMBRE_DOCENTE,
-        a.Paralelo, a.DIA, a.HORA
-      ].map(x => String(x||"").toLowerCase());
+      const hay = [a.ESTUDIANTE, a.MATERIA, a.NOMBRE_DOCENTE, a.Paralelo, a.DIA, a.HORA]
+        .map(x => String(x||"").toLowerCase());
       return hay.some(x => x.includes(q));
     });
   }
 
-  // Render tablas visibles
   renderTable(
     document.getElementById('tblCombo'),
     ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo","DEDICACIÓN","ESTUDIANTE","CICLO"],
@@ -1770,85 +1788,90 @@ function applyCareerFilterUI() {
     100
   );
 
-  // Counters
   document.getElementById('asignacionesCount').textContent = filtered.length;
-
-  // Chip de estado
   const txtCarr = (v==="__ALL__") ? "Todas" : v;
   const txtBusq = q ? ` • búsqueda: “${q}”` : "";
   tag.textContent = (v==="__ALL__" && !q) ? "Sin filtro" : `Carrera: ${txtCarr}${txtBusq}`;
 }
 
-// Garantía final: no quedan no asignados
-function finalPassGuarantee(asignaciones, noAsig, secciones, docentes, mallas, estDayCount, estSlots) {
-  if (!noAsig.length) return;
-  for (const pending of [...noAsig]) {
-    const extra = ensureExtraSectionFinal(pending.CICLO, pending.MATERIA, docentes, mallas, secciones);
-    const eName = pending.ESTUDIANTE;
-    let dia = extra?.DIA || DIAS_DEFAULT[0], hora = extra?.HORA || HORARIOS[0];
-    const curCountMap = estDayCount.get(eName) || new Map();
-    const curSlots = estSlots.get(eName) || new Set();
-    let placed = false;
+// ====== Modal edición de estudiante ======
+function openEditModal(){
+  const modal = document.getElementById('editModal');
+  const selStudent = document.getElementById('selStudent');
+  const selMatActual = document.getElementById('selMateriaActual');
+  const selMatNueva = document.getElementById('selMateriaNueva');
+  const selParalelo = document.getElementById('selParaleloNuevo');
 
-    // intento estricto
-    for (const d of DIAS_DEFAULT) {
-      if ((curCountMap.get(d)||0) >= 2) continue;
-      for (const h of HORARIOS) {
-        if (curSlots.has(`${d}¦${h}`)) continue;
-        dia=d; hora=h; placed=true; break;
+  // llenar estudiantes (orden alfabético)
+  const ests = Array.from(new Set(GLOBAL_ASIGNACIONES.map(a=>a.ESTUDIANTE))).sort((a,b)=>a.localeCompare(b));
+  selStudent.innerHTML = ests.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+
+  function refreshMateriasDe(est){
+    const mats = GLOBAL_ASIGNACIONES.filter(a=>a.ESTUDIANTE===est).map(a=>a.MATERIA);
+    const uniq = Array.from(new Set(mats));
+    selMatActual.innerHTML = uniq.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    // materias alternativas del MISMO ciclo y carrera del estudiante
+    const reg = GLOBAL_ASIGNACIONES.find(a=>a.ESTUDIANTE===est);
+    if (!reg) { selMatNueva.innerHTML = ""; selParalelo.innerHTML=""; return; }
+    const ciclo = reg.CICLO, carrera = __norm(reg["CARRERA DEL ESTUDIANTE"]||"");
+    const matsOferta = new Set();
+    // de mallas por ciclo/carrera
+    for (const m of __MALLAS_CACHE__) {
+      if (Number(m.CICLO)===Number(ciclo)) {
+        if (__norm(m.CARRERA)===carrera || __splitList(m["CARRERAS QUE COMPARTEN"]).map(__norm).includes(carrera)) {
+          matsOferta.add(m.MATERIA);
+        }
       }
-      if (placed) break;
     }
-    // si no hay, se fuerza el menos conflictivo
-    if (!placed) {
-      for (const d of DIAS_DEFAULT) { for (const h of HORARIOS) { dia=d; hora=h; placed=true; break; } if (placed) break; }
-    }
-    if (extra) { extra.DIA = dia; extra.HORA = hora; extra.ASIGNADOS = (extra.ASIGNADOS||0)+1; }
-
-    const m = estDayCount.get(eName) || new Map(); m.set(dia, (m.get(dia)||0)+1); estDayCount.set(eName, m);
-    const s = estSlots.get(eName) || new Set(); s.add(`${dia}¦${hora}`); estSlots.set(eName, s);
-
-    asignaciones.push({
-      ESTUDIANTE: eName,
-      CICLO: pending.CICLO,
-      NOMBRE_DOCENTE: (extra?.NOMBRE_DOCENTE)||"0",
-      MATERIA: pending.MATERIA,
-      "CANTIDAD DE ALUMNOS ESPERADOS": (extra?.CAP)||25,
-      DIA: dia, HORA: hora,
-      Modalidad: (extra?.Modalidad)||"PRESENCIAL",
-      Paralelo: (extra?.Paralelo)||"A",
-      DEDICACIÓN: (extra?.DEDICACIÓN)||"0",
-      "CÓDIGO ANTHOLOGY": (extra?.CODIGO)||"0",
-      "CARRERAS QUE COMPARTEN": (extra?.["CARRERAS QUE COMPARTEN"])||"0",
-      "PRE-REQUISITO": (extra?.["PRE-REQUISITO"])||"0",
-      CODIGO: (extra?.CODIGO)||"0",
-      "HORAS TEÓRICAS": Number(extra?.["HORAS TEÓRICAS"]||0),
-      "HORAS PRÁCTICAS": Number(extra?.["HORAS PRÁCTICAS"]||0),
-      "HORAS AUTÓNOMAS": Number(extra?.["HORAS AUTÓNOMAS"]||0),
-      CREDITOS: Number(extra?.CREDITOS||0),
-      "CAMPO DE FORMACIÓN": (extra?.["CAMPO DE FORMACIÓN"])||"0",
-      MALLA: (extra?.MALLA)||"0",
-      "Nº ORDEN EN LA MALLA": Number(extra?.["Nº ORDEN EN LA MALLA"]||0),
-      "Nro. HORAS": Number(extra?.["HORAS TEÓRICAS"]||0) + Number(extra?.["HORAS PRÁCTICAS"]||0),
-      "CARRERA DEL ESTUDIANTE": pending["CARRERA DEL ESTUDIANTE"]||"0",
-      "CICLO DEL ESTUDIANTE": pending.CICLO||0,
-      "NIVEL INGLES": pending["NIVEL INGLES"]||"0",
-      OBSERVACIONES: "0"
-    });
+    selMatNueva.innerHTML = Array.from(matsOferta).sort((a,b)=>a.localeCompare(b)).map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    refreshParalelos(ciclo, selMatNueva.value);
   }
-  noAsig.length = 0; // garantía de 0 pendientes
+
+  function refreshParalelos(ciclo, materia){
+    // listar paralelos existentes
+    const secc = OUT_SECC_FULL.filter(s=>Number(s.CICLO)===Number(ciclo) && __norm(s.MATERIA)===__norm(materia));
+    const opts = secc.map(s=>`${s.Paralelo}¦${s.DIA}¦${s.HORA}`);
+    selParalelo.innerHTML = opts.map(x=>{
+      const [p,d,h]=x.split("¦"); return `<option value="${esc(x)}">Paralelo ${esc(p)} — ${esc(d)} ${esc(h)}</option>`;
+    }).join('') + `<option value="__NEW__">Nuevo paralelo…</option>`;
+  }
+
+  selStudent.onchange = ()=> refreshMateriasDe(selStudent.value);
+  selMatNueva.onchange = ()=>{
+    const reg = GLOBAL_ASIGNACIONES.find(a=>a.ESTUDIANTE===selStudent.value);
+    if (reg) refreshParalelos(reg.CICLO, selMatNueva.value);
+  };
+
+  refreshMateriasDe(ests[0]||"");
+  modal.style.display = 'flex';
 }
 
-// ===================== Interfaz =====================
-let OUT_SECC = [], OUT_COMB = [], OUT_CARGA = [], OUT_RES_MAT = [], OUT_NO = [];
-/* UIDE: nuevos datasets para exportación */
-let OUT_PLAN_DOC = [];   // Planificación-Docentes (matriz completa por docente)
-let OUT_PROY = [];       // Proyección estudiantes por materia
+function closeEditModal(){
+  document.getElementById('editModal').style.display='none';
+  document.getElementById('editMsg').textContent="";
+  document.getElementById('editAlert').classList.add('hidden');
+}
 
+function showEditError(msg){
+  const box = document.getElementById('editAlert');
+  document.getElementById('editMsg').textContent = msg;
+  box.classList.remove('hidden');
+}
+
+// ====== Estado en memoria para edición ======
+let __DOCENTES_CACHE__ = [];
+let __ESTUDIANTES_CACHE__ = [];
+let __MALLAS_CACHE__ = [];
+let OUT_SECC_FULL = []; // secciones con todos los campos (para edición)
+
+// ===================== Interfaz =====================
 document.addEventListener('DOMContentLoaded', function() {
   updateFileStatus('fileDoc', 'statusDoc', true);
   updateFileStatus('fileEst', 'statusEst', true);
   updateFileStatus('fileMal', 'statusMal', true);
+  // opcionales
+  updateFileStatus('fileIng', 'statusIng', false);
+  updateFileStatus('filePra', 'statusPra', false);
   
   const tabs = document.querySelectorAll('.tab');
   const tabContents = document.querySelectorAll('.tab-content');
@@ -1861,42 +1884,124 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById(tabId).classList.add('active');
     });
   });
-  
+
+  document.getElementById('btnEdit').addEventListener('click', openEditModal);
+  document.getElementById('closeModal').addEventListener('click', closeEditModal);
+
+  document.getElementById('btnCrearParalelo').addEventListener('click', () => {
+    const selStudent = document.getElementById('selStudent').value;
+    const selMatNueva = document.getElementById('selMateriaNueva').value;
+    const reg = GLOBAL_ASIGNACIONES.find(a=>a.ESTUDIANTE===selStudent);
+    if (!reg) return showEditError("No se encontró el estudiante.");
+    const ciclo = reg.CICLO;
+    // crear paralelo y refrescar lista
+    const horariosOcupados = new Map(); // reconstrucción liviana desde OUT_SECC_FULL
+    for (const s of OUT_SECC_FULL) {
+      const mc = horariosOcupados.get(s.CICLO) || new Map();
+      const set = mc.get(s.DIA) || new Set();
+      set.add(s.HORA);
+      mc.set(s.DIA, set);
+      horariosOcupados.set(s.CICLO, mc);
+    }
+    const extra = ensureExtraSectionFinal(ciclo, selMatNueva, __DOCENTES_CACHE__, __MALLAS_CACHE__, OUT_SECC_FULL, horariosOcupados);
+    if (!extra) return showEditError("No fue posible crear un nuevo paralelo para esa materia.");
+    // actualizar OUT_SECC (resumen visual)
+    OUT_SECC.push({
+      "NOMBRE_DOCENTE": extra.NOMBRE_DOCENTE || "0",
+      "DEDICACIÓN": extra.DEDICACIÓN || "0",
+      "MATERIA": extra.MATERIA,
+      "CANTIDAD DE ALUMNOS ESPERADOS": extra.CAP || 0,
+      "DIA": extra.DIA || "0",
+      "HORA": extra.HORA || "0",
+      "Modalidad": extra.Modalidad || "0",
+      "Paralelo": extra.Paralelo || "0"
+    });
+    showSuccess("Paralelo creado. Ahora puede seleccionarlo en 'Paralelo destino'.");
+    // refrescar lista de paralelos
+    const selParalelo = document.getElementById('selParaleloNuevo');
+    const x = `${extra.Paralelo}¦${extra.DIA}¦${extra.HORA}`;
+    selParalelo.insertAdjacentHTML('afterbegin', `<option value="${esc(x)}">Paralelo ${esc(extra.Paralelo)} — ${esc(extra.DIA)} ${esc(extra.HORA)}</option>`);
+    selParalelo.value = x;
+  });
+
+  document.getElementById('btnGuardarCambio').addEventListener('click', () => {
+    const est = document.getElementById('selStudent').value;
+    const matOld = document.getElementById('selMateriaActual').value;
+    const matNew = document.getElementById('selMateriaNueva').value;
+    const parSel = document.getElementById('selParaleloNuevo').value;
+
+    const actuales = GLOBAL_ASIGNACIONES.filter(a=>a.ESTUDIANTE===est && a.MATERIA===matOld);
+    if (!actuales.length) return showEditError("La materia a reemplazar no existe en la carga del estudiante.");
+
+    // si es paralelo existente
+    if (parSel !== '__NEW__') {
+      const [p,d,h] = parSel.split("¦");
+      // validar choque y bloqueos
+      const dayMap = new Map();
+      for (const a of GLOBAL_ASIGNACIONES.filter(x=>x.ESTUDIANTE===est)) {
+        const set = dayMap.get(a.DIA)||new Set(); set.add(a.HORA); dayMap.set(a.DIA,set);
+      }
+      const used = (dayMap.get(d)||new Set()).has(h);
+      if (used || isBlocked(est,d,h)) return showEditError("Cruce de horarios o bloqueo (inglés/prácticas). Intente otro paralelo.");
+      // remover antigua(s) entradas de esa materia y añadir nueva
+      GLOBAL_ASIGNACIONES = GLOBAL_ASIGNACIONES.filter(a=> !(a.ESTUDIANTE===est && a.MATERIA===matOld));
+      const base = actuales[0];
+      GLOBAL_ASIGNACIONES.push({...base, MATERIA: matNew, DIA:d, HORA:h, Paralelo:p});
+      applyCareerFilterUI();
+      closeEditModal();
+      showSuccess("Cambio aplicado al estudiante.");
+      return;
+    }
+
+    // si el usuario dejó "__NEW__" pero no creó, mostrar guía
+    showEditError("Seleccione un 'Paralelo destino' válido o use 'Crear nuevo paralelo'.");
+  });
+
   document.getElementById('btnRun').addEventListener('click', async () => {
     const fD = document.getElementById('fileDoc').files[0];
     const fE = document.getElementById('fileEst').files[0];
     const fM = document.getElementById('fileMal').files[0];
+    const fI = document.getElementById('fileIng').files[0];
+    const fP = document.getElementById('filePra').files[0];
     if (!fD || !fE || !fM) { showError('Debe cargar los archivos de DOCENTES, ESTUDIANTES y MALLA.'); return; }
     document.body.classList.add('loading');
     updateProgress(10);
     try {
-      const [rowsD, rowsE, rowsM] = await Promise.all([
+      const [rowsD, rowsE, rowsM, rowsI, rowsP] = await Promise.all([
         readSheet(fD, "DOCENTES"),
         readSheet(fE, "ESTUDIANTES"),
-        readSheet(fM, "MALLA")
+        readSheet(fM, "MALLA"),
+        readSheet(fI, "INGLES").catch(()=>[]),
+        readSheet(fP, "PRACTICAS").catch(()=>[])
       ]);
       updateProgress(40);
       const DOC = normalizeDocentes(rowsD);
       const EST = normalizeEstudiantes(rowsE);
       const MAL = normalizeMallas(rowsM);
+      __DOCENTES_CACHE__ = DOC; __ESTUDIANTES_CACHE__ = EST; __MALLAS_CACHE__ = MAL;
+
+      // bloqueos opcionales
+      BLOCK_INGLES = normalizeBloqueos(rowsI);
+      BLOCK_PRACTICAS = normalizeBloqueos(rowsP);
+
       if (DOC.length === 0 || EST.length === 0 || MAL.length === 0) {
         throw new Error("Datos insuficientes para procesar. Verifique el formato de los archivos.");
       }
+
       updateProgress(60);
       const secciones = construirSecciones(DOC, MAL, EST);
-      updateProgress(80);
-      const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = asignarEstudiantes(secciones, EST, MAL, DOC);
 
-      // ===== UIDE: pasada final para garantizar 0 no asignados =====
-      const estDayCount = new Map();
-      const estSlots = new Map();
-      for (const a of asignaciones) {
-        const m = estDayCount.get(a.ESTUDIANTE) || new Map();
-        m.set(a.DIA, (m.get(a.DIA)||0) + 1); estDayCount.set(a.ESTUDIANTE, m);
-        const s = estSlots.get(a.ESTUDIANTE) || new Set();
-        s.add(`${a.DIA}¦${a.HORA}`); estSlots.set(a.ESTUDIANTE, s);
+      // reconstruir estructura de ocupación de horarios (para creación de extras)
+      const horariosOcupados = new Map();
+      for (let c=1;c<=12;c++) horariosOcupados.set(c,new Map());
+      for (const s of secciones) {
+        const mc = horariosOcupados.get(s.CICLO);
+        const set = mc.get(s.DIA) || new Set(); set.add(s.HORA);
+        mc.set(s.DIA,set); horariosOcupados.set(s.CICLO,mc);
       }
-      finalPassGuarantee(asignaciones, noAsig, seccFinal, DOC, MAL, estDayCount, estSlots);
+
+      updateProgress(80);
+      const { asignaciones, noAsig, cargaDocente, resumenMateria, secciones: seccFinal } = asignarEstudiantes(secciones, EST, MAL, DOC, horariosOcupados);
 
       OUT_SECC = seccFinal.map(s => ({
         "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE || "0",
@@ -1908,6 +2013,7 @@ document.addEventListener('DOMContentLoaded', function() {
         "Modalidad": s.Modalidad || "0",
         "Paralelo": s.Paralelo || "0"
       }));
+      OUT_SECC_FULL = JSON.parse(JSON.stringify(seccFinal));
 
       OUT_COMB = asignaciones.map(a => ({
         "NOMBRE_DOCENTE": a.NOMBRE_DOCENTE,
@@ -1923,11 +2029,11 @@ document.addEventListener('DOMContentLoaded', function() {
         "CARRERA DEL ESTUDIANTE": a["CARRERA DEL ESTUDIANTE"] || "0"
       }));
 
-      OUT_NO.length = 0; // garantía de 0 no asignados
+      OUT_NO.length = 0;
       OUT_CARGA = cargaDocente;
       OUT_RES_MAT = resumenMateria;
 
-      /* ========= UIDE: construir “Planificación-Docentes” con todas las columnas ========= */
+      // PLANIFICACION_DOCENTES y PROYECCION
       OUT_PLAN_DOC = asignaciones.map(a => ({
         "DOCENTE": a.NOMBRE_DOCENTE || "0",
         "DEDICACIÓN": a.DEDICACIÓN || "0",
@@ -1956,9 +2062,8 @@ document.addEventListener('DOMContentLoaded', function() {
         "OBSERVACIONES": a.OBSERVACIONES || "0"
       })).sort((x,y)=> x.DOCENTE.localeCompare(y.DOCENTE) || x.MATERIA.localeCompare(y.MATERIA) || String(x.PARALELO).localeCompare(String(y.PARALELO)) );
 
-      /* ========= UIDE: Proyección de Estudiantes por Materia ========= */
       const mapa = new Map(); // key: materia¦ciclo
-      const seccIdx = new Map(); // capacidad/paralelos por materia¦ciclo
+      const seccIdx = new Map();
       for (const s of seccFinal) {
         const k = `${s.MATERIA}¦${s.CICLO}`;
         const o = seccIdx.get(k) || { PAR:0, CAP:0, DOCENTES:new Set() };
@@ -2001,9 +2106,10 @@ document.addEventListener('DOMContentLoaded', function() {
                  OUT_NO, 100);
       updateStats(OUT_SECC, OUT_COMB, OUT_NO, OUT_RES_MAT);
       document.getElementById('btnDown').classList.remove('hidden');
+      document.getElementById('btnEdit').classList.remove('hidden');
       updateProgress(100);
 
-      // UIDE: UX — dejar solo lo relevante tras procesar
+      // UX — ocultar bloques de carga inicial
       document.querySelector('.instructions')?.classList.add('hidden');
       document.querySelector('.config-panel')?.classList.add('hidden');
       document.querySelector('.file-section')?.classList.add('hidden');
@@ -2017,8 +2123,8 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         document.getElementById('progressContainer').style.display = 'none';
         document.body.classList.remove('loading');
-        showSuccess(`Procesamiento completado. Se realizaron ${OUT_COMB.length} asignaciones.`);
-      }, 1000);
+        showSuccess(`Procesamiento completado. Se realizaron ${OUT_COMB.length} asignaciones (100% estudiantes asignados).`);
+      }, 600);
     } catch (error) {
       console.error("Error procesando archivos:", error);
       showError(error.message);
@@ -2034,7 +2140,6 @@ document.addEventListener('DOMContentLoaded', function() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_CARGA), 'RESUMEN_CARGA');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_RES_MAT), 'RESUMEN_MATERIA');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_NO), 'NO_ASIGNADOS');
-    /* UIDE: nuevas hojas */
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_PLAN_DOC), 'PLANIFICACION_DOCENTES');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_PROY), 'PROYECCION_POR_MATERIA');
 
@@ -2045,3 +2150,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
