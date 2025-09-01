@@ -1210,9 +1210,28 @@ function agruparPorMateria(secciones){
 
 // ===================== Constantes y Utilidades =====================
 let __DOCENTE_SLOTS__ = new Map(); // Map<Docente, Map<DIA, Set<HORA>>>
-const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","Modalidad","Paralelo"];
+const TARGET7 = ["NOMBRE_DOCENTE","MATERIA","CANTIDAD DE ALUMNOS ESPERADOS","DIA","HORA","MODALIDAD","PARALELO"];
 // Añadimos DEDICACIÓN en la combinación, sin eliminar constantes previas:
-const COMBO9  = [...TARGET7,"DEDICACIÓN","ESTUDIANTE","CICLO"];
+// REEMPLAZO: encabezados de la tabla principal
+
+  const COMBO9 = [
+  "CARRERA",
+  "ESTUDIANTE",
+  "CICLO DEL ESTUDIANTE",
+  "MALLA",
+  "CICLO DE LA MATERIA EN LA MALLA",
+  "COMPARTIDA CON",
+  "CARRERA CREADA EN ANTHOLOGY",
+  "MATERIA",
+  "PARALELO",
+  "DIA",
+  "HORA",
+  "MODALIDAD",
+  "NIVEL INGLES",
+  "OBSERVACIONES",
+  "DOCENTE"
+];
+
 
 const DAY_MAP = new Map(Object.entries({
   "lun":"LUNES","lunes":"LUNES","lun.":"LUNES",
@@ -2061,17 +2080,23 @@ function applyCareerFilterUI() {
   const q = (document.getElementById('quickSearch').value || "").trim().toLowerCase();
   const tag = document.getElementById('careerActive');
 
-  let filtered = (v==="__ALL__")
-    ? GLOBAL_ASIGNACIONES.slice()
-    : GLOBAL_ASIGNACIONES.filter(a => (String(a["CARRERA DEL ESTUDIANTE"]||"").toUpperCase() === v.toUpperCase()));
+// Base para filtro
+let filtered = (v==="__ALL__")
+  ? OUT_COMB.slice()
+  : OUT_COMB.filter(r => String(r["CARRERA"]||"").toUpperCase() === v.toUpperCase());
 
-  if (q) {
-    filtered = filtered.filter(a => {
-      const hay = [a.ESTUDIANTE, a.MATERIA, a.NOMBRE_DOCENTE, a.Paralelo, a.DIA, a.HORA]
-        .map(x => String(x||"").toLowerCase());
-      return hay.some(x => x.includes(q));
-    });
-  }
+if (q) {
+  filtered = filtered.filter(r => {
+    const campos = [
+      r["ESTUDIANTE"], r["MATERIA"], r["DOCENTE"],
+      r["PARALELO"], r["DIA"], r["HORA"]
+    ].map(x => String(x||"").toLowerCase());
+    return campos.some(x => x.includes(q));
+  });
+}
+
+// Render con los encabezados ya reemplazados
+renderTable(document.getElementById('tblCombo'), COMBO9, filtered, Infinity);
 
 renderTable(
   document.getElementById('tblCombo'),
@@ -2311,19 +2336,25 @@ document.addEventListener('DOMContentLoaded', function() {
       }));
       OUT_SECC_FULL = JSON.parse(JSON.stringify(seccFinal));
 
-      OUT_COMB = asignaciones.map(a => ({
-        "NOMBRE_DOCENTE": a.NOMBRE_DOCENTE,
-        "DEDICACIÓN": a.DEDICACIÓN || "0",
-        "MATERIA": a.MATERIA,
-        "CANTIDAD DE ALUMNOS ESPERADOS": a["CANTIDAD DE ALUMNOS ESPERADOS"] || 0,
-        "DIA": a.DIA || "0",
-        "HORA": a.HORA || "0",
-        "Modalidad": a.Modalidad || "0",
-        "Paralelo": a.Paralelo || "0",
-        "ESTUDIANTE": a.ESTUDIANTE,
-        "CICLO": a.CICLO || 0,
-        "CARRERA DEL ESTUDIANTE": a["CARRERA DEL ESTUDIANTE"] || "0"
-      }));
+// REEMPLAZO: contenido de la tabla principal (Planificación Estudiantes)
+OUT_COMB = asignaciones.map(a => ({
+  "CARRERA": a["CARRERA DEL ESTUDIANTE"] || "0",
+  "ESTUDIANTE": a.ESTUDIANTE || "0",
+  "CICLO DEL ESTUDIANTE": a["CICLO DEL ESTUDIANTE"] ?? a.CICLO ?? 0,
+  "MALLA": a.MALLA || "0",
+  "CICLO DE LA MATERIA EN LA MALLA": a.CICLO || 0,
+  "COMPARTIDA CON": a["CARRERAS QUE COMPARTEN"] || "0",
+  "CARRERA CREADA EN ANTHOLOGY": a["CARRERA CREADA EN ANTHOLOGY"] || a["CARRERA DEL ESTUDIANTE"] || "0",
+  "MATERIA": a.MATERIA || "0",
+  "PARALELO": a.Paralelo || "0",
+  "DIA": a.DIA || "0",
+  "HORA": a.HORA || "0",
+  "MODALIDAD": a.Modalidad || "0",
+  "NIVEL INGLES": a["NIVEL INGLES"] || "0",
+  "OBSERVACIONES": a.OBSERVACIONES || "0",
+  "DOCENTE": a.NOMBRE_DOCENTE || "0"
+}));
+
 
       OUT_NO.length = 0;
       OUT_CARGA = cargaDocente;
@@ -2412,10 +2443,11 @@ renderTable(document.getElementById('tblNo'),
       document.querySelector('.file-section')?.classList.add('hidden');
 
       // Filtro por carrera
-      GLOBAL_ASIGNACIONES = JSON.parse(JSON.stringify(asignaciones));
-      const careers = Array.from(new Set(GLOBAL_ASIGNACIONES.map(a=>a["CARRERA DEL ESTUDIANTE"]).filter(Boolean)));
-      installCareerFilter(careers);
-      applyCareerFilterUI();
+GLOBAL_ASIGNACIONES = JSON.parse(JSON.stringify(OUT_COMB));
+const careers = Array.from(new Set(OUT_COMB.map(a => a["CARRERA"]).filter(Boolean)));
+installCareerFilter(careers);
+applyCareerFilterUI();
+
 
       setTimeout(() => {
         document.getElementById('progressContainer').style.display = 'none';
@@ -2433,7 +2465,7 @@ renderTable(document.getElementById('tblNo'),
   document.getElementById('btnDown').addEventListener('click', () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_SECC), 'MATRIZ_SECCIONES');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_COMB), 'COMBINACION');
+XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_COMB), 'PLANIFICACION_ESTUDIANTES');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_CARGA), 'RESUMEN_CARGA');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_RES_MAT), 'RESUMEN_MATERIA');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(OUT_NO), 'NO_ASIGNADOS');
