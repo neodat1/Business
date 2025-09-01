@@ -393,7 +393,7 @@ const COMBO9  = [...TARGET7,"DEDICACIÓN","ESTUDIANTE","CICLO"];
 // Encabezado de PLANIFICACIÓN ESTUDIANTE (reemplaza visibilidad de asignación)
 const PLAN_HEADERS = [
   "CARRERA","ESTUDIANTE","CICLO DEL ESTUDIANTE","MALLA","CICLO DE LA MATERIA EN LA MALLA",
-  "COMPARTIDA CON","CARRERA CREADA EN ANTHOLOGY","MATERIA","PARALELO","DIA","HORA","MODALIDAD",
+  "COMPARTIDA CON","MATERIA CREADA EN ANTHOLOGY","MATERIA","PARALELO","DIA","HORA","MODALIDAD",
   "NIVEL INGLES","OBSERVACIONES","DOCENTE"
 ];
 
@@ -723,26 +723,30 @@ function encontrarHorarioDisponibleAdj(horariosOcupados, keyCarrCiclo, docente, 
   const slotsDoc = __DOCENTE_SLOTS__.get(nombreDoc) || new Map();
   if (!Array.isArray(docente.DIA_DISPONIBLE) || docente.DIA_DISPONIBLE.length===0) return null;
 
+  // 8 solo con 7 (no considerar 9)
+  const checkNext = Number(cicloActual) !== 8;
+  
   const keyPrev = keyCarrCiclo.replace(/¦\d+$/, '¦'+(Number(cicloActual)-1));
   const keyNext = keyCarrCiclo.replace(/¦\d+$/, '¦'+(Number(cicloActual)+1));
 
   const occThis = horariosOcupados.get(keyCarrCiclo) || new Map();
   const occPrev = horariosOcupados.get(keyPrev) || new Map();
-  const occNext = horariosOcupados.get(keyNext) || new Map();
+  const occNext = checkNext ? (horariosOcupados.get(keyNext) || new Map()) : new Map();
+
 
   for (const dia of docente.DIA_DISPONIBLE){
     if (getDocDayCount(nombreDoc, dia) >= 2) continue;
     const usadosDoc = slotsDoc.get(dia) || new Set();
     const usadosThis = occThis.get(dia) || new Set();
     const usadosPrev = occPrev.get(dia) || new Set();
-    const usadosNext = occNext.get(dia) || new Set();
+    const usadosNext = checkNext ? (occNext.get(dia) || new Set()) : new Set();
 
     if (!Array.isArray(docente.HORA_DISPONIBLE) || docente.HORA_DISPONIBLE.length===0) continue;
     for (const hora of docente.HORA_DISPONIBLE){
       if (usadosDoc.has(hora)) continue;
       if (usadosThis.has(hora)) continue;
       if (usadosPrev.has(hora)) continue;
-      if (usadosNext.has(hora)) continue;
+      if (checkNext && usadosNext.has(hora)) continue; // << solo se verifica 9 si no es ciclo 8
 
       usadosThis.add(hora); occThis.set(dia, usadosThis); horariosOcupados.set(keyCarrCiclo, occThis);
       usadosDoc.add(hora); slotsDoc.set(dia, usadosDoc); __DOCENTE_SLOTS__.set(nombreDoc, slotsDoc);
@@ -1017,7 +1021,7 @@ function intentarModificarMateria(globalIdx){
   reg.DOCENTE = s.NOMBRE_DOCENTE || reg.DOCENTE;
   reg["CICLO DE LA MATERIA EN LA MALLA"] = s.CICLO || s.CICLO_MATERIA || reg["CICLO DE LA MATERIA EN LA MALLA"];
   reg["COMPARTIDA CON"] = s["CARRERAS QUE COMPARTEN"] || reg["COMPARTIDA CON"];
-  reg["CARRERA CREADA EN ANTHOLOGY"] = s.CARRERA_CREADA || reg["CARRERA CREADA EN ANTHOLOGY"];
+  reg["MATERIA CREADA EN ANTHOLOGY"] = s.CARRERA_CREADA || reg["MATERIA CREADA EN ANTHOLOGY"];
   reg.OBSERVACIONES = "Cambio de materia por edición";
 
   applyCareerFilterUI();
@@ -1064,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', function(){
       OUT_SECC = seccFinal.map(s=>({
         "NOMBRE_DOCENTE": s.NOMBRE_DOCENTE || "0", "DEDICACIÓN": s.DEDICACIÓN || "0", "MATERIA": s.MATERIA,
         "CANTIDAD DE ALUMNOS ESPERADOS": s.CAP || 0, "DIA": s.DIA || "0", "HORA": s.HORA || "0",
-        "Modalidad": s.Modalidad || "0", "Paralelo": s.Paralelo || "0"
+        "MODALIDAD": s.Modalidad || "0", "Paralelo": s.Paralelo || "0"
       }));
 
       OUT_COMB = asignaciones.map(a=>({
@@ -1111,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', function(){
           "MALLA": a.MALLA || "0",
           "CICLO DE LA MATERIA EN LA MALLA": a.CICLO_MATERIA || a.CICLO || 0,
           "COMPARTIDA CON": a["CARRERAS QUE COMPARTEN"] || "0",
-          "CARRERA CREADA EN ANTHOLOGY": a.CARRERA_CREADA || "0",
+          "MATERIA CREADA EN ANTHOLOGY": a.MATERIA_CREADA || "0",
           "MATERIA": a.MATERIA || "0",
           "PARALELO": a.Paralelo || "0",
           "DIA": a.DIA || "0",
