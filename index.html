@@ -664,8 +664,7 @@ function construirSecciones(docentes, mallas, estudiantes){
 
     const codStr = Array.from(info.CODIGOS||[]).filter(Boolean).join('/') || String(materia.CODIGO||"0");
     const carStr = Array.from(info.CARRERAS||[]).filter(Boolean).join('/') || String(materia["CARRERAS QUE COMPARTEN"]||"0");
-    const mallaStr = Array.from(info.MALLAS||[]).filter(Boolean).join('/') || String(materia.MALLA||"0");
-
+    const mallaStr = Array.from(info.MALLAS||[]).filter(Boolean).join('/') || String(materia.MALLA||"");
     for (let i=0;i<numParalelos;i++){
       let docente=null, horario=null;
       docentesMateria.sort((a,b)=>(seccionesPorDocente.get(a.NOMBRE_DOCENTE)||0)-(seccionesPorDocente.get(b.NOMBRE_DOCENTE)||0));
