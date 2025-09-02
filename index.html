@@ -481,22 +481,83 @@ function renderTable(el, headers, rows, maxRows=100){
 }
 
 // Lectura Excel
-const readSheet = (file, fileName) => new Promise((resolve, reject)=>{
-  if (!file){ resolve([]); return; }
-  const fr=new FileReader();
-  fr.onload = e=>{
-    try{
-      const data=new Uint8Array(e.target.result);
-      const wb=XLSX.read(data,{type:'array'});
-      if (!wb.SheetNames || wb.SheetNames.length===0){ reject(new Error(`El archivo ${fileName} no contiene hojas válidas.`)); return; }
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      if (!ws || !ws['!ref']){ reject(new Error(`La hoja del archivo ${fileName} está vacía.`)); return; }
-      const jsonData=XLSX.utils.sheet_to_json(ws,{defval:""});
-      if (!jsonData || jsonData.length===0){ reject(new Error(`No se pudieron extraer datos del archivo ${fileName}. Verifique el formato.`)); return; }
+// Leer SOLO la hoja que contiene los datos
+const readSheet = (file, sheetKey) => new Promise((resolve, reject) => {
+  if (!file) { resolve([]); return; }
+  const fr = new FileReader();
+
+  const norm = s => String(s || "").toUpperCase().trim();
+
+  fr.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+
+      if (!wb.SheetNames || wb.SheetNames.length === 0) {
+        reject(new Error(`El archivo ${sheetKey} no contiene hojas válidas.`));
+        return;
+      }
+
+      const target = norm(sheetKey); // se le pasa "DOCENTES" | "ESTUDIANTES" | "MALLA"
+      let chosen = null;
+
+      // 1) Coincidencia exacta por nombre
+      for (const sn of wb.SheetNames) {
+        if (norm(sn) === target) { chosen = sn; break; }
+      }
+
+      // 2) Coincidencia parcial por nombre
+      if (!chosen) {
+        for (const sn of wb.SheetNames) {
+          if (norm(sn).includes(target)) { chosen = sn; break; }
+        }
+      }
+
+      // 3) Si no coincide por nombre, tomar la hoja con más filas no vacías
+      if (!chosen) {
+        let maxRows = -1;
+        for (const sn of wb.SheetNames) {
+          const ws = wb.Sheets[sn];
+          if (!ws || !ws['!ref']) continue;
+
+          const rows = XLSX.utils.sheet_to_json(ws, {
+            defval: "",
+            raw: false,
+            blankRows: false
+          });
+
+          const nonEmpty = rows.filter(r =>
+            Object.values(r).some(v => String(v).trim() !== "")
+          ).length;
+
+          if (nonEmpty > maxRows) { maxRows = nonEmpty; chosen = sn; }
+        }
+      }
+
+      if (!chosen) {
+        reject(new Error(`No se encontró una hoja con datos en ${sheetKey}.`));
+        return;
+      }
+
+      const ws = wb.Sheets[chosen];
+      const jsonData = XLSX.utils.sheet_to_json(ws, {
+        defval: "",
+        raw: false,
+        blankRows: false
+      });
+
+      if (!jsonData || jsonData.length === 0) {
+        reject(new Error(`La hoja "${chosen}" de ${sheetKey} está vacía.`));
+        return;
+      }
+
       resolve(jsonData);
-    }catch(error){ reject(new Error(`Error al leer el archivo ${fileName}: ${error.message}`)); }
+    } catch (error) {
+      reject(new Error(`Error al leer ${sheetKey}: ${error.message}`));
+    }
   };
-  fr.onerror = ()=>reject(new Error(`Error al leer el archivo ${fileName}.`));
+
+  fr.onerror = () => { reject(new Error(`Error al leer el archivo ${sheetKey}.`)); };
   fr.readAsArrayBuffer(file);
 });
 
