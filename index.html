@@ -862,6 +862,11 @@ function asignarEstudiantes(secciones, estudiantes, mallas, docentes){
         const free=(s.CAP||0)-(s.ASIGNADOS||0);
         if (free<=0) continue;
         if (!canPlace(e.ESTUDIANTE, s.DIA, s.HORA)) continue;
+          // MALLA: estudiante debe coincidir con la MALLA de la sección (permite "2019/2023")
+        const _mEst = String(e.MALLA || "").trim();
+        const _mSec = String(s.MALLA || "").trim();
+        if (_mEst && _mSec && !_mSec.split('/').map(x => x.trim().toUpperCase()).includes(_mEst.toUpperCase())) continue;
+
 
         s.ASIGNADOS=(s.ASIGNADOS||0)+1; materiasAsignadas++; ya.add(mat); placed=true; markPlace(e.ESTUDIANTE, s.DIA, s.HORA);
         asignaciones.push(buildAsignacionFromSection(e, s));
@@ -908,7 +913,7 @@ function buildAsignacionFromSection(e, s){
     "PRE-REQUISITO": s["PRE-REQUISITO"] || "0", CODIGO: s.CODIGO || "0",
     "HORAS TEÓRICAS": Number(s["HORAS TEÓRICAS"] || 0), "HORAS PRÁCTICAS": Number(s["HORAS PRÁCTICAS"] || 0), "HORAS AUTÓNOMAS": Number(s["HORAS AUTÓNOMAS"] || 0),
     CREDITOS: Number(s.CREDITOS || 0), "CAMPO DE FORMACIÓN": s["CAMPO DE FORMACIÓN"] || "0",
-    MALLA: s.MALLA || "0", "Nº ORDEN EN LA MALLA": Number(s["Nº ORDEN EN LA MALLA"] || 0),
+    MALLA: s.MALLA || "", "Nº ORDEN EN LA MALLA": Number(s["Nº ORDEN EN LA MALLA"] || 0),
     "Nro. HORAS": Number(s["HORAS TEÓRICAS"] || 0) + Number(s["HORAS PRÁCTICAS"] || 0),
     "CARRERA DEL ESTUDIANTE": e.CARRERA || "0", "CICLO DEL ESTUDIANTE": e.CICLO || 0,
     "NIVEL INGLES": e["NIVEL INGLES"] || "0", "PRACTICAS": e["PRACTICAS"] || "0",
