@@ -1,706 +1,1214 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Planificador Académico UIDE</title>
-
-<!-- XLSX (SheetJS) -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-<style>
-  :root{
-    --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
-    --bg:#f6f8fb; --ink:#1b1f3b; --muted:#636a8b; --card:#ffffff; --ok:#0b7a28; --warn:#a15c00; --bad:#8a1f2b;
-  }
-  *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  body{margin:0;background:var(--bg);color:var(--ink)}
-  header{display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--azul);color:#fff}
-  header img{height:44px}
-  header h1{font-size:20px;margin:0;font-weight:700}
-  main{max-width:1200px;margin:20px auto;padding:0 16px}
-  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06);padding:18px;margin-bottom:16px}
-  .title{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--azul);margin-bottom:10px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .row-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  .controls label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-  .controls input[type="file"]{width:100%;padding:10px;background:#fff;border:1px solid #e1e5ee;border-radius:10px}
-  select, input[type="text"], input[type="number"]{
-    width:100%;padding:10px;border:1px solid #e0e5f2;border-radius:10px;background:#fff;color:var(--ink)
-  }
-  button{
-    background:var(--mostaza);color:#fff;border:0;border-radius:12px;padding:10px 14px;
-    font-weight:700;cursor:pointer
-  }
-  button.secondary{background:var(--azul)}
-  button.ghost{background:#fff;color:var(--azul);border:1px solid var(--azul)}
-  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;background:var(--celeste);color:#0b2854}
-  table{width:100%;border-collapse:separate;border-spacing:0 6px}
-  thead th{font-size:12px;color:#46507c;text-align:left;padding:8px 10px}
-  tbody tr{background:#fff}
-  tbody td{padding:8px 10px;border-top:1px solid #eef1f8;border-bottom:1px solid #eef1f8}
-  tbody tr:hover{outline:2px solid #e5ecff}
-  .flex{display:flex;gap:8px;flex-wrap:wrap}
-  .note{font-size:12px;color:var(--muted)}
-  .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
-  .grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-  .divider{height:1px;background:#eaeef8;margin:12px 0}
-  .pill{padding:6px 10px;border-radius:999px;border:1px dashed #c7d2f1;font-size:12px;color:#3b4ea1}
-  .toolbar{display:flex;gap:8px;justify-content:flex-end}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Planificación Académica Corregido</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --azul: #04136C;
+            --mostaza: #DE912E;
+            --vino: #862B39;
+            --celeste: #9CBEE3;
+            --verde: #8A9520;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--azul);
+            color: white;
+            padding: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .logo {
+            height: 50px;
+            margin-right: 15px;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: #e9e9e9;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            background-color: #e9e9e9;
+            transition: background-color 0.3s;
+        }
+        
+        .tab.active {
+            background-color: var(--mostaza);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .upload-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .file-inputs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            flex: 1;
+        }
+        
+        button {
+            background-color: var(--azul);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--vino);
+        }
+        
+        .filters {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        select, input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: var(--azul);
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn-export {
+            background-color: var(--verde);
+        }
+        
+        .btn-save {
+            background-color: var(--vino);
+        }
+        
+        .highlight {
+            background-color: rgba(222, 145, 46, 0.2);
+        }
+        
+        .conflict {
+            background-color: rgba(134, 43, 57, 0.2);
+        }
+        
+        .restriction-form {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .form-field {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .notification {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 768px) {
+            .file-inputs {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+            }
+            
+            .form-row {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-
-<header>
-  <img src="UIDE-Ecuador.png" alt="UIDE" />
-  <h1>Planificador Académico — UIDE</h1>
-  <span class="badge">L–V • 7–10 • 10–13 • 13–16 • 16–19 • 19–22</span>
-</header>
-
-<main>
-  <!-- CARGA DE EXCEL -->
-  <section class="card">
-    <div class="title">Carga de datos</div>
-    <div class="row controls">
-      <div>
-        <label>Mallas.xlsx</label>
-        <input type="file" id="mallasFile" accept=".xlsx,.xls" />
-      </div>
-      <div>
-        <label>Docentes.xlsx</label>
-        <input type="file" id="docentesFile" accept=".xlsx,.xls" />
-      </div>
-      <div>
-        <label>Estudiantes.xlsx</label>
-        <input type="file" id="estudiantesFile" accept=".xlsx,.xls" />
-      </div>
-      <div class="note">Se normalizan días/horas desde “Docentes”. Materias compartidas se listan separadas con “/”.</div>
-      <div class="toolbar">
-        <button id="generateBtn">Generar planificación</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- RESTRICCIONES -->
-  <section class="card">
-    <div class="title">Restricciones opcionales</div>
-    <div class="row">
-      <div>
-        <div class="pill">Prácticas comunitarias</div>
-        <div class="grid-4">
-          <div>
-            <label>Semestre (ciclo)</label>
-            <input type="number" id="pcCiclo" min="1" max="12" placeholder="p. ej. 5" />
-          </div>
-          <div>
-            <label>Día</label>
-            <select id="pcDia">
-              <option value="">—</option>
-              <option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option>
-            </select>
-          </div>
-          <div>
-            <label>Franja</label>
-            <select id="pcFranja">
-              <option value="">—</option>
-              <option>7-10</option><option>10-13</option>
-              <option>13-16</option><option>16-19</option><option>19-22</option>
-            </select>
-          </div>
-          <div style="display:flex;align-items:flex-end">
-            <button class="ghost" id="addPc">Agregar restricción</button>
-          </div>
+    <header>
+        <div class="logo-container">
+            <img src="UIDE-Ecuador.png" alt="UIDE Ecuador" class="logo" onerror="this.style.display='none'">
+            <h1>Sistema de Planificación Académica - Corregido</h1>
         </div>
-        <div id="pcList" class="note" style="margin-top:8px"></div>
-      </div>
+    </header>
 
-      <div>
-        <div class="pill">Bloques de Inglés (reservado estudiantes)</div>
-        <div class="grid-4">
-          <div>
-            <label>Día</label>
-            <select id="ingDia">
-              <option value="">—</option>
-              <option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option>
-            </select>
-          </div>
-          <div>
-            <label>Franja</label>
-            <select id="ingFranja">
-              <option value="">—</option>
-              <option>7-10</option><option>10-13</option>
-              <option>13-16</option><option>16-19</option><option>19-22</option>
-            </select>
-          </div>
-          <div>
-            <label>Nivel mínimo</label>
-            <input type="text" id="ingNivel" placeholder="p. ej. B1, B2, C1…" />
-          </div>
-          <div style="display:flex;align-items:flex-end">
-            <button class="ghost" id="addIng">Agregar bloque</button>
-          </div>
+    <div class="container">
+        <div class="upload-section">
+            <h2>Cargar Archivos Excel</h2>
+            <div class="file-inputs">
+                <div class="file-input">
+                    <label for="malla-file">Mallas Curriculares:</label>
+                    <input type="file" id="malla-file" accept=".xlsx, .xls">
+                </div>
+                <div class="file-input">
+                    <label for="docentes-file">Docentes:</label>
+                    <input type="file" id="docentes-file" accept=".xlsx, .xls">
+                </div>
+                <div class="file-input">
+                    <label for="estudiantes-file">Estudiantes:</label>
+                    <input type="file" id="estudiantes-file" accept=".xlsx, .xls">
+                </div>
+            </div>
+            <button id="load-data">Cargar Datos</button>
+            <div id="upload-notification" class="notification"></div>
         </div>
-        <div id="ingList" class="note" style="margin-top:8px"></div>
-      </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="docente">Planificación Docente</div>
+            <div class="tab" data-tab="estudiante">Planificación Estudiante</div>
+            <div class="tab" data-tab="materias">Materias</div>
+            <div class="tab" data-tab="restricciones">Restricciones</div>
+        </div>
+
+        <div class="tab-content active" id="docente-content">
+            <div class="filters">
+                <h3>Filtros</h3>
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="filter-carrera-doc">Carrera:</label>
+                        <select id="filter-carrera-doc">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-docente">Docente:</label>
+                        <select id="filter-docente">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-modalidad">Modalidad:</label>
+                        <select id="filter-modalidad">
+                            <option value="">Todas</option>
+                            <option value="PRESENCIAL">Presencial</option>
+                            <option value="VIRTUAL">Virtual</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="apply-filters-doc">Aplicar Filtros</button>
+            </div>
+
+            <div class="table-container">
+                <table id="docente-table">
+                    <thead>
+                        <tr>
+                            <th>DOCENTE</th>
+                            <th>TÍTULO ACADÉMICO</th>
+                            <th>DEDICACIÓN</th>
+                            <th>MATERIA</th>
+                            <th>CÓDIGO ANTHOLOGY</th>
+                            <th>CARRERAS QUE COMPARTEN</th>
+                            <th>PRE-REQUISITO</th>
+                            <th>CODIGO</th>
+                            <th>HORAS TEÓRICAS</th>
+                            <th>HORAS PRÁCTICAS</th>
+                            <th>HORAS AUTÓNOMAS</th>
+                            <th>CRÉDITOS</th>
+                            <th>CAMPO DE FORMACIÓN</th>
+                            <th>CICLO MALLA</th>
+                            <th>Nº ORDEN EN LA MALLA</th>
+                            <th>PARALELO</th>
+                            <th>DIA</th>
+                            <th>HORA</th>
+                            <th>MODALIDAD</th>
+                            <th>Nro. HORAS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los datos se cargarán aquí mediante JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="actions">
+                <button class="btn-export" id="export-docente">Exportar a Excel</button>
+                <button class="btn-save" id="save-docente">Guardar Cambios</button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="estudiante-content">
+            <div class="filters">
+                <h3>Filtros</h3>
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="filter-carrera-est">Carrera:</label>
+                        <select id="filter-carrera-est">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-ciclo-est">Ciclo:</label>
+                        <select id="filter-ciclo-est">
+                            <option value="">Todos</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-malla-est">Malla:</label>
+                        <select id="filter-malla-est">
+                            <option value="">Todas</option>
+                            <option value="2019">2019</option>
+                            <option value="2023">2023</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="apply-filters-est">Aplicar Filtros</button>
+            </div>
+
+            <div class="table-container">
+                <table id="estudiante-table">
+                    <thead>
+                        <tr>
+                            <th>CARRERA</th>
+                            <th>ESTUDIANTE</th>
+                            <th>CICLO DEL ESTUDIANTE</th>
+                            <th>MALLA</th>
+                            <th>CICLO DE LA MATERIA EN LA MALLA</th>
+                            <th>COMPARTIDA CON CARRERA</th>
+                            <th>MATERIA</th>
+                            <th>PARALELO</th>
+                            <th>DIA</th>
+                            <th>HORA</th>
+                            <th>MODALIDAD</th>
+                            <th>NIVEL INGLES</th>
+                            <th>OBSERVACIONES</th>
+                            <th>DOCENTE</th>
+                            <th>ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los datos se cargarán aquí mediante JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="actions">
+                <button class="btn-export" id="export-estudiante">Exportar a Excel</button>
+                <button class="btn-save" id="save-estudiante">Guardar Cambios</button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="materias-content">
+            <div class="filters">
+                <h3>Filtros</h3>
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="filter-carrera-mat">Carrera:</label>
+                        <select id="filter-carrera-mat">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-ciclo-mat">Ciclo:</label>
+                        <select id="filter-ciclo-mat">
+                            <option value="">Todos</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-malla-mat">Malla:</label>
+                        <select id="filter-malla-mat">
+                            <option value="">Todas</option>
+                            <option value="2019">2019</option>
+                            <option value="2023">2023</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="apply-filters-mat">Aplicar Filtros</button>
+            </div>
+
+            <div class="table-container">
+                <table id="materias-table">
+                    <thead>
+                        <tr>
+                            <th>MALLA</th>
+                            <th>CICLO DE LA MATERIA EN LA MALLA</th>
+                            <th>COMPARTIDA CON CARRERA</th>
+                            <th>MATERIA</th>
+                            <th>PARALELO</th>
+                            <th>DIA</th>
+                            <th>HORA</th>
+                            <th>Número de estudiantes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los datos se cargarán aquí mediante JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="actions">
+                <button class="btn-export" id="export-materias">Exportar a Excel</button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="restricciones-content">
+            <h2>Gestión de Restricciones de Horario</h2>
+            <div class="restriction-form">
+                <h3>Agregar Restricción para Prácticas Comunitarias</h3>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="restriction-carrera">Carrera:</label>
+                        <select id="restriction-carrera">
+                            <option value="">Seleccionar carrera</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="restriction-ciclo">Ciclo:</label>
+                        <select id="restriction-ciclo">
+                            <option value="">Seleccionar ciclo</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="restriction-dia">Día:</label>
+                        <select id="restriction-dia">
+                            <option value="">Seleccionar día</option>
+                            <option value="LUNES">Lunes</option>
+                            <option value="MARTES">Martes</option>
+                            <option value="MIÉRCOLES">Miércoles</option>
+                            <option value="JUEVES">Jueves</option>
+                            <option value="VIERNES">Viernes</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="restriction-hora">Hora:</label>
+                        <select id="restriction-hora">
+                            <option value="">Seleccionar horario</option>
+                            <option value="07:00-10:00">07:00-10:00</option>
+                            <option value="10:00-13:00">10:00-13:00</option>
+                            <option value="13:00-16:00">13:00-16:00</option>
+                            <option value="16:00-19:00">16:00-19:00</option>
+                            <option value="19:00-22:00">19:00-22:00</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="add-restriction">Agregar Restricción</button>
+                <div id="restriction-notification" class="notification"></div>
+            </div>
+
+            <div class="table-container">
+                <table id="restricciones-table">
+                    <thead>
+                        <tr>
+                            <th>Carrera</th>
+                            <th>Ciclo</th>
+                            <th>Día</th>
+                            <th>Hora</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Las restricciones se cargarán aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </section>
 
-  <!-- SALIDAS -->
-  <section class="card">
-    <div class="title">Planificación docente</div>
-    <div class="toolbar">
-      <button id="exportDoc">Exportar CSV</button>
-    </div>
-    <div class="note">Columnas: DOCENTE, TITULO ACADÉMICO, DEDICACIÓN, MATERIA, CÓDIGO ANTHOLOGY, CARRERAS QUE COMPARTEN (“/”), PRE-REQUISITO, CÓDIGO, HORAS TEÓRICAS, HORAS PRÁCTICAS, HORAS AUTÓNOMAS, CRÉDITOS, CAMPO DE FORMACIÓN, CICLO MALLA, Nº ORDEN EN LA MALLA, PARALELO, DÍA, HORA, MODALIDAD, Nro. HORAS.</div>
-    <div style="overflow:auto;max-height:380px">
-      <table id="tblDoc"><thead></thead><tbody></tbody></table>
-    </div>
-  </section>
+    <script>
+        // Variables globales para almacenar los datos
+        let mallaData = [];
+        let docentesData = [];
+        let estudiantesData = [];
+        let restricciones = [];
+        let planificacionDocente = [];
+        let planificacionEstudiante = [];
+        let materiasData = [];
 
-  <section class="card">
-    <div class="title">Planificación estudiante <span class="note">— modificable (solo estudiantes)</span></div>
-    <div class="toolbar">
-      <button id="exportEst">Exportar CSV</button>
-    </div>
-    <div class="grid-2" style="margin-bottom:10px">
-      <div>
-        <label>Estudiante</label>
-        <select id="selEst"></select>
-      </div>
-      <div style="display:flex;align-items:flex-end">
-        <button class="secondary" id="btnVerAsign">Ver asignaciones</button>
-      </div>
-    </div>
-    <div class="note">Si reemplaza una materia y existe cruce de horario, se mostrará advertencia.</div>
-    <div id="estAsign"></div>
-  </section>
+        // Mapeo de carreras para normalizar nombres entre archivos
+        const carrerasMap = {
+            'ADMINISTRACIÓN DE EMPRESAS': 'ADMINISTRACIÓN',
+            'MARKETING': 'MARKETING',
+            'NEGOCIOS INTERNACIONALES': 'NEGOCIOS INTERNACIONALES'
+        };
 
-  <section class="card">
-    <div class="title">Materias (resumen)</div>
-    <div class="toolbar">
-      <button id="exportMat">Exportar CSV</button>
-    </div>
-    <div class="note">Columnas: MALLA, CICLO DE LA MATERIA EN LA MALLA, COMPARTIDA CON CARRERA (“/”), MATERIA, PARALELO, DÍA, HORA, Número de estudiantes.</div>
-    <div style="overflow:auto;max-height:380px">
-      <table id="tblMat"><thead></thead><tbody></tbody></table>
-    </div>
-  </section>
-</main>
-
-<script>
-/* ======= Utilidades ======= */
-const DAYS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
-const SLOTS = ["7-10","10-13","13-16","16-19","19-22"];
-const dayKeys = {"lun":"Lunes","lunes":"Lunes","mar":"Martes","martes":"Martes","mie":"Miércoles","mié":"Miércoles","miercoles":"Miércoles","miércoles":"Miércoles","jue":"Jueves","jueves":"Jueves","vie":"Viernes","viernes":"Viernes"};
-
-const norm = s => (s??"").toString().trim();
-const up = s => norm(s).toUpperCase();
-const cleanCol = s => norm(s).toLowerCase()
-  .replaceAll('á','a').replaceAll('é','e').replaceAll('í','i')
-  .replaceAll('ó','o').replaceAll('ú','u').replaceAll('ñ','n')
-  .replace(/[.\-:]+/g,' ').replace(/\s+/g,' ').trim();
-
-function parseCycle(v){
-  const t = norm(v).toLowerCase()
-    .replaceAll('á','a').replaceAll('é','e').replaceAll('í','i')
-    .replaceAll('ó','o').replaceAll('ú','u');
-  const map = {primero:1,segundo:2,tercero:3,cuarto:4,quinto:5,sexto:6,septimo:7,septimo_:7,octavo:8,noveno:9,decimo:10,undecimo:11,duodecimo:12};
-  if (map[t]!==undefined) return map[t];
-  const m = t.match(/\d+/); return m?parseInt(m[0],10): (isFinite(+t)?+t:null);
-}
-function parseHoras(x){ const v = Number(x); return isFinite(v)?v:0; }
-function normDays(text){
-  if (!text) return [];
-  const toks = norm(text).toLowerCase()
-    .replaceAll('á','a').replaceAll('é','e').replaceAll('í','i')
-    .replaceAll('ó','o').replaceAll('ú','u')
-    .split(/[,\s;/]+/).filter(Boolean);
-  const out = [];
-  for (const t of toks){ const k = t.slice(0,3); out.push(dayKeys[k]||null); }
-  return out.filter(Boolean);
-}
-function parseSlots(text){
-  if (!text) return [];
-  const s = norm(text).toLowerCase();
-  const ranges = [...s.matchAll(/(\d{1,2})\s*[:.]?\s*\d{0,2}\s*-\s*(\d{1,2})/g)];
-  const out = new Set();
-  for (const m of ranges){
-    const a = +m[1], b = +m[2];
-    const sl = `${a}-${b}`; if (SLOTS.includes(sl)) out.add(sl);
-  }
-  if (!out.size){
-    const nums = (s.match(/\b(\d{1,2})\b/g)||[]).map(Number).filter(n=>n>=6&&n<=22);
-    for (let i=0;i<nums.length-1;i++){ const sl = `${nums[i]}-${nums[i+1]}`; if (SLOTS.includes(sl)) out.add(sl); }
-  }
-  return [...out];
-}
-
-/* ======= Lectura de Excel ======= */
-async function readXlsx(file){
-  const data = await file.arrayBuffer();
-  const wb = XLSX.read(data,{type:'array'});
-  // pick largest sheet
-  let best = null, bestSize=-1;
-  for (const name of wb.SheetNames){
-    const ws = wb.Sheets[name];
-    const json = XLSX.utils.sheet_to_json(ws,{defval:null});
-    const size = (json.length)*((json[0]&&Object.keys(json[0]).length)||0);
-    if (size>bestSize){ best={name,rows:json}; bestSize=size; }
-  }
-  return best.rows;
-}
-
-function normalizeColumns(rows, dict){
-  if (!rows.length) return [];
-  const cols = Object.keys(rows[0]).map(cleanCol);
-  const map = {};
-  Object.keys(rows[0]).forEach((k,i)=>{
-    const ck = cleanCol(k);
-    map[k] = dict[ck]||ck;
-  });
-  return rows.map(r=>{
-    const o = {};
-    Object.keys(r).forEach(k=>{
-      o[map[k]] = r[k];
-    });
-    return o;
-  });
-}
-
-/* ======= Variables en memoria ======= */
-let MALLA=[], DOCENTES=[], ESTUDIANTES=[];
-let asignaciones=[], planDoc=[], planEst=[], materiasResumen=[];
-let restriccionesPC=[]; // {ciclo, dia, franja}
-let bloquesIng=[];      // {dia, franja, nivelMin}
-
-/* ======= Interfaz: agregar restricciones ======= */
-document.getElementById('addPc').onclick = ()=>{
-  const ciclo = parseCycle(document.getElementById('pcCiclo').value);
-  const dia = norm(document.getElementById('pcDia').value);
-  const franja = norm(document.getElementById('pcFranja').value);
-  if (!ciclo || !dia || !franja) return alert('Complete ciclo, día y franja para prácticas comunitarias.');
-  restriccionesPC.push({ciclo,dia,franja});
-  renderPc();
-};
-function renderPc(){
-  const el = document.getElementById('pcList');
-  el.innerHTML = restriccionesPC.length? ('Restringidos: '+restriccionesPC.map(x=>`Ciclo ${x.ciclo} → ${x.dia} ${x.franja}`).join(' · ')) : 'Sin restricciones agregadas.';
-}
-
-document.getElementById('addIng').onclick = ()=>{
-  const dia = norm(document.getElementById('ingDia').value);
-  const franja = norm(document.getElementById('ingFranja').value);
-  const nivel = norm(document.getElementById('ingNivel').value);
-  if (!dia || !franja) return alert('Complete día y franja para el bloque de Inglés.');
-  bloquesIng.push({dia,franja,nivelMin:nivel});
-  renderIng();
-};
-function renderIng(){
-  const el = document.getElementById('ingList');
-  el.innerHTML = bloquesIng.length? ('Bloques: '+bloquesIng.map(x=>`${x.dia} ${x.franja}${x.nivelMin?` (≥ ${x.nivelMin})`:''}`).join(' · ')) : 'Sin bloques de Inglés.';
-}
-
-/* ======= Generación ======= */
-document.getElementById('generateBtn').onclick = async ()=>{
-  const mFile = document.getElementById('mallasFile').files[0];
-  const dFile = document.getElementById('docentesFile').files[0];
-  const eFile = document.getElementById('estudiantesFile').files[0];
-  if (!mFile || !dFile || !eFile){ alert('Cargue los tres archivos (Mallas, Docentes, Estudiantes).'); return; }
-
-  // Leer
-  const rawM = await readXlsx(mFile);
-  const rawD = await readXlsx(dFile);
-  const rawE = await readXlsx(eFile);
-
-  // Normalizar columnas según sinónimos
-  const mapM = {
-    'carrera':'carrera','malla':'malla',
-    'ciclo':'ciclo_malla','ciclo malla':'ciclo_malla','ciclo de la materia en la malla':'ciclo_malla',
-    'materia':'materia','asignatura':'materia','nombre asignatura':'materia','nombre de la asignatura':'materia',
-    'codigo':'codigo','codigo anthology':'codigo','codigo materia':'codigo','codigo asignatura':'codigo',
-    'pre requisito':'pre_requisito','prerequisito':'pre_requisito','prerrequisito':'pre_requisito',
-    'horas teoricas':'horas_teoricas','h teoricas':'horas_teoricas','ht':'horas_teoricas',
-    'horas practicas':'horas_practicas','h practicas':'horas_practicas','hp':'horas_practicas',
-    'horas autonomas':'horas_autonomas','h autonomas':'horas_autonomas','ha':'horas_autonomas',
-    'creditos':'creditos','cr':'creditos',
-    'campo de formacion':'campo_formacion','campo formacion':'campo_formacion','area formacion':'campo_formacion','area':'campo_formacion',
-    'n orden en la malla':'orden_malla','no orden en la malla':'orden_malla','nº orden en la malla':'orden_malla','nro orden en la malla':'orden_malla','orden en la malla':'orden_malla',
-    'carreras que comparten':'compartida_con','compartida con':'compartida_con','compartida con carrera':'compartida_con','compartida con carreras':'compartida_con',
-    'paralelo':'paralelo'
-  };
-  const mapD = {
-    'docente':'docente','nombre':'docente','nombres':'docente','apellidos y nombres':'docente',
-    'titulo academico':'titulo_academico','titulo':'titulo_academico','titulacion':'titulo_academico',
-    'dedicacion':'dedicacion','tipo dedicacion':'dedicacion',
-    'materia':'materias_habilitadas','materias':'materias_habilitadas','asignaturas':'materias_habilitadas','asignatura':'materias_habilitadas',
-    'dias':'dias_disponibles','dias disponibles':'dias_disponibles','disponibilidad dias':'dias_disponibles','disponibilidad de dias':'dias_disponibles',
-    'horas':'horas_disponibles','horas disponibles':'horas_disponibles','disponibilidad horas':'horas_disponibles','disponibilidad de horas':'horas_disponibles'
-  };
-  const mapE = {
-    'estudiante':'estudiante','alumno':'estudiante','apellidos y nombres':'estudiante',
-    'carrera':'carrera',
-    'ciclo del estudiante':'ciclo_estudiante','ciclo_estudiante':'ciclo_estudiante','ciclo':'ciclo_estudiante',
-    'malla':'malla',
-    'nivel ingles':'nivel_ingles','nivel de ingles':'nivel_ingles','ingles':'nivel_ingles',
-    'observaciones':'observaciones'
-  };
-
-  MALLA = normalizeColumns(rawM, mapM).map(r=>({
-    carrera: norm(r.carrera), malla: norm(r.malla),
-    ciclo_malla: parseCycle(r.ciclo_malla),
-    materia: norm(r.materia), codigo: norm(r.codigo),
-    pre_requisito: norm(r.pre_requisito),
-    horas_teoricas: parseHoras(r.horas_teoricas), horas_practicas: parseHoras(r.horas_practicas), horas_autonomas: parseHoras(r.horas_autonomas),
-    creditos: parseHoras(r.creditos),
-    campo_formacion: norm(r.campo_formacion),
-    orden_malla: norm(r.orden_malla),
-    compartida_con: norm(r.compartida_con||""),
-    paralelo: norm(r.paralelo||"A"),
-  }));
-
-  // Inferir compartidas si vacío
-  const byMat = {};
-  for (const r of MALLA){
-    if (!byMat[r.materia]) byMat[r.materia] = new Set();
-    if (r.carrera) byMat[r.materia].add(r.carrera);
-  }
-  for (const r of MALLA){
-    if (!r.compartida_con){
-      const others = [...(byMat[r.materia]||[])].filter(c=>c!==r.carrera);
-      r.compartida_con = others.join(' / ');
-    }
-  }
-
-  DOCENTES = normalizeColumns(rawD, mapD).map(r=>{
-    const dias = normDays(r.dias_disponibles);
-    const slots = parseSlots(r.horas_disponibles);
-    return {
-      docente: norm(r.docente), titulo_academico: norm(r.titulo_academico), dedicacion: norm(r.dedicacion),
-      materias_habilitadas: norm(r.materias_habilitadas),
-      dias_norm: dias.length?dias:DAYS.slice(),
-      slots_norm: slots.length?slots:SLOTS.slice()
-    };
-  });
-
-  ESTUDIANTES = normalizeColumns(rawE, mapE).map(r=>({
-    estudiante: norm(r.estudiante), carrera: norm(r.carrera),
-    ciclo_estudiante: parseCycle(r.ciclo_estudiante),
-    malla: norm(r.malla), nivel_ingles: norm(r.nivel_ingles), observaciones: norm(r.observaciones)
-  }));
-
-  // Index docentes por materia (si se listan)
-  const mat2doc = {};
-  DOCENTES.forEach((d,idx)=>{
-    const mats = d.materias_habilitadas? d.materias_habilitadas.split('/').map(x=>x.trim().toLowerCase()).filter(Boolean):[];
-    for (const m of mats){ (mat2doc[m] ||= []).push(idx); }
-  });
-
-  // Helpers de disponibilidad y carga (máx. 2 por día)
-  const loadDoc = {}; // {docente:{dia:count}}
-  function docLoadOk(name, day){ loadDoc[name] ||= {}; return ((loadDoc[name][day]||0) < 2); }
-  function incDocLoad(name, day){ loadDoc[name] ||= {}; loadDoc[name][day] = (loadDoc[name][day]||0)+1; }
-
-  // No choques entre ciclos adyacentes por carrera
-  const occByCycle = {}; // key: carrera|ciclo -> Set("Dia|Franja")
-  function keyCycle(car,c){ return `${car}||${c}`; }
-  function freeAdj(car,c,day,slot){
-    const k1 = keyCycle(car, (c??0)-1), k2 = keyCycle(car, (c??0)+1);
-    const tag = `${day}|${slot}`;
-    return !(occByCycle[k1]?.has(tag) || occByCycle[k2]?.has(tag));
-  }
-  function markOcc(car,c,day,slot){
-    const k = keyCycle(car,c); occByCycle[k] ||= new Set(); occByCycle[k].add(`${day}|${slot}`);
-  }
-
-  // Restricciones: prácticas comunitarias (por ciclo)
-  function blockedByPC(c, day, slot){
-    return restriccionesPC.some(x=> x.ciclo===c && x.dia===day && x.franja===slot);
-  }
-
-  // Asignación principal (greedy profesional con restricciones)
-  asignaciones = [];
-  // ordenar por carrera, ciclo, orden
-  const sorted = [...MALLA].sort((a,b)=>{
-    const ac = up(a.carrera), bc = up(b.carrera);
-    if (ac!==bc) return ac<bc?-1:1;
-    const ca = a.ciclo_malla||0, cb = b.ciclo_malla||0;
-    if (ca!==cb) return ca-cb;
-    const oa = (a.orden_malla||"").toString(), ob=(b.orden_malla||"").toString();
-    return oa.localeCompare(ob);
-  });
-
-  function pickDocente(materia){
-    const key = materia.toLowerCase();
-    let cands = mat2doc[key]||[];
-    if (!cands.length) cands = DOCENTES.map((_,i)=>i);
-    // escoger con mayor disponibilidad neta y menor carga
-    let best=-1, bestIdx=0;
-    for (const idx of cands){
-      const d = DOCENTES[idx];
-      const avail = (d.dias_norm?.length||DAYS.length)*(d.slots_norm?.length||SLOTS.length);
-      const carga = Object.values(loadDoc[d.docente]||{}).reduce((a,b)=>a+b,0);
-      const score = avail - carga;
-      if (score>best){ best=score; bestIdx=idx; }
-    }
-    return bestIdx;
-  }
-
-  for (const r of sorted){
-    const car = r.carrera, ciclo = r.ciclo_malla;
-    const di = pickDocente(r.materia);
-    const D = DOCENTES[di]||{docente:"",titulo_academico:"",dedicacion:"",dias_norm:DAYS,slots_norm:SLOTS};
-    let placed = false;
-    for (const d of D.dias_norm){
-      for (const sl of D.slots_norm){
-        if (!docLoadOk(D.docente, d)) continue;
-        if (!freeAdj(car, ciclo, d, sl)) continue;
-        if (blockedByPC(ciclo, d, sl)) continue;
-        // asignado
-        incDocLoad(D.docente,d); markOcc(car,ciclo,d,sl);
-        asignaciones.push({
-          carrera: car, malla: r.malla, ciclo_malla: ciclo, materia: r.materia, codigo: r.codigo,
-          pre_requisito: r.pre_requisito, horas_teoricas: r.horas_teoricas, horas_practicas: r.horas_practicas, horas_autonomas: r.horas_autonomas,
-          creditos: r.creditos, campo_formacion: r.campo_formacion, orden_malla: r.orden_malla,
-          compartida_con: r.compartida_con, paralelo: r.paralelo||"A",
-          dia: d, hora: sl, docente: D.docente, titulo_academico: D.titulo_academico, dedicacion: D.dedicacion,
-          modalidad: "Presencial", nro_horas: (r.horas_teoricas||0)+(r.horas_practicas||0)+(r.horas_autonomas||0)
+        // Función para cargar archivos Excel
+        document.getElementById('load-data').addEventListener('click', function() {
+            const mallaFile = document.getElementById('malla-file').files[0];
+            const docentesFile = document.getElementById('docentes-file').files[0];
+            const estudiantesFile = document.getElementById('estudiantes-file').files[0];
+            
+            if (!mallaFile || !docentesFile || !estudiantesFile) {
+                showNotification('Por favor, seleccione los tres archivos Excel.', 'error');
+                return;
+            }
+            
+            const notification = document.getElementById('upload-notification');
+            
+            // Cargar archivo de Mallas
+            const reader1 = new FileReader();
+            reader1.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                mallaData = XLSX.utils.sheet_to_json(worksheet);
+                
+                // Cargar archivo de Docentes
+                const reader2 = new FileReader();
+                reader2.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    docentesData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // Cargar archivo de Estudiantes
+                    const reader3 = new FileReader();
+                    reader3.onload = function(e) {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        estudiantesData = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        // Procesar los datos
+                        procesarDatos();
+                        
+                        showNotification('Datos cargados y procesados correctamente.', 'success');
+                    };
+                    reader3.readAsArrayBuffer(estudiantesFile);
+                };
+                reader2.readAsArrayBuffer(docentesFile);
+            };
+            reader1.readAsArrayBuffer(mallaFile);
         });
-        placed = true; break;
-      }
-      if (placed) break;
-    }
-    if (!placed){
-      // fallback: ubicar en cualquier celda libre respetando reglas mínimas
-      outer: for (const d of DAYS){
-        for (const sl of SLOTS){
-          if (!docLoadOk(D.docente, d)) continue;
-          if (!freeAdj(car, ciclo, d, sl)) continue;
-          if (blockedByPC(ciclo, d, sl)) continue;
-          incDocLoad(D.docente,d); markOcc(car,ciclo,d,sl);
-          asignaciones.push({ ...r, carrera:car, dia:d, hora:sl, docente:D.docente, titulo_academico:D.titulo_academico, dedicacion:D.dedicacion, modalidad:"Presencial", nro_horas:(r.horas_teoricas||0)+(r.horas_practicas||0)+(r.horas_autonomas||0) });
-          break outer;
+
+        // Función para procesar los datos cargados
+        function procesarDatos() {
+            // Normalizar datos de docentes (días y horas)
+            docentesData.forEach(docente => {
+                if (docente['DIA DISPONIBLE']) {
+                    docente.diasDisponibles = docente['DIA DISPONIBLE'].split('\n').map(d => d.trim().toUpperCase());
+                }
+                
+                if (docente['HORA DISPONIBLE']) {
+                    docente.horasDisponibles = docente['HORA DISPONIBLE'].split('\n').map(h => h.trim());
+                }
+            });
+            
+            // Extraer carreras únicas de mallaData
+            const carreras = [...new Set(mallaData.map(item => item.CARRERA))];
+            populateSelect('filter-carrera-doc', carreras);
+            populateSelect('filter-carrera-est', carreras);
+            populateSelect('filter-carrera-mat', carreras);
+            populateSelect('restriction-carrera', carreras);
+            
+            // Extraer docentes únicos
+            const docentes = [...new Set(docentesData.map(item => item.DOCENTE))];
+            populateSelect('filter-docente', docentes);
+            
+            // Generar planificación docente
+            generarPlanificacionDocente();
+            
+            // Generar planificación estudiante
+            generarPlanificacionEstudiante();
+            
+            // Generar datos de materias
+            generarDatosMaterias();
+            
+            // Mostrar datos en las tablas
+            mostrarPlanificacionDocente();
+            mostrarPlanificacionEstudiante();
+            mostrarMaterias();
         }
-      }
-    }
-  }
 
-  /* ===== Planificación Docente ===== */
-  planDoc = asignaciones.map(a=>({
-    "DOCENTE":a.docente,
-    "TITULO ACADÉMICO":a.titulo_academico,
-    "DEDICACIÓN":a.dedicacion,
-    "MATERIA":a.materia,
-    "CÓDIGO ANTHOLOGY":a.codigo,
-    "CARRERAS QUE COMPARTEN":a.compartida_con,
-    "PRE-REQUISITO":a.pre_requisito,
-    "CÓDIGO":a.codigo,
-    "HORAS TEÓRICAS":a.horas_teoricas,
-    "HORAS PRÁCTICAS":a.horas_practicas,
-    "HORAS AUTÓNOMAS":a.horas_autonomas,
-    "CREDITOS":a.creditos,
-    "CAMPO DE FORMACIÓN":a.campo_formacion,
-    "CICLO MALLA":a.ciclo_malla,
-    "Nº ORDEN EN LA MALLA":a.orden_malla,
-    "PARALELO":a.paralelo,
-    "DIA":a.dia,
-    "HORA":a.hora,
-    "MODALIDAD":a.modalidad,
-    "Nro. HORAS":a.nro_horas,
-    "CARRERA":a.carrera
-  }));
+        // Función para generar la planificación docente
+        function generarPlanificacionDocente() {
+            planificacionDocente = [];
+            const docentesAsignados = {}; // Para evitar duplicados
+            
+            // Para cada materia en la malla, asignar un docente disponible
+            mallaData.forEach(materia => {
+                // Buscar docentes que enseñen esta materia
+                const docentesMateria = docentesData.filter(docente => 
+                    docente.MATERIA && docente.MATERIA.trim().toUpperCase() === materia.MATERIA.trim().toUpperCase()
+                );
+                
+                if (docentesMateria.length > 0) {
+                    // Seleccionar el primer docente disponible
+                    const docente = docentesMateria[0];
+                    
+                    // Crear clave única para evitar duplicados
+                    const clave = `${docente.DOCENTE}-${materia.MATERIA}-${materia.MALLA}`;
+                    
+                    if (!docentesAsignados[clave]) {
+                        docentesAsignados[clave] = true;
+                        
+                        // Determinar las carreras que comparten esta materia
+                        const carrerasComparten = mallaData
+                            .filter(m => m.MATERIA === materia.MATERIA && m.MALLA == materia.MALLA)
+                            .map(m => m.CARRERA)
+                            .filter((v, i, a) => a.indexOf(v) === i) // Valores únicos
+                            .join(' / ');
+                        
+                        // Calcular créditos si no están definidos
+                        let creditos = materia.CRÉDITOS;
+                        if (typeof creditos === 'string' && creditos.startsWith('=')) {
+                            // Calcular créditos basados en la fórmula: =((G2*16)+(H2*16)+(I2*16))/48
+                            const horasTeoricas = materia['HORAS TEÓRICAS'] || 0;
+                            const horasPracticas = materia['HORAS PRÁCTICAS'] || 0;
+                            const horasAutonomas = materia['HORAS AUTÓNOMAS'] || 0;
+                            creditos = ((horasTeoricas * 16) + (horasPracticas * 16) + (horasAutonomas * 16)) / 48;
+                        }
+                        
+                        // Asignar horario
+                        const dias = docente.diasDisponibles || ['LUNES'];
+                        const horas = docente.horasDisponibles || ['07:00-10:00'];
+                        
+                        planificacionDocente.push({
+                            docente: docente.DOCENTE,
+                            titulo: docente['TITULO ACADÉMICO'] || 'MAGISTER',
+                            dedicacion: docente.DEDICACION || 'TIEMPO COMPLETO',
+                            materia: materia.MATERIA,
+                            codigoAnthology: materia.CÓDIGO,
+                            carrerasComparten: carrerasComparten,
+                            prerequisito: materia.PRERREQUISITO || '',
+                            codigo: materia.CÓDIGO,
+                            horasTeoricas: materia['HORAS TEÓRICAS'] || 0,
+                            horasPracticas: materia['HORAS PRÁCTICAS'] || 0,
+                            horasAutonomas: materia['HORAS AUTÓNOMAS'] || 0,
+                            creditos: creditos,
+                            campoFormacion: materia['CAMPO DE FORMACIÓN'] || '',
+                            cicloMalla: materia.CICLO,
+                            ordenMalla: materia['NUMERO DE ORDEN EN LA MALLA'] || '',
+                            malla: materia.MALLA, // Agregar malla
+                            paralelo: 'A', // Asignar paralelo por defecto
+                            dia: dias[0],
+                            hora: horas[0],
+                            modalidad: docente.Modalidad || 'PRESENCIAL',
+                            numHoras: (materia['HORAS TEÓRICAS'] || 0) + (materia['HORAS PRÁCTICAS'] || 0)
+                        });
+                    }
+                }
+            });
+        }
 
-  renderTable('tblDoc', planDoc, [
-    "DOCENTE","TITULO ACADÉMICO","DEDICACIÓN","MATERIA","CÓDIGO ANTHOLOGY","CARRERAS QUE COMPARTEN",
-    "PRE-REQUISITO","CÓDIGO","HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","CREDITOS",
-    "CAMPO DE FORMACIÓN","CICLO MALLA","Nº ORDEN EN LA MALLA","PARALELO","DIA","HORA","MODALIDAD","Nro. HORAS","CARRERA"
-  ]);
+        // Función para generar la planificación estudiante
+        function generarPlanificacionEstudiante() {
+            planificacionEstudiante = [];
+            
+            estudiantesData.forEach(estudiante => {
+                // Obtener el ciclo al que va el estudiante
+                const cicloEstudiante = estudiante['CICLO AL QUE VA'] || estudiante.CICLO;
+                
+                if (!cicloEstudiante) return;
+                
+                // Normalizar el nombre de la carrera
+                const carreraNormalizada = carrerasMap[estudiante.CARRERA] || estudiante.CARRERA;
+                
+                // Filtrar materias para este estudiante según su carrera, malla y ciclo
+                const materiasEstudiante = mallaData.filter(materia => 
+                    materia.CARRERA === carreraNormalizada && 
+                    materia.MALLA == estudiante.MALLA && 
+                    materia.CICLO == cicloEstudiante
+                );
+                
+                // Limitar a 6 materias como máximo
+                const materiasAsignar = materiasEstudiante.slice(0, 6);
+                
+                // Para cada materia, crear una entrada en la planificación
+                materiasAsignar.forEach(materia => {
+                    // Buscar la planificación docente para esta materia
+                    const planDocente = planificacionDocente.find(p => 
+                        p.materia === materia.MATERIA && 
+                        p.malla == materia.MALLA &&
+                        p.carrerasComparten.includes(carreraNormalizada)
+                    );
+                    
+                    if (planDocente) {
+                        // Determinar las carreras que comparten esta materia
+                        const carrerasComparten = mallaData
+                            .filter(m => m.MATERIA === materia.MATERIA && m.MALLA == materia.MALLA)
+                            .map(m => m.CARRERA)
+                            .filter((v, i, a) => a.indexOf(v) === i) // Valores únicos
+                            .join(' / ');
+                        
+                        planificacionEstudiante.push({
+                            carrera: estudiante.CARRERA, // Usar el nombre original de la carrera
+                            estudiante: estudiante.ESTUDIANTE,
+                            cicloEstudiante: estudiante.CICLO,
+                            malla: estudiante.MALLA,
+                            cicloMateria: materia.CICLO,
+                            carrerasComparten: carrerasComparten,
+                            materia: materia.MATERIA,
+                            paralelo: planDocente.paralelo,
+                            dia: planDocente.dia,
+                            hora: planDocente.hora,
+                            modalidad: planDocente.modalidad,
+                            nivelIngles: estudiante['NIVEL DE INGLES'] || '',
+                            observaciones: '',
+                            docente: planDocente.docente
+                        });
+                    }
+                });
+            });
+        }
 
-  /* ===== Planificación Estudiante ===== */
-  // Índice de horario por (carrera, ciclo)
-  const idxSch = new Map();
-  for (const a of asignaciones){
-    const key = `${a.carrera}|${a.ciclo_malla}`;
-    (idxSch.get(key) ? idxSch.get(key) : idxSch.set(key, []).get(key)).push(a);
-  }
+        // Función para generar datos de materias
+        function generarDatosMaterias() {
+            materiasData = [];
+            
+            // Agrupar materias por nombre, malla y ciclo
+            const materiasAgrupadas = {};
+            
+            planificacionDocente.forEach(plan => {
+                const key = `${plan.materia}-${plan.cicloMalla}-${plan.malla}`;
+                
+                if (!materiasAgrupadas[key]) {
+                    materiasAgrupadas[key] = {
+                        malla: plan.malla,
+                        cicloMateria: plan.cicloMalla,
+                        carrerasComparten: plan.carrerasComparten,
+                        materia: plan.materia,
+                        paralelo: plan.paralelo,
+                        dia: plan.dia,
+                        hora: plan.hora,
+                        numEstudiantes: 0
+                    };
+                }
+                
+                // Contar estudiantes para esta materia
+                materiasAgrupadas[key].numEstudiantes += planificacionEstudiante.filter(est => 
+                    est.materia === plan.materia && 
+                    est.malla == plan.malla && 
+                    est.cicloMateria == plan.cicloMalla
+                ).length;
+            });
+            
+            // Convertir el objeto a array
+            for (const key in materiasAgrupadas) {
+                materiasData.push(materiasAgrupadas[key]);
+            }
+        }
 
-  // Bloques de inglés: aquí se solicita pero no bloquea por defecto; si desea, puede activar bloqueo filtrando cand por bloquesIng.
-  function blocksEnglish(est,cand){
-    if (!bloquesIng.length) return false;
-    return bloquesIng.some(b=>{
-      if (b.nivelMin && est.nivel_ingles && est.nivel_ingles < b.nivelMin) return false;
-      return cand.dia===b.dia && cand.hora===b.franja;
-    });
-  }
+        // Función para mostrar la planificación docente en la tabla
+        function mostrarPlanificacionDocente() {
+            const tableBody = document.querySelector('#docente-table tbody');
+            tableBody.innerHTML = '';
+            
+            const carreraFilter = document.getElementById('filter-carrera-doc').value;
+            const docenteFilter = document.getElementById('filter-docente').value;
+            const modalidadFilter = document.getElementById('filter-modalidad').value;
+            
+            const filteredData = planificacionDocente.filter(item => {
+                return (!carreraFilter || item.carrerasComparten.includes(carreraFilter)) &&
+                       (!docenteFilter || item.docente === docenteFilter) &&
+                       (!modalidadFilter || item.modalidad === modalidadFilter);
+            });
+            
+            filteredData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.docente}</td>
+                    <td>${item.titulo}</td>
+                    <td>${item.dedicacion}</td>
+                    <td>${item.materia}</td>
+                    <td>${item.codigoAnthology}</td>
+                    <td>${item.carrerasComparten}</td>
+                    <td>${item.prerequisito}</td>
+                    <td>${item.codigo}</td>
+                    <td>${item.horasTeoricas}</td>
+                    <td>${item.horasPracticas}</td>
+                    <td>${item.horasAutonomas}</td>
+                    <td>${item.creditos.toFixed(2)}</td>
+                    <td>${item.campoFormacion}</td>
+                    <td>${item.cicloMalla}</td>
+                    <td>${item.ordenMalla}</td>
+                    <td>${item.paralelo}</td>
+                    <td>${item.dia}</td>
+                    <td>${item.hora}</td>
+                    <td>${item.modalidad}</td>
+                    <td>${item.numHoras}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
 
-  planEst = [];
-  const loadEst = {}; // {estudiante:{dia:count}}
-  function estLoadOk(name, day){ loadEst[name] ||= {}; return ((loadEst[name][day]||0) < 2); }
-  function incEstLoad(name, day){ loadEst[name] ||= {}; loadEst[name][day]=(loadEst[name][day]||0)+1; }
+        // Función para mostrar la planificación estudiante en la tabla
+        function mostrarPlanificacionEstudiante() {
+            const tableBody = document.querySelector('#estudiante-table tbody');
+            tableBody.innerHTML = '';
+            
+            const carreraFilter = document.getElementById('filter-carrera-est').value;
+            const cicloFilter = document.getElementById('filter-ciclo-est').value;
+            const mallaFilter = document.getElementById('filter-malla-est').value;
+            
+            const filteredData = planificacionEstudiante.filter(item => {
+                return (!carreraFilter || item.carrera === carreraFilter) &&
+                       (!cicloFilter || item.cicloEstudiante == cicloFilter) &&
+                       (!mallaFilter || item.malla == mallaFilter);
+            });
+            
+            filteredData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.carrera}</td>
+                    <td>${item.estudiante}</td>
+                    <td>${item.cicloEstudiante}</td>
+                    <td>${item.malla}</td>
+                    <td>${item.cicloMateria}</td>
+                    <td>${item.carrerasComparten}</td>
+                    <td>${item.materia}</td>
+                    <td>${item.paralelo}</td>
+                    <td>${item.dia}</td>
+                    <td>${item.hora}</td>
+                    <td>${item.modalidad}</td>
+                    <td>${item.nivelIngles}</td>
+                    <td>${item.observaciones}</td>
+                    <td>${item.docente}</td>
+                    <td>
+                        <button class="btn-cambiar" data-estudiante="${item.estudiante}" data-materia="${item.materia}">Cambiar</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Agregar event listeners a los botones de cambiar
+            document.querySelectorAll('.btn-cambiar').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const estudiante = this.getAttribute('data-estudiante');
+                    const materia = this.getAttribute('data-materia');
+                    cambiarMateriaEstudiante(estudiante, materia);
+                });
+            });
+        }
 
-  for (const est of ESTUDIANTES){
-    const key0 = `${est.carrera}|${est.ciclo_estudiante}`;
-    let cand = idxSch.get(key0)||[];
-    // si vacío, probar ciclos cercanos (mantiene regla de adyacencia en la construcción base)
-    if (!cand.length && est.ciclo_estudiante!=null){
-      for (const delta of [0,-1,1,-2,2]) {
-        cand = idxSch.get(`${est.carrera}|${est.ciclo_estudiante+delta}`)||[];
-        if (cand.length) break;
-      }
-    }
-    // máximo 6 materias
-    cand = cand.slice(0,6);
-    const dayCount = {};
-    for (const a of cand){
-      const can2PerDay = (dayCount[a.dia]||0) < 2;
-      const respectsEng = !blocksEnglish(est, a);
-      if (can2PerDay && respectsEng && estLoadOk(est.estudiante, a.dia)){
-        dayCount[a.dia]=(dayCount[a.dia]||0)+1;
-        incEstLoad(est.estudiante, a.dia);
-        planEst.push({
-          "CARRERA":est.carrera,
-          "ESTUDIANTE":est.estudiante,
-          "CICLO DEL ESTUDIANTE":est.ciclo_estudiante,
-          "MALLA":est.malla,
-          "CICLO DE LA MATERIA EN LA MALLA":a.ciclo_malla,
-          "COMPARTIDA CON CARRERA":a.compartida_con,
-          "MATERIA":a.materia,
-          "PARALELO":a.paralelo,
-          "DIA":a.dia,
-          "HORA":a.hora,
-          "MODALIDAD":"Presencial",
-          "NIVEL INGLES":est.nivel_ingles,
-          "OBSERVACIONES":est.observaciones,
-          "DOCENTE":a.docente
+        // Función para mostrar las materias en la tabla
+        function mostrarMaterias() {
+            const tableBody = document.querySelector('#materias-table tbody');
+            tableBody.innerHTML = '';
+            
+            const carreraFilter = document.getElementById('filter-carrera-mat').value;
+            const cicloFilter = document.getElementById('filter-ciclo-mat').value;
+            const mallaFilter = document.getElementById('filter-malla-mat').value;
+            
+            const filteredData = materiasData.filter(item => {
+                return (!carreraFilter || item.carrerasComparten.includes(carreraFilter)) &&
+                       (!cicloFilter || item.cicloMateria == cicloFilter) &&
+                       (!mallaFilter || item.malla == mallaFilter);
+            });
+            
+            filteredData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.malla}</td>
+                    <td>${item.cicloMateria}</td>
+                    <td>${item.carrerasComparten}</td>
+                    <td>${item.materia}</td>
+                    <td>${item.paralelo}</td>
+                    <td>${item.dia}</td>
+                    <td>${item.hora}</td>
+                    <td>${item.numEstudiantes}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Función para cambiar la materia de un estudiante
+        function cambiarMateriaEstudiante(estudiante, materiaActual) {
+            // Encontrar al estudiante en los datos
+            const estudianteData = estudiantesData.find(e => e.ESTUDIANTE === estudiante);
+            if (!estudianteData) return;
+            
+            // Encontrar la materia actual en la planificación
+            const planIndex = planificacionEstudiante.findIndex(p => 
+                p.estudiante === estudiante && p.materia === materiaActual
+            );
+            
+            if (planIndex === -1) return;
+            
+            // Obtener ciclo del estudiante
+            const cicloEstudiante = estudianteData['CICLO AL QUE VA'] || estudianteData.CICLO;
+            
+            // Normalizar el nombre de la carrera
+            const carreraNormalizada = carrerasMap[estudianteData.CARRERA] || estudianteData.CARRERA;
+            
+            // Obtener materias disponibles para este estudiante (que no estén ya asignadas)
+            const materiasDisponibles = mallaData.filter(materia => 
+                materia.CARRERA === carreraNormalizada && 
+                materia.MALLA == estudianteData.MALLA && 
+                materia.CICLO == cicloEstudiante &&
+                !planificacionEstudiante.some(p => 
+                    p.estudiante === estudiante && p.materia === materia.MATERIA
+                )
+            );
+            
+            if (materiasDisponibles.length === 0) {
+                alert('No hay materias disponibles para cambiar');
+                return;
+            }
+            
+            // Mostrar diálogo para seleccionar nueva materia
+            const nuevaMateria = prompt(
+                `Seleccione una nueva materia para ${estudiante}:\n` +
+                materiasDisponibles.map((m, i) => `${i+1}. ${m.MATERIA}`).join('\n')
+            );
+            
+            if (!nuevaMateria) return;
+            
+            const index = parseInt(nuevaMateria) - 1;
+            if (isNaN(index) || index < 0 || index >= materiasDisponibles.length) {
+                alert('Selección inválida');
+                return;
+            }
+            
+            const materiaSeleccionada = materiasDisponibles[index];
+            
+            // Buscar la planificación docente para la nueva materia
+            const planDocente = planificacionDocente.find(p => 
+                p.materia === materiaSeleccionada.MATERIA && 
+                p.malla == materiaSeleccionada.MALLA &&
+                p.carrerasComparten.includes(carreraNormalizada)
+            );
+            
+            if (!planDocente) {
+                alert('No hay horario disponible para esta materia');
+                return;
+            }
+            
+            // Verificar si hay conflicto de horario con otras materias del estudiante
+            const tieneConflicto = planificacionEstudiante.some(p => 
+                p.estudiante === estudiante && 
+                p.materia !== materiaActual &&
+                p.dia === planDocente.dia && 
+                p.hora === planDocente.hora
+            );
+            
+            if (tieneConflicto) {
+                if (!confirm('¡CONFLICTO DE HORARIO! ¿Desea asignar de todas formas?')) {
+                    return;
+                }
+            }
+            
+            // Actualizar la planificación del estudiante
+            planificacionEstudiante[planIndex] = {
+                ...planificacionEstudiante[planIndex],
+                materia: materiaSeleccionada.MATERIA,
+                cicloMateria: materiaSeleccionada.CICLO,
+                carrerasComparten: planDocente.carrerasComparten,
+                paralelo: planDocente.paralelo,
+                dia: planDocente.dia,
+                hora: planDocente.hora,
+                modalidad: planDocente.modalidad,
+                docente: planDocente.docente
+            };
+            
+            // Actualizar la tabla
+            mostrarPlanificacionEstudiante();
+            
+            alert('Materia cambiada exitosamente');
+        }
+
+        // Función para agregar una restricción
+        document.getElementById('add-restriction').addEventListener('click', function() {
+            const carrera = document.getElementById('restriction-carrera').value;
+            const ciclo = document.getElementById('restriction-ciclo').value;
+            const dia = document.getElementById('restriction-dia').value;
+            const hora = document.getElementById('restriction-hora').value;
+            
+            if (!carrera || !ciclo || !dia || !hora) {
+                showNotification('Por favor, complete todos los campos.', 'error', 'restriction');
+                return;
+            }
+            
+            // Verificar si ya existe esta restricción
+            const existe = restricciones.some(r => 
+                r.carrera === carrera && r.ciclo == ciclo && r.dia === dia && r.hora === hora
+            );
+            
+            if (existe) {
+                showNotification('Esta restricción ya existe.', 'error', 'restriction');
+                return;
+            }
+            
+            // Agregar la restricción
+            restricciones.push({ carrera, ciclo, dia, hora });
+            
+            // Actualizar la tabla de restricciones
+            mostrarRestricciones();
+            
+            // Limpiar el formulario
+            document.getElementById('restriction-carrera').value = '';
+            document.getElementById('restriction-ciclo').value = '';
+            document.getElementById('restriction-dia').value = '';
+            document.getElementById('restriction-hora').value = '';
+            
+            showNotification('Restricción agregada correctamente.', 'success', 'restriction');
         });
-      }
-    }
-  }
 
-  // Población de selector para modificación
-  const selEst = document.getElementById('selEst');
-  selEst.innerHTML = ['<option value="">—</option>'].concat([...new Set(planEst.map(x=>x["ESTUDIANTE"]))].map(n=>`<option>${n}</option>`)).join('');
+        // Función para mostrar las restricciones
+        function mostrarRestricciones() {
+            const tableBody = document.querySelector('#restricciones-table tbody');
+            tableBody.innerHTML = '';
+            
+            restricciones.forEach((restriccion, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${restriccion.carrera}</td>
+                    <td>${restriccion.ciclo}</td>
+                    <td>${restriccion.dia}</td>
+                    <td>${restriccion.hora}</td>
+                    <td>
+                        <button class="btn-eliminar" data-index="${index}">Eliminar</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Agregar event listeners a los botones de eliminar
+            document.querySelectorAll('.btn-eliminar').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    restricciones.splice(index, 1);
+                    mostrarRestricciones();
+                    showNotification('Restricción eliminada correctamente.', 'success', 'restriction');
+                });
+            });
+        }
 
-  renderTable('tblEst', planEst, [
-    "CARRERA","ESTUDIANTE","CICLO DEL ESTUDIANTE","MALLA","CICLO DE LA MATERIA EN LA MALLA",
-    "COMPARTIDA CON CARRERA","MATERIA","PARALELO","DIA","HORA","MODALIDAD","NIVEL INGLES","OBSERVACIONES","DOCENTE"
-  ]);
+        // Funciones auxiliares
+        function populateSelect(selectId, options) {
+            const select = document.getElementById(selectId);
+            // Guardar la opción seleccionada actualmente
+            const selectedValue = select.value;
+            
+            // Limpiar el select (manteniendo la primera opción)
+            const firstOption = select.options[0];
+            select.innerHTML = '';
+            select.appendChild(firstOption);
+            
+            // Agregar las nuevas opciones
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                select.appendChild(opt);
+            });
+            
+            // Restaurar la selección anterior si todavía existe
+            if (selectedValue && Array.from(select.options).some(opt => opt.value === selectedValue)) {
+                select.value = selectedValue;
+            }
+        }
 
-  /* ===== Materias resumen ===== */
-  const count = {};
-  for (const r of planEst){
-    const k = `${r["MATERIA"]}|${r["PARALELO"]}|${r["DIA"]}|${r["HORA"]}`; count[k] = (count[k]||0)+1;
-  }
-  materiasResumen = asignaciones.map(a=>({
-    "MALLA":a.malla,
-    "CICLO DE LA MATERIA EN LA MALLA":a.ciclo_malla,
-    "COMPARTIDA CON CARRERA":a.compartida_con,
-    "MATERIA":a.materia,
-    "PARALELO":a.paralelo,
-    "DIA":a.dia,
-    "HORA":a.hora,
-    "Número de estudiantes": count[`${a.materia}|${a.paralelo}|${a.dia}|${a.hora}`]||0
-  }));
-  renderTable('tblMat', materiasResumen, [
-    "MALLA","CICLO DE LA MATERIA EN LA MALLA","COMPARTIDA CON CARRERA","MATERIA","PARALELO","DIA","HORA","Número de estudiantes"
-  ]);
+        function showNotification(message, type, context = 'upload') {
+            const notification = document.getElementById(`${context}-notification`);
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
 
-  alert('Planificación generada.');
-};
+        // Funciones para cambiar entre pestañas
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remover la clase active de todas las pestañas y contenidos
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Agregar la clase active a la pestaña clickeada
+                this.classList.add('active');
+                
+                // Mostrar el contenido correspondiente
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(`${tabId}-content`).classList.add('active');
+            });
+        });
 
-/* ======= Ver/Modificar asignaciones (estudiantes) ======= */
-document.getElementById('btnVerAsign').onclick = ()=>{
-  const est = document.getElementById('selEst').value;
-  if (!est){ alert('Seleccione un estudiante.'); return; }
-  const cont = document.getElementById('estAsign');
-  const rows = planEst.filter(x=>x["ESTUDIANTE"]===est);
-  const materiasPosibles = asignaciones.map(a=>a.materia);
-  let html = `
-    <div class="divider"></div>
-    <div class="note">Cambie materia (solo estudiantes). Si hay cruce de horario, se advertirá.</div>
-    <table><thead><tr>
-      <th>Materia asignada</th><th>Día</th><th>Hora</th><th>Cambiar por</th><th></th>
-    </tr></thead><tbody>
-  `;
-  rows.forEach((r,idx)=>{
-    html += `
-      <tr>
-        <td>${r["MATERIA"]}</td><td>${r["DIA"]}</td><td>${r["HORA"]}</td>
-        <td>
-          <select data-row="${idx}" class="selNew">
-            <option value="">—</option>
-            ${[...new Set(materiasPosibles)].sort().map(m=>`<option>${m}</option>`).join('')}
-          </select>
-        </td>
-        <td><button class="ghost btnApply" data-row="${idx}">Aplicar</button></td>
-      </tr>
-    `;
-  });
-  html += `</tbody></table>`;
-  cont.innerHTML = html;
+        // Aplicar filtros
+        document.getElementById('apply-filters-doc').addEventListener('click', mostrarPlanificacionDocente);
+        document.getElementById('apply-filters-est').addEventListener('click', mostrarPlanificacionEstudiante);
+        document.getElementById('apply-filters-mat').addEventListener('click', mostrarMaterias);
 
-  // Eventos
-  cont.querySelectorAll('.btnApply').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const idx = +btn.dataset.row;
-      const sel = cont.querySelector(`.selNew[data-row="${idx}"]`);
-      const newMat = sel.value;
-      if (!newMat) return;
+        // Exportar a Excel
+        document.getElementById('export-docente').addEventListener('click', function() {
+            exportToExcel(planificacionDocente, 'planificacion_docente');
+        });
+        
+        document.getElementById('export-estudiante').addEventListener('click', function() {
+            exportToExcel(planificacionEstudiante, 'planificacion_estudiante');
+        });
+        
+        document.getElementById('export-materias').addEventListener('click', function() {
+            exportToExcel(materiasData, 'materias');
+        });
 
-      const r = rows[idx];
-      // Buscar oferta de esa materia (cualquier carrera/paro) para recuperar día/hora
-      const cand = asignaciones.find(a=>a.materia===newMat);
-      if (!cand){ alert('No hay horario para esa materia.'); return; }
+        function exportToExcel(data, fileName) {
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, fileName);
+            XLSX.writeFile(workbook, `${fileName}.xlsx`);
+        }
 
-      // Verificar choques para el estudiante
-      const sameDay = rows.filter(x=>x["DIA"]===cand.dia && x["HORA"]===cand.hora);
-      if (sameDay.length){ alert('Cruce detectado: el estudiante ya tiene una materia en ese horario.'); return; }
-
-      // Aplicar cambio
-      const globalIdx = planEst.findIndex(x=>x["ESTUDIANTE"]===r["ESTUDIANTE"] && x["MATERIA"]===r["MATERIA"] && x["DIA"]===r["DIA"] && x["HORA"]===r["HORA"]);
-      if (globalIdx>=0){
-        planEst[globalIdx]["MATERIA"]=cand.materia;
-        planEst[globalIdx]["PARALELO"]=cand.paralelo;
-        planEst[globalIdx]["DIA"]=cand.dia;
-        planEst[globalIdx]["HORA"]=cand.hora;
-        planEst[globalIdx]["DOCENTE"]=cand.docente;
-        renderTable('tblEst', planEst, [
-          "CARRERA","ESTUDIANTE","CICLO DEL ESTUDIANTE","MALLA","CICLO DE LA MATERIA EN LA MALLA",
-          "COMPARTIDA CON CARRERA","MATERIA","PARALELO","DIA","HORA","MODALIDAD","NIVEL INGLES","OBSERVACIONES","DOCENTE"
-        ]);
-        alert('Cambio aplicado.');
-      }
-    });
-  });
-};
-
-/* ======= Render de tablas ======= */
-function renderTable(id, rows, cols){
-  const tbl = document.getElementById(id);
-  if (!tbl) return;
-  const thead = tbl.querySelector('thead'), tbody = tbl.querySelector('tbody');
-  thead.innerHTML = `<tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
-  tbody.innerHTML = rows.map(r=>`<tr>${cols.map(c=>`<td>${(r[c]??"")}</td>`).join('')}</tr>`).join('');
-}
-
-/* ======= Exportadores ======= */
-function exportCSV(rows, name){
-  if (!rows.length) return alert('No hay datos.');
-  const cols = Object.keys(rows[0]);
-  const csv = [cols.join(';')].concat(rows.map(r=>cols.map(c=>{
-    const v = (r[c]??"").toString().replaceAll('"','""');
-    return `"${v}"`;
-  }).join(';'))).join('\n');
-  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name; a.click(); URL.revokeObjectURL(a.href);
-}
-document.getElementById('exportDoc').onclick = ()=> exportCSV(planDoc, 'Planificacion_Docente.csv');
-document.getElementById('exportEst').onclick = ()=> exportCSV(planEst, 'Planificacion_Estudiante.csv');
-document.getElementById('exportMat').onclick = ()=> exportCSV(materiasResumen, 'Materias.csv');
-
-</script>
+        // Guardar cambios
+        document.getElementById('save-docente').addEventListener('click', function() {
+            // En una implementación real, aquí se guardarían los cambios en una base de datos
+            alert('Cambios en la planificación docente guardados correctamente.');
+        });
+        
+        document.getElementById('save-estudiante').addEventListener('click', function() {
+            // En una implementación real, aquí se guardarían los cambios en una base de datos
+            alert('Cambios en la planificación estudiantil guardados correctamente.');
+        });
+    </script>
 </body>
 </html>
