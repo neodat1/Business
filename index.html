@@ -1,1071 +1,1002 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Planificación Académica</title>
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --accent: #e74c3c;
-            --light: #ecf0f1;
-            --dark: #34495e;
-            --success: #2ecc71;
-            --warning: #f39c12;
-        }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-        }
-        
-        .container {
-            width: 95%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            background-color: var(--primary);
-            color: white;
-            padding: 1rem;
-            text-align: center;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        h1, h2, h3 {
-            margin-bottom: 0.5rem;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--secondary);
-        }
-        
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            background: #e0e0e0;
-            border-radius: 5px 5px 0 0;
-            margin-right: 5px;
-        }
-        
-        .tab.active {
-            background: var(--secondary);
-            color: white;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        
-        input, select, button {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        
-        button {
-            background-color: var(--secondary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        button:hover {
-            background-color: var(--primary);
-        }
-        
-        .file-upload {
-            border: 2px dashed #ccc;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        th {
-            background-color: var(--primary);
-            color: white;
-        }
-        
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-        
-        .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            color: white;
-        }
-        
-        .alert-success {
-            background-color: var(--success);
-        }
-        
-        .alert-warning {
-            background-color: var(--warning);
-        }
-        
-        .alert-error {
-            background-color: var(--accent);
-        }
-        
-        .schedule-grid {
-            display: grid;
-            grid-template-columns: 100px repeat(5, 1fr);
-            gap: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .schedule-header {
-            background-color: var(--primary);
-            color: white;
-            padding: 10px;
-            text-align: center;
-            font-weight: bold;
-        }
-        
-        .schedule-cell {
-            background-color: #f0f0f0;
-            padding: 10px;
-            min-height: 80px;
-            border-radius: 4px;
-        }
-        
-        .time-slot {
-            background-color: var(--secondary);
-            color: white;
-            padding: 5px;
-            margin-bottom: 5px;
-            border-radius: 3px;
-            font-size: 14px;
-        }
-        
-        .filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .filter-item {
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        .student-card {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background-color: white;
-        }
-        
-        .student-name {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: var(--primary);
-        }
-        
-        .student-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .student-detail {
-            flex: 1;
-            min-width: 150px;
-        }
-        
-        .subject-list {
-            margin-top: 10px;
-        }
-        
-        .subject-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px;
-            background-color: #f9f9f9;
-            border-radius: 4px;
-            margin-bottom: 5px;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .modal-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .close {
-            float: right;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        @media (max-width: 768px) {
-            .filters {
-                flex-direction: column;
-            }
-            
-            .schedule-grid {
-                grid-template-columns: 60px repeat(5, 1fr);
-                font-size: 12px;
-            }
-            
-            .time-slot {
-                font-size: 10px;
-                padding: 3px;
-            }
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Planificador Académico (HTML único)</title>
+
+<!-- Librería para leer Excel en el navegador (sin servidor) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#0f172a;          /* slate-900 */
+  --panel:#111827;       /* gray-900 */
+  --muted:#334155;       /* slate-600 */
+  --card:#111827;
+  --accent:#f59e0b;      /* amber-500 */
+  --accent-2:#2563eb;    /* blue-600 */
+  --ok:#16a34a;          /* green-600 */
+  --danger:#dc2626;      /* red-600 */
+  --text:#e5e7eb;        /* gray-200 */
+  --text-dim:#cbd5e1;    /* slate-300 */
+  --chip:#1f2937;        /* gray-800 */
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Ubuntu", "Cantarell", "Helvetica Neue", sans-serif;
+  background:linear-gradient(180deg, #0b1023 0%, #0f172a 60%, #0b1023 100%);
+  color:var(--text);
+}
+header{
+  padding:26px 20px 10px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:14px; justify-content:space-between;
+}
+h1{margin:0; font-size:20px; letter-spacing:.5px; font-weight:700}
+.badge{padding:4px 10px; border-radius:999px; background:var(--chip); color:var(--text-dim); font-size:12px}
+.container{padding:16px; max-width:1300px; margin:0 auto}
+.card{
+  background:rgba(17,24,39,.75);
+  border:1px solid rgba(148,163,184,.15);
+  backdrop-filter: blur(6px);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+.row{display:grid; grid-template-columns:1.2fr .8fr; gap:16px}
+.section{padding:16px}
+.section h2{margin:0 0 12px 0; font-size:16px}
+hr.sep{border:none; border-top:1px dashed rgba(148,163,184,.18); margin:12px 0}
+
+.uploads{display:grid; grid-template-columns:repeat(3, 1fr); gap:10px}
+.upl{padding:12px; background:#0b1224; border:1px dashed rgba(148,163,184,.3); border-radius:12px}
+.upl label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px}
+.upl input[type=file]{width:100%; color:var(--text-dim)}
+
+.controls{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px}
+button{
+  background:var(--accent-2); border:none; color:white; padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
+}
+button.secondary{ background:transparent; border:1px solid rgba(148,163,184,.25); color:var(--text) }
+button.warn{ background:var(--danger) }
+button.ok{ background:var(--ok) }
+button:disabled{opacity:.55; cursor:not-allowed}
+.small{font-size:12px; color:var(--text-dim)}
+
+.tabs{display:flex; gap:8px; margin:10px 0}
+.tab{padding:8px 12px; border-radius:999px; background:var(--chip); color:var(--text-dim); cursor:pointer; border:1px solid transparent}
+.tab.active{background:#0b1224; color:var(--text); border-color:rgba(148,163,184,.25)}
+
+.grid{
+  display:grid; grid-template-columns: 130px repeat(5, 1fr);
+  border:1px solid rgba(148,163,184,.2); border-radius:12px; overflow:hidden;
+}
+.grid .cell{
+  border-bottom:1px solid rgba(148,163,184,.12);
+  border-right:1px dashed rgba(148,163,184,.12);
+  padding:8px; min-height:64px; font-size:12px;
+}
+.grid .header{background:#0b1224; font-weight:700}
+.grid .slot{background:rgba(2,6,23,.35)}
+.tag{
+  display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:rgba(37,99,235,.12); color:#93c5fd; margin:2px 2px 0 0; border:1px solid rgba(37,99,235,.25)
+}
+.tag small{opacity:.8}
+.legend{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px}
+.legend .chip{background:var(--chip); padding:6px 10px; border-radius:999px; border:1px solid rgba(148,163,184,.25); font-size:12px}
+.kpi{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+.kpi .box{background:#0b1224; border:1px solid rgba(148,163,184,.2); border-radius:10px; padding:10px 12px; font-size:12px}
+
+.table{width:100%; border-collapse: collapse; margin-top:6px}
+.table th,.table td{border-bottom:1px solid rgba(148,163,184,.18); padding:8px; text-align:left; font-size:13px}
+.table tr:hover{background:rgba(148,163,184,.08)}
+
+aside .pills{display:flex; flex-wrap:wrap; gap:6px}
+.pill{background:var(--chip); padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid rgba(148,163,184,.25)}
+fieldset{border:1px solid rgba(148,163,184,.25); padding:10px; border-radius:10px}
+legend{font-size:12px; color:var(--text-dim); padding:0 6px}
+
+.bad{color:#fecaca}
+.good{color:#bbf7d0}
+.warnText{color:#fde68a}
+
+footer{padding:16px; text-align:center; color:var(--text-dim); font-size:12px}
+
+.modal{
+  position:fixed; inset:0; background:rgba(2,6,23,.6); display:none; align-items:center; justify-content:center; z-index:40;
+}
+.modal .dialog{
+  width:min(680px, 92vw); background:#0b1224; border:1px solid rgba(148,163,184,.35); border-radius:16px; padding:16px; box-shadow:var(--shadow)
+}
+.modal .dialog h3{margin:0 0 8px 0; font-size:16px}
+.modal .dialog .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.checkbox { display:flex; align-items:center; gap:8px; margin:6px 0; }
+.select{width:100%; background:#0f172a; color:var(--text); border:1px solid rgba(148,163,184,.3); padding:8px; border-radius:8px}
+.input{width:100%; background:#0f172a; color:var(--text); border:1px solid rgba(148,163,184,.3); padding:8px; border-radius:8px}
+.hr{height:1px; background:rgba(148,163,184,.2); margin:10px 0}
+.note{font-size:12px; color:var(--text-dim)}
+.mini{font-size:11px; opacity:.85}
+</style>
 </head>
 <body>
-    <header>
-        <h1>Sistema de Planificación Académica</h1>
-        <p>Asignación inteligente de horarios para estudiantes y docentes</p>
-    </header>
+<header class="container">
+  <div style="display:flex; align-items:center; gap:10px">
+    <h1>Planificador Académico</h1>
+    <span class="badge">HTML único • Sin servidor</span>
+  </div>
+  <div class="legend">
+    <span class="chip">Días: L–V</span>
+    <span class="chip">Franjas: 7–10 · 10–13 · 13–16 · 16–19 · 19–22</span>
+    <span class="chip">Máx. 2 materias/día (docente y estudiante)</span>
+    <span class="chip">Máx. 6 materias/estudiante</span>
+    <span class="chip">Ciclos adyacentes sin choque</span>
+  </div>
+</header>
 
-    <div class="container">
-        <div class="tabs">
-            <div class="tab active" data-tab="upload">Cargar Datos</div>
-            <div class="tab" data-tab="students">Estudiantes</div>
-            <div class="tab" data-tab="teachers">Docentes</div>
-            <div class="tab" data-tab="schedule">Horarios</div>
-            <div class="tab" data-tab="restrictions">Restricciones</div>
-        </div>
-
-        <div id="upload" class="tab-content active">
-            <div class="card">
-                <h2>Cargar Archivos Excel</h2>
-                <p>Suba los archivos Excel necesarios para la planificación:</p>
-                
-                <div class="file-upload">
-                    <h3>Mallas Curriculares</h3>
-                    <input type="file" id="mallas-file" accept=".xlsx">
-                    <div id="mallas-status"></div>
-                </div>
-                
-                <div class="file-upload">
-                    <h3>Docentes</h3>
-                    <input type="file" id="docentes-file" accept=".xlsx">
-                    <div id="docentes-status"></div>
-                </div>
-                
-                <div class="file-upload">
-                    <h3>Estudiantes</h3>
-                    <input type="file" id="estudiantes-file" accept=".xlsx">
-                    <div id="estudiantes-status"></div>
-                </div>
-                
-                <button id="process-data">Procesar Datos</button>
-            </div>
-            
-            <div class="card">
-                <h2>Resumen de Datos Cargados</h2>
-                <div id="data-summary">
-                    <p>Esperando carga de datos...</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="students" class="tab-content">
-            <div class="card">
-                <h2>Gestión de Estudiantes</h2>
-                
-                <div class="filters">
-                    <div class="filter-item">
-                        <label for="filter-carrera">Carrera:</label>
-                        <select id="filter-carrera">
-                            <option value="all">Todas las carreras</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="filter-ciclo">Ciclo:</label>
-                        <select id="filter-ciclo">
-                            <option value="all">Todos los ciclos</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="filter-malla">Malla:</label>
-                        <select id="filter-malla">
-                            <option value="all">Todas las mallas</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="search-student">Buscar estudiante:</label>
-                        <input type="text" id="search-student" placeholder="Nombre del estudiante">
-                    </div>
-                </div>
-                
-                <div id="students-list">
-                    <!-- Los estudiantes se cargarán aquí dinámicamente -->
-                </div>
-            </div>
-        </div>
-
-        <div id="teachers" class="tab-content">
-            <div class="card">
-                <h2>Gestión de Docentes</h2>
-                
-                <div class="filters">
-                    <div class="filter-item">
-                        <label for="filter-teacher">Buscar docente:</label>
-                        <input type="text" id="filter-teacher" placeholder="Nombre del docente">
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="filter-dedicacion">Dedicación:</label>
-                        <select id="filter-dedicacion">
-                            <option value="all">Todas</option>
-                            <option value="TIEMPO COMPLETO">Tiempo Completo</option>
-                            <option value="TIEMPO PARCIAL">Tiempo Parcial</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <table id="teachers-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Dedicación</th>
-                            <th>Materias</th>
-                            <th>Disponibilidad</th>
-                            <th>Modalidad</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Los docentes se cargarán aquí dinámicamente -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="schedule" class="tab-content">
-            <div class="card">
-                <h2>Horarios y Asignaciones</h2>
-                
-                <div class="filters">
-                    <div class="filter-item">
-                        <label for="schedule-carrera">Carrera:</label>
-                        <select id="schedule-carrera">
-                            <option value="all">Todas las carreras</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="schedule-ciclo">Ciclo:</label>
-                        <select id="schedule-ciclo">
-                            <option value="all">Todos los ciclos</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="schedule-malla">Malla:</label>
-                        <select id="schedule-malla">
-                            <option value="all">Todas las mallas</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <button id="generate-schedule">Generar Horarios</button>
-                
-                <div id="schedule-result">
-                    <!-- Los horarios generados se mostrarán aquí -->
-                </div>
-            </div>
-        </div>
-
-        <div id="restrictions" class="tab-content">
-            <div class="card">
-                <h2>Gestión de Restricciones</h2>
-                
-                <div class="form-group">
-                    <label for="restriction-type">Tipo de restricción:</label>
-                    <select id="restriction-type">
-                        <option value="practicas">Prácticas Comunitarias</option>
-                        <option value="ingles">Inglés</option>
-                        <option value="estudiante">Restricción de Estudiante</option>
-                    </select>
-                </div>
-                
-                <div id="practicas-restriction" class="restriction-form">
-                    <h3>Horario de Prácticas Comunitarias</h3>
-                    
-                    <div class="form-group">
-                        <label for="practicas-day">Día:</label>
-                        <select id="practicas-day">
-                            <option value="LUNES">Lunes</option>
-                            <option value="MARTES">Martes</option>
-                            <option value="MIERCOLES">Miércoles</option>
-                            <option value="JUEVES">Jueves</option>
-                            <option value="VIERNES">Viernes</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="practicas-time">Horario:</label>
-                        <select id="practicas-time">
-                            <option value="7-10">7:00 - 10:00</option>
-                            <option value="10-13">10:00 - 13:00</option>
-                            <option value="13-16">13:00 - 16:00</option>
-                            <option value="16-19">16:00 - 19:00</option>
-                            <option value="19-22">19:00 - 22:00</option>
-                        </select>
-                    </div>
-                    
-                    <button id="add-practicas-restriction">Añadir Restricción</button>
-                </div>
-                
-                <div id="ingles-restriction" class="restriction-form" style="display: none;">
-                    <h3>Nivel de Inglés</h3>
-                    
-                    <div class="form-group">
-                        <label for="ingles-student">Estudiante:</label>
-                        <select id="ingles-student">
-                            <!-- Se llenará dinámicamente -->
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="ingles-level">Nivel de inglés:</label>
-                        <select id="ingles-level">
-                            <option value="A1">A1 - Principiante</option>
-                            <option value="A2">A2 - Básico</option>
-                            <option value="B1">B1 - Intermedio</option>
-                            <option value="B2">B2 - Intermedio Alto</option>
-                            <option value="C1">C1 - Avanzado</option>
-                            <option value="C2">C2 - Maestría</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="ingles-schedule">Horario de inglés:</label>
-                        <div class="form-group">
-                            <label>Días:</label>
-                            <div>
-                                <input type="checkbox" id="ingles-lunes" value="LUNES"> <label for="ingles-lunes">Lunes</label>
-                                <input type="checkbox" id="ingles-martes" value="MARTES"> <label for="ingles-martes">Martes</label>
-                                <input type="checkbox" id="ingles-miercoles" value="MIERCOLES"> <label for="ingles-miercoles">Miércoles</label>
-                                <input type="checkbox" id="ingles-jueves" value="JUEVES"> <label for="ingles-jueves">Jueves</label>
-                                <input type="checkbox" id="ingles-viernes" value="VIERNES"> <label for="ingles-viernes">Viernes</label>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="ingles-time">Horario:</label>
-                            <select id="ingles-time">
-                                <option value="7-10">7:00 - 10:00</option>
-                                <option value="10-13">10:00 - 13:00</option>
-                                <option value="13-16">13:00 - 16:00</option>
-                                <option value="16-19">16:00 - 19:00</option>
-                                <option value="19-22">19:00 - 22:00</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <button id="add-ingles-restriction">Añadir Restricción</button>
-                </div>
-                
-                <div id="estudiante-restriction" class="restriction-form" style="display: none;">
-                    <h3>Restricción Específica de Estudiante</h3>
-                    
-                    <div class="form-group">
-                        <label for="restriction-student">Estudiante:</label>
-                        <select id="restriction-student">
-                            <!-- Se llenará dinámicamente -->
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="restriction-day">Día no disponible:</label>
-                        <select id="restriction-day">
-                            <option value="LUNES">Lunes</option>
-                            <option value="MARTES">Martes</option>
-                            <option value="MIERCOLES">Miércoles</option>
-                            <option value="JUEVES">Jueves</option>
-                            <option value="VIERNES">Viernes</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="restriction-time">Horario no disponible:</label>
-                        <select id="restriction-time">
-                            <option value="7-10">7:00 - 10:00</option>
-                            <option value="10-13">10:00 - 13:00</option>
-                            <option value="13-16">13:00 - 16:00</option>
-                            <option value="16-19">16:00 - 19:00</option>
-                            <option value="19-22">19:00 - 22:00</option>
-                        </select>
-                    </div>
-                    
-                    <button id="add-student-restriction">Añadir Restricción</button>
-                </div>
-                
-                <div class="card">
-                    <h3>Restricciones Aplicadas</h3>
-                    <div id="applied-restrictions">
-                        <!-- Las restricciones aplicadas se mostrarán aquí -->
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="container row">
+  <!-- IZQUIERDA: CARGA + VISTAS -->
+  <section class="card section">
+    <h2>Entradas (Excel) y ejecución</h2>
+    <div class="uploads">
+      <div class="upl">
+        <label for="fileMalla">Malla (obligatorio)</label>
+        <input id="fileMalla" type="file" accept=".xlsx,.xls" />
+        <div class="small">Requiere columnas mínimas: <b>CARRERA</b>, <b>CICLO</b>, <b>MATERIA</b>. Opcionales: <i>PARALELOS</i>, <i>COMPARTIDA CON</i>.</div>
+      </div>
+      <div class="upl">
+        <label for="fileDocentes">Docentes (obligatorio)</label>
+        <input id="fileDocentes" type="file" accept=".xlsx,.xls" />
+        <div class="small">Mínimas: <b>DOCENTE</b>, <b>CARRERA</b>, <b>MATERIA</b>. Opcional: <i>PARALELO</i>.</div>
+      </div>
+      <div class="upl">
+        <label for="fileEstudiantes">Estudiantes (obligatorio)</label>
+        <input id="fileEstudiantes" type="file" accept=".xlsx,.xls" />
+        <div class="small">Mínimas: <b>ESTUDIANTE</b>, <b>CARRERA</b>, <b>CICLO</b>. Opcionales: <i>NIVEL INGLES</i>, <i>PRACTICAS</i>.</div>
+      </div>
     </div>
 
-    <div id="student-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Editar Asignaturas del Estudiante</h2>
-            <div id="modal-student-info"></div>
-            <div id="modal-subjects-list"></div>
-            <button id="save-student-changes">Guardar Cambios</button>
-        </div>
+    <div class="controls">
+      <button id="btnAnalizar">Validar & Leer 100 %</button>
+      <button id="btnConfig" class="secondary" disabled>Configurar bloqueos</button>
+      <button id="btnAsignar" class="ok" disabled>Generar planificación</button>
+      <button id="btnLimpiar" class="secondary">Reiniciar</button>
+      <span id="status" class="small"></span>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script>
-        // Variables globales para almacenar los datos
-        let mallasData = [];
-        let docentesData = [];
-        let estudiantesData = [];
-        let restrictions = {
-            practicas: [],
-            ingles: {},
-            estudiantes: {}
-        };
-        
-        // Referencias a elementos del DOM
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const mallasFileInput = document.getElementById('mallas-file');
-        const docentesFileInput = document.getElementById('docentes-file');
-        const estudiantesFileInput = document.getElementById('estudiantes-file');
-        const processDataButton = document.getElementById('process-data');
-        const dataSummary = document.getElementById('data-summary');
-        const restrictionType = document.getElementById('restriction-type');
-        const practicasRestriction = document.getElementById('practicas-restriction');
-        const inglesRestriction = document.getElementById('ingles-restriction');
-        const estudianteRestriction = document.getElementById('estudiante-restriction');
-        const modal = document.getElementById('student-modal');
-        const closeModal = document.querySelector('.close');
-        
-        // Cambiar pestañas
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabId = tab.getAttribute('data-tab');
-                
-                tabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(tc => tc.classList.remove('active'));
-                
-                tab.classList.add('active');
-                document.getElementById(tabId).classList.add('active');
-            });
+    <hr class="sep"/>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="estudiantes">Planificación de estudiantes</div>
+      <div class="tab" data-tab="docentes">Planificación docente</div>
+    </div>
+
+    <!-- VISTA ESTUDIANTES -->
+    <div id="view-estudiantes">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:6px 0 12px">
+        <select id="selEstudiante" class="select" disabled>
+          <option value="">— Seleccione estudiante —</option>
+        </select>
+        <button id="btnEditar" class="secondary" disabled>Editar asignación (estudiante)</button>
+        <span class="small">Edición válida únicamente a nivel de estudiante. Los choques o violaciones se bloquean con aviso.</span>
+      </div>
+
+      <div id="kpiEst" class="kpi" style="display:none">
+        <div class="box">Total materias: <b id="kTotal">0</b>/6</div>
+        <div class="box">Choques detectados: <b id="kChoques">0</b></div>
+        <div class="box">Bloqueos activos: <b id="kBlocks">0</b></div>
+      </div>
+
+      <div class="grid" id="gridEstudiante" style="margin-top:10px">
+        <!-- se completa por JS -->
+      </div>
+
+      <table class="table" id="tablaEst" style="display:none">
+        <thead>
+          <tr>
+            <th>Materia</th><th>Paralelo</th><th>Día</th><th>Franja</th><th>Docente</th><th>Carrera</th><th>Ciclo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- VISTA DOCENTES -->
+    <div id="view-docentes" style="display:none">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:6px 0 12px">
+        <select id="selDocente" class="select" disabled>
+          <option value="">— Seleccione docente —</option>
+        </select>
+      </div>
+      <div class="grid" id="gridDocente">
+        <!-- se completa por JS -->
+      </div>
+      <table class="table" id="tablaDoc" style="display:none">
+        <thead>
+          <tr>
+            <th>Día</th><th>Franja</th><th>Materia</th><th>Paralelo</th><th>Carrera</th><th>Ciclo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DERECHA: REGLAS y BLOQUEOS -->
+  <aside class="card section">
+    <h2>Reglas y estado</h2>
+
+    <fieldset>
+      <legend>Calendario</legend>
+      <div class="pills">
+        <span class="pill">Lunes–Viernes</span>
+        <span class="pill">7–10</span>
+        <span class="pill">10–13</span>
+        <span class="pill">13–16</span>
+        <span class="pill">16–19</span>
+        <span class="pill">19–22</span>
+      </div>
+      <div class="pills" style="margin-top:8px">
+        <span class="pill">Máx. 2 materias por día (docente y estudiante)</span>
+        <span class="pill">Máx. 6 materias por estudiante</span>
+        <span class="pill">Ciclos adyacentes sin choque en misma carrera</span>
+        <span class="pill">Asignación solo por carrera de estudiante</span>
+        <span class="pill">Coincidencias entre carreras permitidas</span>
+      </div>
+    </fieldset>
+
+    <div style="height:10px"></div>
+
+    <fieldset>
+      <legend>Restricciones</legend>
+      <div class="small">Prioridad de asignación: malla del estudiante → nivel de inglés → bloqueos de prácticas.</div>
+      <div class="hr"></div>
+      <div class="checkbox"><input type="checkbox" id="chkIngles" disabled/> <label for="chkIngles">Aplicar bloqueos de Inglés si no hay datos en Excel</label></div>
+      <div class="checkbox"><input type="checkbox" id="chkPracticas" disabled/> <label for="chkPracticas">Aplicar bloqueos de “Prácticas comunitarias” si no hay datos en Excel</label></div>
+      <div class="note mini">Use “Configurar bloqueos” para definir franjas por semestre.</div>
+    </fieldset>
+
+    <div style="height:10px"></div>
+
+    <fieldset>
+      <legend>Mensajes</legend>
+      <div id="log" class="small" style="max-height:230px; overflow:auto; white-space:pre-wrap"></div>
+    </fieldset>
+  </aside>
+</div>
+
+<footer>
+  Cumplimiento estricto de reglas; edición exclusivamente por estudiante con bloqueo de choques. ©
+</footer>
+
+<!-- MODAL: CONFIGURAR BLOQUEOS -->
+<div id="modalCfg" class="modal">
+  <div class="dialog">
+    <h3>Configuración de bloqueos</h3>
+    <div class="note">Defina bloqueos por semestre (ciclo del estudiante) para evitar choques con “Prácticas comunitarias” u otros compromisos. También puede definir un bloqueo general de Inglés.</div>
+    <div class="hr"></div>
+    <div class="row2">
+      <div>
+        <h4 style="margin:0 0 6px">Bloqueos por semestre</h4>
+        <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px">
+          <input id="inCicloBloq" class="input" type="number" min="1" placeholder="Ciclo (ej. 2)" />
+          <select id="inDiaBloq" class="select">
+            <option value="">Día</option>
+          </select>
+          <select id="inSlotBloq" class="select">
+            <option value="">Franja</option>
+          </select>
+          <button id="btnAddBloq" class="secondary">Agregar</button>
+        </div>
+        <div id="listBloq" class="small"></div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 6px">Bloqueo general de Inglés</h4>
+        <div class="checkbox"><input type="checkbox" id="inInglesAct" /> <label for="inInglesAct">Activar bloqueo general</label></div>
+        <div style="display:flex; gap:6px; align-items:center; margin:6px 0">
+          <select id="inDiaIng" class="select"><option value="">Día</option></select>
+          <select id="inSlotIng" class="select"><option value="">Franja</option></select>
+          <button id="btnAddIng" class="secondary">Agregar</button>
+        </div>
+        <div id="listIng" class="small"></div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div style="display:flex; gap:8px; justify-content:flex-end">
+      <button id="btnCloseCfg" class="secondary">Cerrar</button>
+      <button id="btnSaveCfg" class="ok">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDICIÓN ESTUDIANTE -->
+<div id="modalEdit" class="modal">
+  <div class="dialog">
+    <h3>Edición de asignación (por estudiante)</h3>
+    <div id="editInfo" class="note"></div>
+    <div class="hr"></div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+      <select id="editMateria" class="select"></select>
+      <select id="editDestino" class="select"></select>
+      <button id="btnAplicarEdicion" class="ok">Aplicar cambio</button>
+      <button id="btnCerrarEdicion" class="secondary">Cerrar</button>
+    </div>
+    <div class="hr"></div>
+    <div id="editMsg" class="small"></div>
+  </div>
+</div>
+
+<script>
+/* ==========================
+   Utilidades y constantes
+========================== */
+const DAYS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const SLOTS = ["7-10","10-13","13-16","16-19","19-22"];
+
+const state = {
+  raw:{ malla:null, docentes:null, estudiantes:null }, // lectura completa
+  data:{ malla:[], docentes:[], estudiantes:[] },      // normalizados mínimos
+  loaded:false,
+  config:{
+    bloqueosPorSemestre:[], // { ciclo: number, dia: string, slot: string }
+    ingles:{ activo:false, items:[] } // [{dia, slot}]
+  },
+  sections:[],   // secciones/Paralelos planificados por (carrera, ciclo, materia, paralelo, dia, slot, docente)
+  assign:{       // asignaciones por estudiante
+    byStudent: new Map() // key: estudianteId, value: array de { materia, paralelo, dia, slot, docente, carrera, ciclo }
+  },
+  index:{
+    docentes:[], estudiantes:[]
+  },
+  ui:{
+    currentStudent:null,
+    currentDocente:null
+  }
+};
+
+const $ = sel => document.querySelector(sel);
+const $c = (tag, cls) => { const el = document.createElement(tag); if(cls) el.className = cls; return el; };
+function log(msg, type="info"){
+  const el=$("#log"); if(!el) return;
+  const stamp = new Date().toLocaleTimeString();
+  const color = type==="error" ? "bad" : type==="warn" ? "warnText" : "good";
+  el.innerHTML = `[${stamp}] <span class="${color}">${msg}</span>\n` + el.innerHTML;
+}
+function toKey(s){ return String(s||"").trim(); }
+function upperKeys(row){
+  const o={}; Object.keys(row).forEach(k=> o[toKey(k).toUpperCase()] = row[k]); return o;
+}
+function ensureHeaders(rows, req){
+  if(!rows || !rows.length) return false;
+  const h = Object.keys(upperKeys(rows[0]));
+  return req.every(x => h.includes(x));
+}
+function readExcel(file){
+  return new Promise((resolve,reject)=>{
+    const fr=new FileReader();
+    fr.onload = e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result), {type:"array"});
+        const allSheets={};
+        wb.SheetNames.forEach(name=>{
+          const ws=wb.Sheets[name];
+          const arr = XLSX.utils.sheet_to_json(ws, {defval:""});
+          allSheets[name]=arr;
         });
-        
-        // Cambiar tipo de restricción
-        restrictionType.addEventListener('change', () => {
-            const type = restrictionType.value;
-            
-            practicasRestriction.style.display = type === 'practicas' ? 'block' : 'none';
-            inglesRestriction.style.display = type === 'ingles' ? 'block' : 'none';
-            estudianteRestriction.style.display = type === 'estudiante' ? 'block' : 'none';
-        });
-        
-        // Cerrar modal
-        closeModal.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-        
-        // Cargar archivos Excel
-        processDataButton.addEventListener('click', () => {
-            if (!mallasFileInput.files.length || !docentesFileInput.files.length || !estudiantesFileInput.files.length) {
-                alert('Por favor, suba los tres archivos Excel.');
-                return;
-            }
-            
-            // Leer archivo de mallas
-            const mallasReader = new FileReader();
-            mallasReader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                mallasData = XLSX.utils.sheet_to_json(worksheet);
-                
-                document.getElementById('mallas-status').innerHTML = 
-                    `<span style="color: green;">✓ Cargado correctamente (${mallasData.length} registros)</span>`;
-            };
-            mallasReader.readAsArrayBuffer(mallasFileInput.files[0]);
-            
-            // Leer archivo de docentes
-            const docentesReader = new FileReader();
-            docentesReader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                docentesData = XLSX.utils.sheet_to_json(worksheet);
-                
-                document.getElementById('docentes-status').innerHTML = 
-                    `<span style="color: green;">✓ Cargado correctamente (${docentesData.length} registros)</span>`;
-            };
-            docentesReader.readAsArrayBuffer(docentesFileInput.files[0]);
-            
-            // Leer archivo de estudiantes
-            const estudiantesReader = new FileReader();
-            estudiantesReader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                estudiantesData = XLSX.utils.sheet_to_json(worksheet);
-                
-                document.getElementById('estudiantes-status').innerHTML = 
-                    `<span style="color: green;">✓ Cargado correctamente (${estudiantesData.length} registros)</span>`;
-                
-                // Actualizar resumen de datos
-                updateDataSummary();
-                
-                // Llenar filtros y listas
-                populateFilters();
-                displayStudents();
-                displayTeachers();
-            };
-            estudiantesReader.readAsArrayBuffer(estudiantesFileInput.files[0]);
-        });
-        
-        // Actualizar resumen de datos
-        function updateDataSummary() {
-            let summaryHTML = `
-                <p><strong>Mallas cargadas:</strong> ${mallasData.length} materias</p>
-                <p><strong>Docentes cargados:</strong> ${docentesData.length} docentes</p>
-                <p><strong>Estudiantes cargados:</strong> ${estudiantesData.length} estudiantes</p>
-            `;
-            
-            // Contar estudiantes por carrera
-            const carreras = {};
-            estudiantesData.forEach(est => {
-                const carrera = est.CARRERA || 'Sin especificar';
-                carreras[carrera] = (carreras[carrera] || 0) + 1;
-            });
-            
-            summaryHTML += `<p><strong>Estudiantes por carrera:</strong></p><ul>`;
-            for (const carrera in carreras) {
-                summaryHTML += `<li>${carrera}: ${carreras[carrera]} estudiantes</li>`;
-            }
-            summaryHTML += `</ul>`;
-            
-            dataSummary.innerHTML = summaryHTML;
+        resolve(allSheets);
+      }catch(err){ reject(err); }
+    };
+    fr.onerror = reject;
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+/* ==========================
+   Lectura de archivos (100%)
+========================== */
+async function handleAnalizar(){
+  $("#status").textContent="Leyendo archivos…";
+  state.raw={ malla:null, docentes:null, estudiantes:null };
+  state.data={ malla:[], docentes:[], estudiantes:[] };
+  state.sections=[]; state.assign.byStudent.clear();
+  state.ui.currentStudent=null; state.ui.currentDocente=null;
+
+  const fM = $("#fileMalla").files[0];
+  const fD = $("#fileDocentes").files[0];
+  const fE = $("#fileEstudiantes").files[0];
+  if(!fM || !fD || !fE){
+    log("Faltan archivos obligatorios (Malla, Docentes, Estudiantes).", "error");
+    $("#status").textContent="Faltan archivos.";
+    return;
+  }
+
+  try{
+    const [wbM, wbD, wbE] = await Promise.all([readExcel(fM), readExcel(fD), readExcel(fE)]);
+    state.raw.malla=wbM; state.raw.docentes=wbD; state.raw.estudiantes=wbE;
+
+    // Tomar primera hoja de cada libro (se lee el 100%, pero normalizamos desde la primera o “Malla/Docentes/Estudiantes” si existen)
+    const pickSheet = (wb, pref) => {
+      const names = Object.keys(wb);
+      const byName = names.find(n => n.trim().toUpperCase().includes(pref));
+      return wb[ byName || names[0] ] || [];
+    };
+    const rowsM = pickSheet(wbM, "MALLA").map(upperKeys);
+    const rowsD = pickSheet(wbD, "DOCENTE").map(upperKeys);
+    const rowsE = pickSheet(wbE, "ESTUDIANT").map(upperKeys);
+
+    // Validación mínima de encabezados requeridos
+    if(!ensureHeaders(rowsM, ["CARRERA","CICLO","MATERIA"])){
+      log("Malla: encabezados requeridos: CARRERA, CICLO, MATERIA.", "error");
+      $("#status").textContent="Encabezados inválidos en Malla.";
+      return;
+    }
+    if(!ensureHeaders(rowsD, ["DOCENTE","CARRERA","MATERIA"])){
+      log("Docentes: encabezados requeridos: DOCENTE, CARRERA, MATERIA.", "error");
+      $("#status").textContent="Encabezados inválidos en Docentes.";
+      return;
+    }
+    if(!ensureHeaders(rowsE, ["ESTUDIANTE","CARRERA","CICLO"])){
+      log("Estudiantes: encabezados requeridos: ESTUDIANTE, CARRERA, CICLO.", "error");
+      $("#status").textContent="Encabezados inválidos en Estudiantes.";
+      return;
+    }
+
+    // Normalización mínima (el resto de columnas quedan disponibles en state.raw)
+    state.data.malla = rowsM.map((r,i)=>({
+      id:`m_${i+1}`,
+      carrera: toKey(r["CARRERA"]),
+      ciclo: Number(r["CICLO"])||0,
+      materia: toKey(r["MATERIA"]),
+      paralelos: Number(r["PARALELOS"]||1),
+      compartidaCon: toKey(r["COMPARTIDA CON"]||"")
+    }));
+
+    state.data.docentes = rowsD.map((r,i)=>({
+      id:`d_${i+1}`,
+      docente: toKey(r["DOCENTE"]),
+      carrera: toKey(r["CARRERA"]),
+      materia: toKey(r["MATERIA"]),
+      paralelo: toKey(r["PARALELO"]||"")
+    }));
+
+    state.data.estudiantes = rowsE.map((r,i)=>({
+      id:`e_${i+1}`,
+      estudiante: toKey(r["ESTUDIANTE"]),
+      carrera: toKey(r["CARRERA"]),
+      ciclo: Number(r["CICLO"])||0,
+      nivelIngles: toKey(r["NIVEL INGLES"]||r["NIVEL_INGLES"]||""),
+      practicas: toKey(r["PRACTICAS"]||"")
+    }));
+
+    // Habilitar controles de configuración y asignación
+    $("#btnConfig").disabled=false;
+    $("#btnAsignar").disabled=false;
+    $("#chkIngles").disabled=false;
+    $("#chkPracticas").disabled=false;
+    $("#status").textContent="Archivos leídos (100%). Listo para configurar bloqueos o asignar.";
+    log("Lectura completa de los tres Excel. Puede configurar bloqueos o generar la planificación.", "ok");
+
+    // Poblar selects básicos
+    fillDaySlotSelects();
+  }catch(err){
+    console.error(err);
+    log("Error leyendo archivos: " + err.message, "error");
+    $("#status").textContent="Error al leer.";
+  }
+}
+
+function fillDaySlotSelects(){
+  const d1=$("#inDiaBloq"), s1=$("#inSlotBloq");
+  const d2=$("#inDiaIng"), s2=$("#inSlotIng");
+  [d1,d2].forEach(s=>{
+    s.innerHTML='<option value="">Día</option>' + DAYS.map(d=>`<option>${d}</option>`).join("");
+  });
+  [s1,s2].forEach(s=>{
+    s.innerHTML='<option value="">Franja</option>' + SLOTS.map(d=>`<option>${d}</option>`).join("");
+  });
+}
+
+/* ==========================
+   Configuración de bloqueos
+========================== */
+function openCfg(){
+  $("#modalCfg").style.display="flex";
+  // Pintar listas existentes
+  renderBloqLists();
+}
+function closeCfg(){
+  $("#modalCfg").style.display="none";
+}
+function renderBloqLists(){
+  const list=$("#listBloq");
+  if(!state.config.bloqueosPorSemestre.length){
+    list.innerHTML='<span class="mini">Sin bloqueos por semestre.</span>';
+  }else{
+    list.innerHTML = state.config.bloqueosPorSemestre
+      .map((b,i)=>`• Semestre ${b.ciclo}: ${b.dia} ${b.slot} <button data-rm-b="${i}" class="secondary miniBtn" style="margin-left:6px; padding:2px 6px; font-size:11px">Quitar</button>`)
+      .join("<br>");
+  }
+
+  const listIng=$("#listIng");
+  if(!state.config.ingles.items.length){
+    listIng.innerHTML='<span class="mini">Sin bloqueos definidos.</span>';
+  }else{
+    listIng.innerHTML = state.config.ingles.items
+      .map((b,i)=>`• ${b.dia} ${b.slot} <button data-rm-i="${i}" class="secondary miniBtn" style="margin-left:6px; padding:2px 6px; font-size:11px">Quitar</button>`)
+      .join("<br>");
+  }
+}
+function saveCfg(){
+  state.config.ingles.activo = $("#inInglesAct").checked;
+  closeCfg();
+  log("Bloqueos guardados.", "ok");
+}
+function addBloq(){
+  const ciclo = Number($("#inCicloBloq").value||0);
+  const dia = $("#inDiaBloq").value;
+  const slot = $("#inSlotBloq").value;
+  if(!ciclo || !dia || !slot){ log("Complete ciclo, día y franja para agregar bloqueo por semestre.", "warn"); return; }
+  state.config.bloqueosPorSemestre.push({ciclo, dia, slot});
+  $("#inCicloBloq").value=""; $("#inDiaBloq").value=""; $("#inSlotBloq").value="";
+  renderBloqLists();
+}
+function addIng(){
+  const dia=$("#inDiaIng").value;
+  const slot=$("#inSlotIng").value;
+  if(!dia || !slot){ log("Complete día y franja para agregar bloqueo de Inglés.", "warn"); return; }
+  state.config.ingles.items.push({dia, slot});
+  $("#inDiaIng").value=""; $("#inSlotIng").value="";
+  renderBloqLists();
+}
+document.addEventListener("click", (ev)=>{
+  if(ev.target && ev.target.dataset && ev.target.dataset.rmB!==undefined){
+    const i = Number(ev.target.dataset.rmB);
+    state.config.bloqueosPorSemestre.splice(i,1); renderBloqLists();
+  }
+  if(ev.target && ev.target.dataset && ev.target.dataset.rmI!==undefined){
+    const i = Number(ev.target.dataset.rmI);
+    state.config.ingles.items.splice(i,1); renderBloqLists();
+  }
+});
+
+/* ==========================
+   Planificación (generación)
+========================== */
+function docenteDailyCount(map, docente, dia){
+  const key = `${docente}__${dia}`;
+  return map.get(key)||0;
+}
+function incDocenteDaily(map, docente, dia){
+  const key = `${docente}__${dia}`;
+  map.set(key, (map.get(key)||0)+1);
+}
+function slotBusyForAdjacency(adjIndex, carrera, ciclo, dia, slot){
+  // Revisa si en la misma carrera existe una sección en ciclo adyacente (c-1 o c+1) en el mismo día+franja
+  const neighbor = state.sections.find(s =>
+    s.carrera===carrera &&
+    Math.abs(s.ciclo - ciclo)===1 &&
+    s.dia===dia && s.slot===slot
+  );
+  return !!neighbor;
+}
+function findDocentesFor(carrera, materia){
+  return state.data.docentes.filter(d => d.carrera===carrera && d.materia===materia);
+}
+
+function generarPlanificacion(){
+  state.sections=[]; state.assign.byStudent.clear();
+
+  // Construir secciones/Paralelos por materia
+  // Ordenar por carrera y ciclo para mejorar distribución
+  const items = [...state.data.malla].sort((a,b)=>{
+    if(a.carrera!==b.carrera) return a.carrera.localeCompare(b.carrera);
+    return a.ciclo - b.ciclo;
+  });
+
+  const docenteDayMap = new Map(); // conteo por día para cada docente
+  for(const item of items){
+    const docentes = findDocentesFor(item.carrera, item.materia);
+    const nPar = Math.max(1, Number(item.paralelos||1));
+    for(let p=1; p<=nPar; p++){
+      // Asignar docente (si hay varios, alternar); si no existe, "Por asignar"
+      const docente = docentes.length ? docentes[(p-1)%docentes.length].docente : "Por asignar";
+      // Buscar día+franja cumpliendo: ciclos adyacentes sin choque + docente máx. 2/día y sin solapes
+      let placed=false;
+      for(const dia of DAYS){
+        // Límite por día del docente
+        if(docente!=="Por asignar" && docenteDailyCount(docenteDayMap, docente, dia)>=2) continue;
+
+        for(const slot of SLOTS){
+          // No ubicar si existe choque por adyacencia
+          if(slotBusyForAdjacency(true, item.carrera, item.ciclo, dia, slot)) continue;
+
+          // No ubicar si el mismo docente ya tiene clase en ese día+franja
+          const docBusy = state.sections.find(s => s.docente===docente && s.dia===dia && s.slot===slot);
+          if(docente!=="Por asignar" && docBusy) continue;
+
+          // Aceptado
+          state.sections.push({
+            carrera:item.carrera, ciclo:item.ciclo, materia:item.materia,
+            paralelo:p, dia, slot, docente
+          });
+          if(docente!=="Por asignar") incDocenteDaily(docenteDayMap, docente, dia);
+          placed=true; break;
         }
-        
-        // Llenar filtros con datos
-        function populateFilters() {
-            // Filtrar carreras únicas
-            const carreras = [...new Set(estudiantesData.map(est => est.CARRERA))].filter(Boolean);
-            const filterCarrera = document.getElementById('filter-carrera');
-            const scheduleCarrera = document.getElementById('schedule-carrera');
-            
-            carreras.forEach(carrera => {
-                const option1 = document.createElement('option');
-                option1.value = carrera;
-                option1.textContent = carrera;
-                filterCarrera.appendChild(option1);
-                
-                const option2 = document.createElement('option');
-                option2.value = carrera;
-                option2.textContent = carrera;
-                scheduleCarrera.appendChild(option2);
+        if(placed) break;
+      }
+      if(!placed){
+        // Si no encontró hueco, forzar primer hueco libre ignorando adyacencia (último recurso)
+        outer: for(const dia of DAYS){
+          if(docente!=="Por asignar" && docenteDailyCount(docenteDayMap, docente, dia)>=2) continue;
+          for(const slot of SLOTS){
+            const docBusy = state.sections.find(s => s.docente===docente && s.dia===dia && s.slot===slot);
+            if(docente!=="Por asignar" && docBusy) continue;
+            state.sections.push({
+              carrera:item.carrera, ciclo:item.ciclo, materia:item.materia,
+              paralelo:p, dia, slot, docente
             });
-            
-            // Filtrar ciclos únicos
-            const ciclos = [...new Set(estudiantesData.map(est => est['CICLO AL QUE VA'] || est['CICLO ACTUAL']))].filter(Boolean);
-            const filterCiclo = document.getElementById('filter-ciclo');
-            const scheduleCiclo = document.getElementById('schedule-ciclo');
-            
-            ciclos.forEach(ciclo => {
-                const option1 = document.createElement('option');
-                option1.value = ciclo;
-                option1.textContent = `Ciclo ${ciclo}`;
-                filterCiclo.appendChild(option1);
-                
-                const option2 = document.createElement('option');
-                option2.value = ciclo;
-                option2.textContent = `Ciclo ${ciclo}`;
-                scheduleCiclo.appendChild(option2);
-            });
-            
-            // Filtrar mallas únicas
-            const mallas = [...new Set(estudiantesData.map(est => est.MALLA))].filter(Boolean);
-            const filterMalla = document.getElementById('filter-malla');
-            const scheduleMalla = document.getElementById('schedule-malla');
-            
-            mallas.forEach(malla => {
-                const option1 = document.createElement('option');
-                option1.value = malla;
-                option1.textContent = `Malla ${malla}`;
-                filterMalla.appendChild(option1);
-                
-                const option2 = document.createElement('option');
-                option2.value = malla;
-                option2.textContent = `Malla ${malla}`;
-                scheduleMalla.appendChild(option2);
-            });
-            
-            // Llenar listas de estudiantes para restricciones
-            const inglesStudent = document.getElementById('ingles-student');
-            const restrictionStudent = document.getElementById('restriction-student');
-            
-            estudiantesData.forEach(est => {
-                const nombre = est.ESTUDIANTE || 'Estudiante sin nombre';
-                
-                const option1 = document.createElement('option');
-                option1.value = nombre;
-                option1.textContent = nombre;
-                inglesStudent.appendChild(option1);
-                
-                const option2 = document.createElement('option');
-                option2.value = nombre;
-                option2.textContent = nombre;
-                restrictionStudent.appendChild(option2);
-            });
+            if(docente!=="Por asignar") incDocenteDaily(docenteDayMap, docente, dia);
+            break outer;
+          }
         }
-        
-        // Mostrar estudiantes con filtros
-        function displayStudents() {
-            const carreraFilter = document.getElementById('filter-carrera').value;
-            const cicloFilter = document.getElementById('filter-ciclo').value;
-            const mallaFilter = document.getElementById('filter-malla').value;
-            const searchFilter = document.getElementById('search-student').value.toLowerCase();
-            
-            let filteredStudents = estudiantesData;
-            
-            if (carreraFilter !== 'all') {
-                filteredStudents = filteredStudents.filter(est => est.CARRERA === carreraFilter);
-            }
-            
-            if (cicloFilter !== 'all') {
-                filteredStudents = filteredStudents.filter(est => 
-                    (est['CICLO AL QUE VA'] || est['CICLO ACTUAL']) == cicloFilter
-                );
-            }
-            
-            if (mallaFilter !== 'all') {
-                filteredStudents = filteredStudents.filter(est => est.MALLA == mallaFilter);
-            }
-            
-            if (searchFilter) {
-                filteredStudents = filteredStudents.filter(est => 
-                    (est.ESTUDIANTE || '').toLowerCase().includes(searchFilter)
-                );
-            }
-            
-            const studentsList = document.getElementById('students-list');
-            studentsList.innerHTML = '';
-            
-            if (filteredStudents.length === 0) {
-                studentsList.innerHTML = '<p>No se encontraron estudiantes con los filtros aplicados.</p>';
-                return;
-            }
-            
-            filteredStudents.forEach(estudiante => {
-                const studentCard = document.createElement('div');
-                studentCard.className = 'student-card';
-                
-                const cicloActual = estudiante['CICLO ACTUAL'] || 'No especificado';
-                const cicloSiguiente = estudiante['CICLO AL QUE VA'] || 'No especificado';
-                
-                studentCard.innerHTML = `
-                    <div class="student-name">${estudiante.ESTUDIANTE || 'Estudiante sin nombre'}</div>
-                    <div class="student-details">
-                        <div class="student-detail"><strong>Carrera:</strong> ${estudiante.CARRERA || 'No especificada'}</div>
-                        <div class="student-detail"><strong>Malla:</strong> ${estudiante.MALLA || 'No especificada'}</div>
-                        <div class="student-detail"><strong>Ciclo actual:</strong> ${cicloActual}</div>
-                        <div class="student-detail"><strong>Próximo ciclo:</strong> ${cicloSiguiente}</div>
-                    </div>
-                    <div class="subject-list">
-                        <h4>Materias asignadas:</h4>
-                        <div id="subjects-${estudiante.ESTUDIANTE?.replace(/\s+/g, '-')}">
-                            <p>No se han asignado materias aún.</p>
-                        </div>
-                    </div>
-                    <button class="edit-student" data-student="${estudiante.ESTUDIANTE}">Editar Asignaturas</button>
-                `;
-                
-                studentsList.appendChild(studentCard);
-            });
-            
-            // Añadir event listeners a los botones de edición
-            document.querySelectorAll('.edit-student').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const studentName = e.target.getAttribute('data-student');
-                    openStudentModal(studentName);
-                });
-            });
-        }
-        
-        // Mostrar docentes
-        function displayTeachers() {
-            const teacherFilter = document.getElementById('filter-teacher').value.toLowerCase();
-            const dedicacionFilter = document.getElementById('filter-dedicacion').value;
-            
-            let filteredTeachers = docentesData;
-            
-            if (teacherFilter) {
-                filteredTeachers = filteredTeachers.filter(doc => 
-                    (doc.NOMBRE_DOCENTE || '').toLowerCase().includes(teacherFilter)
-                );
-            }
-            
-            if (dedicacionFilter !== 'all') {
-                filteredTeachers = filteredTeachers.filter(doc => doc.DEDICACION === dedicacionFilter);
-            }
-            
-            const teachersTable = document.getElementById('teachers-table').querySelector('tbody');
-            teachersTable.innerHTML = '';
-            
-            if (filteredTeachers.length === 0) {
-                teachersTable.innerHTML = '<tr><td colspan="5">No se encontraron docentes con los filtros aplicados.</td></tr>';
-                return;
-            }
-            
-            filteredTeachers.forEach(docente => {
-                const row = document.createElement('tr');
-                
-                row.innerHTML = `
-                    <td>${docente.NOMBRE_DOCENTE || 'No especificado'}</td>
-                    <td>${docente.DEDICACION || 'No especificado'}</td>
-                    <td>${docente.MATERIA || 'No especificado'}</td>
-                    <td>${docente['DIA DISPONIBLE'] || 'No especificado'} ${docente['HORA DISPONIBLE'] || ''}</td>
-                    <td>${docente.Modalidad || 'No especificado'}</td>
-                `;
-                
-                teachersTable.appendChild(row);
-            });
-        }
-        
-        // Abrir modal para editar estudiante
-        function openStudentModal(studentName) {
-            const student = estudiantesData.find(est => est.ESTUDIANTE === studentName);
-            
-            if (!student) return;
-            
-            const modalStudentInfo = document.getElementById('modal-student-info');
-            const modalSubjectsList = document.getElementById('modal-subjects-list');
-            
-            const cicloActual = student['CICLO ACTUAL'] || 'No especificado';
-            const cicloSiguiente = student['CICLO AL QUE VA'] || 'No especificado';
-            
-            modalStudentInfo.innerHTML = `
-                <h3>${studentName}</h3>
-                <p><strong>Carrera:</strong> ${student.CARRERA || 'No especificada'}</p>
-                <p><strong>Malla:</strong> ${student.MALLA || 'No especificada'}</p>
-                <p><strong>Ciclo actual:</strong> ${cicloActual}</p>
-                <p><strong>Próximo ciclo:</strong> ${cicloSiguiente}</p>
-            `;
-            
-            // Obtener materias del próximo ciclo según la malla y carrera
-            const nextCycleSubjects = mallasData.filter(materia => 
-                materia.CARRERA === student.CARRERA && 
-                materia.MALLA == student.MALLA && 
-                materia.CICLO === `CICLO ${cicloSiguiente}`
-            );
-            
-            modalSubjectsList.innerHTML = `
-                <h4>Materias disponibles para el próximo ciclo:</h4>
-                <div class="subject-selection">
-                    ${nextCycleSubjects.map(materia => `
-                        <div class="subject-item">
-                            <div>
-                                <input type="checkbox" id="subject-${materia.CÓDIGO}" value="${materia.CÓDIGO}">
-                                <label for="subject-${materia.CÓDIGO}">${materia.MATERIA} (${materia.CÓDIGO})</label>
-                            </div>
-                            <div>Créditos: ${materia.CRÉDITOS || 'N/A'}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            
-            modal.style.display = 'flex';
-        }
-        
-        // Aplicar filtros en tiempo real
-        document.getElementById('filter-carrera').addEventListener('change', displayStudents);
-        document.getElementById('filter-ciclo').addEventListener('change', displayStudents);
-        document.getElementById('filter-malla').addEventListener('change', displayStudents);
-        document.getElementById('search-student').addEventListener('input', displayStudents);
-        document.getElementById('filter-teacher').addEventListener('input', displayTeachers);
-        document.getElementById('filter-dedicacion').addEventListener('change', displayTeachers);
-        
-        // Generar horarios
-        document.getElementById('generate-schedule').addEventListener('click', () => {
-            alert('La generación de horarios se ejecutará cuando se implemente la lógica completa.');
-            // Aquí iría la lógica para generar horarios considerando todas las restricciones
-        });
-        
-        // Añadir restricciones
-        document.getElementById('add-practicas-restriction').addEventListener('click', () => {
-            const day = document.getElementById('practicas-day').value;
-            const time = document.getElementById('practicas-time').value;
-            
-            restrictions.practicas.push({ day, time });
-            updateAppliedRestrictions();
-            alert(`Restricción de Prácticas Comunitarias añadida: ${day} ${time}`);
-        });
-        
-        document.getElementById('add-ingles-restriction').addEventListener('click', () => {
-            const student = document.getElementById('ingles-student').value;
-            const level = document.getElementById('ingles-level').value;
-            
-            // Obtener días seleccionados
-            const days = [];
-            if (document.getElementById('ingles-lunes').checked) days.push('LUNES');
-            if (document.getElementById('ingles-martes').checked) days.push('MARTES');
-            if (document.getElementById('ingles-miercoles').checked) days.push('MIERCOLES');
-            if (document.getElementById('ingles-jueves').checked) days.push('JUEVES');
-            if (document.getElementById('ingles-viernes').checked) days.push('VIERNES');
-            
-            const time = document.getElementById('ingles-time').value;
-            
-            restrictions.ingles[student] = {
-                level,
-                schedule: days.map(day => ({ day, time }))
-            };
-            
-            updateAppliedRestrictions();
-            alert(`Restricción de inglés añadida para ${student}`);
-        });
-        
-        document.getElementById('add-student-restriction').addEventListener('click', () => {
-            const student = document.getElementById('restriction-student').value;
-            const day = document.getElementById('restriction-day').value;
-            const time = document.getElementById('restriction-time').value;
-            
-            if (!restrictions.estudiantes[student]) {
-                restrictions.estudiantes[student] = [];
-            }
-            
-            restrictions.estudiantes[student].push({ day, time });
-            updateAppliedRestrictions();
-            alert(`Restricción añadida para ${student}: ${day} ${time}`);
-        });
-        
-        // Actualizar restricciones aplicadas
-        function updateAppliedRestrictions() {
-            const appliedRestrictions = document.getElementById('applied-restrictions');
-            let html = '';
-            
-            // Restricciones de prácticas comunitarias
-            if (restrictions.practicas.length > 0) {
-                html += `<h4>Prácticas Comunitarias:</h4><ul>`;
-                restrictions.practicas.forEach(res => {
-                    html += `<li>${res.day} ${res.time}</li>`;
-                });
-                html += `</ul>`;
-            }
-            
-            // Restricciones de inglés
-            if (Object.keys(restrictions.ingles).length > 0) {
-                html += `<h4>Inglés:</h4><ul>`;
-                for (const student in restrictions.ingles) {
-                    const res = restrictions.ingles[student];
-                    html += `<li>${student}: Nivel ${res.level} - `;
-                    html += res.schedule.map(s => `${s.day} ${s.time}`).join(', ');
-                    html += `</li>`;
-                }
-                html += `</ul>`;
-            }
-            
-            // Restricciones de estudiantes
-            if (Object.keys(restrictions.estudiantes).length > 0) {
-                html += `<h4>Restricciones de Estudiantes:</h4><ul>`;
-                for (const student in restrictions.estudiantes) {
-                    html += `<li>${student}: `;
-                    html += restrictions.estudiantes[student].map(res => `${res.day} ${res.time}`).join(', ');
-                    html += `</li>`;
-                }
-                html += `</ul>`;
-            }
-            
-            if (!html) {
-                html = '<p>No hay restricciones aplicadas.</p>';
-            }
-            
-            appliedRestrictions.innerHTML = html;
-        }
-    </script>
+      }
+    }
+  }
+
+  // Índices para selects
+  state.index.docentes = Array.from(new Set(state.sections.map(s=>s.docente))).filter(x=>x && x!=="Por asignar").sort();
+  state.index.estudiantes = state.data.estudiantes.map(e => ({id:e.id, label:`${e.estudiante} — ${e.carrera} (C${e.ciclo})`}));
+
+  // Asignar a estudiantes (máx. 6, 2 por día, respetando bloqueos)
+  for(const est of state.data.estudiantes){
+    const wanted = state.data.malla.filter(m => m.carrera===est.carrera && m.ciclo===est.ciclo);
+    const plan=[];
+    const dailyCount = new Map(); // día -> count
+    // bloqueos por semestre
+    const blocksSem = state.config.bloqueosPorSemestre.filter(b => Number(b.ciclo)===Number(est.ciclo));
+    // bloqueos de inglés
+    const hasInglesData = !!toKey(est.nivelIngles);
+    const applyInglesGlobal = state.config.ingles.activo && !hasInglesData && $("#chkIngles").checked;
+    const inglesBlocks = applyInglesGlobal ? state.config.ingles.items : [];
+
+    const blocked = (dia,slot)=>{
+      if($("#chkPracticas").checked){
+        for(const b of blocksSem){ if(b.dia===dia && b.slot===slot) return true; }
+      }
+      if(applyInglesGlobal){
+        for(const b of inglesBlocks){ if(b.dia===dia && b.slot===slot) return true; }
+      }
+      return false;
+    };
+
+    for(const wm of wanted){
+      if(plan.length>=6) break; // máximo por estudiante
+      // buscar sección compatible
+      const secs = state.sections.filter(s => s.carrera===wm.carrera && s.ciclo===wm.ciclo && s.materia===wm.materia);
+      let placed=false;
+      for(const sec of secs){
+        if(blocked(sec.dia, sec.slot)) continue;
+        // 2 por día
+        const cnt = dailyCount.get(sec.dia)||0;
+        if(cnt>=2) continue;
+        // sin choque de horas en el mismo día y franja
+        const has = plan.find(p => p.dia===sec.dia && p.slot===sec.slot);
+        if(has) continue;
+
+        plan.push({...sec});
+        dailyCount.set(sec.dia, cnt+1);
+        placed=true; break;
+      }
+      // si no se pudo ubicar esa materia, se omite (quedará sin asignar)
+    }
+    state.assign.byStudent.set(est.id, plan);
+  }
+
+  // Activar UI
+  fillUIAfterPlan();
+  log("Planificación generada.", "ok");
+  $("#status").textContent="Planificación generada. Revise las vistas.";
+}
+
+/* ==========================
+   UI posterior a planificación
+========================== */
+function fillUIAfterPlan(){
+  // Estudiantes
+  const selEst=$("#selEstudiante");
+  selEst.innerHTML = '<option value="">— Seleccione estudiante —</option>' +
+    state.data.estudiantes.map(e => `<option value="${e.id}">${e.estudiante} — ${e.carrera} (C${e.ciclo})</option>`).join("");
+  selEst.disabled=false;
+
+  // Docentes
+  const selDoc=$("#selDocente");
+  selDoc.innerHTML = '<option value="">— Seleccione docente —</option>' +
+    state.index.docentes.map(d => `<option>${d}</option>`).join("");
+  selDoc.disabled=false;
+
+  // Grids vacíos iniciales
+  renderGrid("#gridEstudiante", null, "estudiante");
+  renderGrid("#gridDocente", null, "docente");
+
+  $("#tablaEst").style.display="none";
+  $("#tablaDoc").style.display="none";
+
+  $("#btnEditar").disabled=true;
+}
+
+/* ==========================
+   Render de grillas
+========================== */
+function baseGrid(){
+  const frag=document.createDocumentFragment();
+  // encabezados
+  const head0=$c("div","cell header"); head0.textContent="Franja / Día"; frag.appendChild(head0);
+  for(const d of DAYS){ const h=$c("div","cell header"); h.textContent=d; frag.appendChild(h); }
+  // filas
+  for(const sl of SLOTS){
+    const l=$c("div","cell slot"); l.textContent=sl; frag.appendChild(l);
+    for(const d of DAYS){
+      const cell=$c("div","cell"); cell.dataset.day=d; cell.dataset.slot=sl; frag.appendChild(cell);
+    }
+  }
+  return frag;
+}
+function renderGrid(selector, entries, mode, contextInfo){
+  const root = $(selector);
+  root.innerHTML="";
+  root.appendChild(baseGrid());
+  if(!entries) return;
+
+  // entries: array de objetos con { materia, paralelo, dia, slot, docente, carrera, ciclo }
+  // Para vista docente, entries son del docente; para estudiante, del estudiante
+  const cells = root.querySelectorAll(".cell");
+  for(const it of entries){
+    const cell=[...cells].find(c => c.dataset && c.dataset.day===it.dia && c.dataset.slot===it.slot);
+    if(!cell) continue;
+    const tag=$c("div","tag");
+    tag.innerHTML = `<b>${it.materia}</b> <small>Par. ${it.paralelo}</small><small>• C${it.ciclo} • ${it.carrera}</small>${mode==="docente"?"":`<small>• ${it.docente||"Doc."}</small>`}`;
+    cell.appendChild(tag);
+  }
+
+  // pintar bloqueos si el contexto es estudiante
+  if(mode==="estudiante" && contextInfo){
+    const blocks = contextInfo.blocks||[];
+    for(const b of blocks){
+      const cell=[...cells].find(c => c.dataset && c.dataset.day===b.dia && c.dataset.slot===b.slot);
+      if(cell){
+        const tag=$c("div","tag"); tag.style.borderColor="rgba(220,38,38,.35)";
+        tag.style.background="rgba(220,38,38,.12)"; tag.style.color="#fecaca";
+        tag.innerHTML = `<b>Bloqueado</b> <small>${b.motivo||""}</small>`;
+        cell.appendChild(tag);
+      }
+    }
+  }
+}
+
+/* ==========================
+   Selecciones y tablas
+========================== */
+function currentStudentBlocks(est){
+  const blocks=[];
+  // por semestre
+  const sem = state.config.bloqueosPorSemestre.filter(b => Number(b.ciclo)===Number(est.ciclo));
+  for(const b of sem){ blocks.push({dia:b.dia, slot:b.slot, motivo:"Prácticas / Semestre"}); }
+  // inglés
+  const hasInglesData = !!toKey(est.nivelIngles);
+  const applyInglesGlobal = state.config.ingles.activo && !hasInglesData && $("#chkIngles").checked;
+  if(applyInglesGlobal){
+    for(const b of state.config.ingles.items){ blocks.push({dia:b.dia, slot:b.slot, motivo:"Inglés (global)"}); }
+  }
+  return blocks;
+}
+function onPickStudent(){
+  const id=$("#selEstudiante").value;
+  $("#btnEditar").disabled = !id;
+  if(!id){
+    renderGrid("#gridEstudiante", null, "estudiante");
+    $("#tablaEst").style.display="none";
+    $("#kpiEst").style.display="none";
+    return;
+  }
+  state.ui.currentStudent = id;
+  const est = state.data.estudiantes.find(e=>e.id===id);
+  const plan = state.assign.byStudent.get(id)||[];
+  renderGrid("#gridEstudiante", plan, "estudiante", { blocks: currentStudentBlocks(est) });
+
+  // KPIs
+  $("#kpiEst").style.display="";
+  $("#kTotal").textContent = String(plan.length);
+  $("#kBlocks").textContent = String(currentStudentBlocks(est).length);
+  // choques (no deberían existir con el algoritmo)
+  $("#kChoques").textContent = "0";
+
+  // Tabla detalle
+  const tb=$("#tablaEst tbody"); tb.innerHTML="";
+  for(const p of plan){
+    const tr=$c("tr");
+    tr.innerHTML = `<td>${p.materia}</td><td>${p.paralelo}</td><td>${p.dia}</td><td>${p.slot}</td><td>${p.docente||""}</td><td>${p.carrera}</td><td>${p.ciclo}</td>`;
+    tb.appendChild(tr);
+  }
+  $("#tablaEst").style.display="";
+}
+
+function onPickDocente(){
+  const name=$("#selDocente").value;
+  if(!name){
+    renderGrid("#gridDocente", null, "docente");
+    $("#tablaDoc").style.display="none";
+    return;
+  }
+  state.ui.currentDocente = name;
+  const entries = state.sections.filter(s => s.docente===name);
+  renderGrid("#gridDocente", entries, "docente");
+
+  const tb=$("#tablaDoc tbody"); tb.innerHTML="";
+  for(const e of entries){
+    const tr=$c("tr");
+    tr.innerHTML = `<td>${e.dia}</td><td>${e.slot}</td><td>${e.materia}</td><td>${e.paralelo}</td><td>${e.carrera}</td><td>${e.ciclo}</td>`;
+    tb.appendChild(tr);
+  }
+  $("#tablaDoc").style.display="";
+}
+
+/* ==========================
+   Edición por estudiante
+========================== */
+function openEdit(){
+  const id = state.ui.currentStudent;
+  if(!id) return;
+  const est = state.data.estudiantes.find(e=>e.id===id);
+  const plan = state.assign.byStudent.get(id)||[];
+  const selMat=$("#editMateria");
+  selMat.innerHTML = plan.map(p => `<option value="${p.materia}__${p.paralelo}">${p.materia} — Par. ${p.paralelo} (${p.dia} ${p.slot})</option>`).join("");
+  $("#editDestino").innerHTML = '<option value="">— Seleccione destino —</option>';
+  $("#editMsg").innerHTML="";
+  $("#editInfo").textContent = `${est.estudiante} — ${est.carrera} (C${est.ciclo})`;
+  $("#modalEdit").style.display="flex";
+}
+function closeEdit(){ $("#modalEdit").style.display="none"; }
+
+$("#editMateria").addEventListener("change", ()=>{
+  const id = state.ui.currentStudent;
+  if(!id) return;
+  const est = state.data.estudiantes.find(e=>e.id===id);
+  const [materia, paralelo] = $("#editMateria").value.split("__");
+  // destinos: todas las secciones de esa materia en su carrera/ciclo
+  const dests = state.sections.filter(s =>
+    s.materia===materia && s.carrera===est.carrera && s.ciclo===est.ciclo
+  );
+  $("#editDestino").innerHTML = dests.map(d => `<option value="${d.dia}__${d.slot}__${d.paralelo}">${d.dia} • ${d.slot} • Par. ${d.paralelo} • Doc. ${d.docente||""}</option>`).join("");
+});
+
+function aplicarEdicion(){
+  const id = state.ui.currentStudent;
+  if(!id) return;
+  const est = state.data.estudiantes.find(e=>e.id===id);
+  const plan = state.assign.byStudent.get(id)||[];
+  if(!plan.length){ $("#editMsg").innerHTML='<span class="bad">No hay asignaciones.</span>'; return; }
+
+  const sel = $("#editMateria").value;
+  const dst = $("#editDestino").value;
+  if(!sel || !dst){ $("#editMsg").innerHTML='<span class="warnText">Seleccione materia y destino.</span>'; return; }
+
+  const [materia, parOrig] = sel.split("__");
+  const [diaN, slotN, parN] = dst.split("__");
+
+  // Buscar entrada original
+  const idx = plan.findIndex(p => p.materia===materia && String(p.paralelo)===String(parOrig));
+  if(idx<0){ $("#editMsg").innerHTML='<span class="bad">No se encontró la asignación original.</span>'; return; }
+
+  const nuevo = state.sections.find(s =>
+    s.materia===materia && s.carrera===est.carrera && s.ciclo===est.ciclo &&
+    s.dia===diaN && s.slot===slotN && String(s.paralelo)===String(parN)
+  );
+  if(!nuevo){ $("#editMsg").innerHTML='<span class="bad">Destino no válido.</span>'; return; }
+
+  // Validaciones: 2 por día, choques de franja, máx. 6
+  const provisional = [...plan];
+  provisional[idx] = {...nuevo};
+
+  // 2 por día
+  const dayCount = new Map();
+  for(const p of provisional){
+    dayCount.set(p.dia, (dayCount.get(p.dia)||0) + 1);
+    if(dayCount.get(p.dia)>2){
+      $("#editMsg").innerHTML='<span class="bad">No se permite más de 2 materias el mismo día.</span>';
+      return;
+    }
+  }
+  // choques de franja
+  for(let i=0;i<provisional.length;i++){
+    for(let j=i+1;j<provisional.length;j++){
+      const a=provisional[i], b=provisional[j];
+      if(a.dia===b.dia && a.slot===b.slot){
+        $("#editMsg").innerHTML='<span class="bad">Choque de horario detectado en la misma franja.</span>';
+        return;
+      }
+    }
+  }
+  // bloqueos (semestre / inglés global)
+  const blocks = currentStudentBlocks(est);
+  const isBlocked = blocks.some(b => b.dia===nuevo.dia && b.slot===nuevo.slot);
+  if(isBlocked){
+    $("#editMsg").innerHTML='<span class="bad">El destino está bloqueado (Inglés/Prácticas). Cambio no aplicado.</span>';
+    return;
+  }
+
+  // OK: aplicar
+  state.assign.byStudent.set(id, provisional);
+  $("#editMsg").innerHTML='<span class="good">Cambio aplicado correctamente.</span>';
+  // refrescar vista estudiante
+  onPickStudent();
+}
+
+/* ==========================
+   Eventos generales de UI
+========================== */
+function switchTab(tab){
+  const est = $("#view-estudiantes");
+  const doc = $("#view-docentes");
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add("active");
+  if(tab==="estudiantes"){ est.style.display=""; doc.style.display="none"; }
+  else { est.style.display="none"; doc.style.display=""; }
+}
+
+function resetAll(){
+  ["fileMalla","fileDocentes","fileEstudiantes"].forEach(id => { const el=$("#"+id); el.value=""; });
+  $("#status").textContent="";
+  $("#log").textContent="";
+  $("#btnConfig").disabled=true;
+  $("#btnAsignar").disabled=true;
+  $("#chkIngles").checked=false; $("#chkIngles").disabled=true;
+  $("#chkPracticas").checked=false; $("#chkPracticas").disabled=true;
+  state.raw={malla:null, docentes:null, estudiantes:null};
+  state.data={malla:[], docentes:[], estudiantes:[]};
+  state.sections=[]; state.assign.byStudent.clear();
+  state.config={ bloqueosPorSemestre:[], ingles:{activo:false, items:[]} };
+  fillDaySlotSelects();
+  // limpiar vistas
+  renderGrid("#gridEstudiante", null, "estudiante");
+  renderGrid("#gridDocente", null, "docente");
+  $("#selEstudiante").innerHTML='<option value="">— Seleccione estudiante —</option>'; $("#selEstudiante").disabled=true;
+  $("#selDocente").innerHTML='<option value="">— Seleccione docente —</option>'; $("#selDocente").disabled=true;
+  $("#tablaEst").style.display="none"; $("#tablaDoc").style.display="none";
+  $("#kpiEst").style.display="none";
+  $("#btnEditar").disabled=true;
+}
+
+/* ==========================
+   Listeners
+========================== */
+$("#btnAnalizar").addEventListener("click", handleAnalizar);
+$("#btnConfig").addEventListener("click", openCfg);
+$("#btnCloseCfg").addEventListener("click", closeCfg);
+$("#btnSaveCfg").addEventListener("click", saveCfg);
+$("#btnAddBloq").addEventListener("click", addBloq);
+$("#btnAddIng").addEventListener("click", addIng);
+
+$("#btnAsignar").addEventListener("click", generarPlanificacion);
+$("#btnLimpiar").addEventListener("click", resetAll);
+
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", ()=> switchTab(t.dataset.tab)));
+$("#selEstudiante").addEventListener("change", onPickStudent);
+$("#selDocente").addEventListener("change", onPickDocente);
+
+$("#btnEditar").addEventListener("click", openEdit);
+$("#btnCerrarEdicion").addEventListener("click", closeEdit);
+$("#btnAplicarEdicion").addEventListener("click", aplicarEdicion);
+
+// Cerrar modales al hacer click fuera del cuadro
+document.querySelectorAll(".modal").forEach(m=>{
+  m.addEventListener("click", (e)=>{ if(e.target===m) m.style.display="none"; });
+});
+
+// Inicial
+fillDaySlotSelects();
+renderGrid("#gridEstudiante", null, "estudiante");
+renderGrid("#gridDocente", null, "docente");
+</script>
 </body>
 </html>
