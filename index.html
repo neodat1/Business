@@ -4,8 +4,79 @@
   <meta charset="utf-8" />
   <title>Planificación Académica UIDE — Asignación Automática</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Librería para leer Excel -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
+
+  <!-- ===== CARGADOR ROBUSTO DE XLSX (múltiples CDNs + archivo local + carga manual) ===== -->
+  <script>
+  (function(){
+    const SOURCES = [
+      "https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js",
+      "https://unpkg.com/xlsx@0.19.3/dist/xlsx.full.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.19.3/xlsx.full.min.js",
+      "xlsx.full.min.js" // archivo local junto al HTML (fallback sin internet)
+    ];
+    let idx = 0, loaded = false;
+
+    function tryNext(){
+      if (window.XLSX) { loaded = true; notifyReady(); return; }
+      if (idx >= SOURCES.length) { notifyMissing(); return; }
+      const s = document.createElement("script");
+      s.src = SOURCES[idx++];
+      s.async = true;
+      s.onload = () => { loaded = true; notifyReady(); };
+      s.onerror = () => setTimeout(tryNext, 150);
+      document.head.appendChild(s);
+    }
+
+    function notifyReady(){
+      document.documentElement.dataset.xlsx = "ready";
+      const badge = document.getElementById("xlsxBadge");
+      if (badge) { badge.textContent = "Librería XLSX cargada"; badge.className = "ok"; }
+    }
+    function notifyMissing(){
+      if (window.XLSX) { notifyReady(); return; }
+      document.documentElement.dataset.xlsx = "missing";
+      const badge = document.getElementById("xlsxBadge");
+      if (badge) {
+        badge.innerHTML = "No se cargó la librería XLSX. Use el botón <b>“Cargar librería XLSX local”</b> o coloque <code>xlsx.full.min.js</code> junto a este HTML.";
+        badge.className = "error";
+      }
+      const panel = document.getElementById("xlsxLocalPanel");
+      if (panel) panel.style.display = "block";
+    }
+
+    // Exponer un asegurador para el botón “Leer Excel…”
+    window.ensureXLSX = function(timeoutMs=6000){
+      return new Promise((resolve, reject)=>{
+        if (window.XLSX) return resolve();
+        const start = Date.now();
+        const t = setInterval(()=>{
+          if (window.XLSX) { clearInterval(t); resolve(); }
+          else if (Date.now() - start > timeoutMs) { clearInterval(t); reject(new Error("XLSX no disponible")); }
+        }, 120);
+      });
+    };
+
+    // Carga manual desde input[type=file] (archivo xlsx.full.min.js)
+    window.loadLocalXLSXFromFile = function(file){
+      if (!file) return;
+      const fr = new FileReader();
+      fr.onload = function(e){
+        try{
+          new Function(e.target.result)(); // evalúa la librería
+          if (window.XLSX) notifyReady(); else notifyMissing();
+        }catch(err){
+          const a = document.getElementById("alertasLectura");
+          if (a) a.innerHTML = `<div class="error">No se pudo cargar el script local: ${err.message}</div>`;
+        }
+      };
+      fr.readAsText(file);
+    };
+
+    // Iniciar intentos de carga automáticamente
+    tryNext();
+  })();
+  </script>
+
   <style>
     :root{
       --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
@@ -56,6 +127,22 @@
 
 <div class="wrap">
 
+  <!-- Panel de estado de la librería -->
+  <section class="card" style="border-style:dashed">
+    <h2>Dependencia: Librería XLSX</h2>
+    <div id="xlsxBadge" class="muted">Intentando cargar XLSX…</div>
+    <div id="xlsxLocalPanel" style="display:none; margin-top:10px">
+      <div class="grid col-3">
+        <div>
+          <label>Cargar librería XLSX local (opcional)</label>
+          <input type="file" id="xlsxLocalFile" accept=".js" />
+          <div class="help">Seleccione <code>xlsx.full.min.js</code> desde su equipo.</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+    </div>
+  </section>
+
   <!-- Carga de archivos -->
   <section class="card">
     <h2>1) Cargar archivos Excel (obligatorio)</h2>
@@ -63,17 +150,17 @@
       <div>
         <label for="fileMalla">Mallas (Excel)</label>
         <input type="file" id="fileMalla" accept=".xlsx,.xls,.xlsm,.csv" />
-        <div class="help">Debe contener: MALLA, CARRERA, CICLO, MATERIA, CÓDIGO/CODIGO, CÓDIGO ANTHOLOGY, PRE-REQUISITO, HORAS TEÓRICAS/PRÁCTICAS/AUTÓNOMAS, CRÉDITOS, CAMPO DE FORMACIÓN, Nº ORDEN EN LA MALLA, COMPARTIDA CON, PARALELO.</div>
+        <div class="help">Columnas esperadas: MALLA, CARRERA, CICLO, MATERIA, CÓDIGO, CÓDIGO ANTHOLOGY, PRE-REQUISITO, HORAS T/P/A, CRÉDITOS, CAMPO, Nº ORDEN, COMPARTIDA CON, PARALELO.</div>
       </div>
       <div>
         <label for="fileDocente">Docentes (Excel)</label>
         <input type="file" id="fileDocente" accept=".xlsx,.xls,.xlsm,.csv" />
-        <div class="help">Debe contener: DOCENTE, TITULO ACADÉMICO, DEDICACIÓN, DISPONIBILIDAD DÍAS, DISPONIBILIDAD HORAS, MATERIAS (separadas por / , ;).</div>
+        <div class="help">Columnas: DOCENTE, TITULO ACADÉMICO, DEDICACIÓN, DISPONIBILIDAD DÍAS, DISPONIBILIDAD HORAS, MATERIAS.</div>
       </div>
       <div>
         <label for="fileEstudiante">Estudiantes (Excel)</label>
         <input type="file" id="fileEstudiante" accept=".xlsx,.xls,.xlsm,.csv" />
-        <div class="help">Debe contener: CARRERA, ESTUDIANTE, CICLO DEL ESTUDIANTE, MALLA, NIVEL INGLES, OBSERVACIONES.</div>
+        <div class="help">Columnas: CARRERA, ESTUDIANTE, CICLO DEL ESTUDIANTE, MALLA, NIVEL INGLES, OBSERVACIONES.</div>
       </div>
     </div>
     <div class="divider"></div>
@@ -89,6 +176,7 @@
     <div id="alertasLectura"></div>
   </section>
 
+  <!-- (El resto del HTML es el mismo de la versión anterior, sin cambios en estructura ni campos) -->
   <!-- Restricciones y parámetros -->
   <section class="card">
     <h2>2) Restricciones y parámetros</h2>
@@ -98,35 +186,24 @@
         <div class="kpi">
           <span>7–10</span><span>10–13</span><span>13–16</span><span>16–19</span><span>19–22</span>
         </div>
-        <div class="help">Se aplican automáticamente. Máx. <b>2 materias/día</b> por docente y por estudiante.</div>
+        <div class="help">Máx. <b>2 materias/día</b> por docente y por estudiante.</div>
       </div>
       <div>
-        <label for="ciclosNoChoque">Regla de no choque entre ciclos adyacentes</label>
+        <label for="ciclosNoChoque">No choque ciclos adyacentes</label>
         <select id="ciclosNoChoque">
-          <option value="on" selected>Activada (2° no choca 1°/3°, etc.)</option>
+          <option value="on" selected>Activada</option>
           <option value="off">Desactivada</option>
         </select>
       </div>
     </div>
-
     <div class="divider"></div>
-
     <div class="grid col-2">
       <div>
-        <label for="rCiclo">Agregar restricción por “Prácticas comunitarias” (por ciclo)</label>
+        <label>“Prácticas comunitarias”</label>
         <div class="grid col-3">
-          <div>
-            <label class="help">Ciclo</label>
-            <input type="number" id="rCiclo" min="1" placeholder="p.ej., 2" />
-          </div>
-          <div>
-            <label class="help">Día</label>
-            <select id="rDia"><option value="">Seleccione</option><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option></select>
-          </div>
-          <div>
-            <label class="help">Franja</label>
-            <select id="rFranja"><option value="">Seleccione</option><option>7-10</option><option>10-13</option><option>13-16</option><option>16-19</option><option>19-22</option></select>
-          </div>
+          <div><label class="help">Ciclo</label><input type="number" id="rCiclo" min="1" placeholder="p.ej., 2" /></div>
+          <div><label class="help">Día</label><select id="rDia"><option value="">Seleccione</option><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option></select></div>
+          <div><label class="help">Franja</label><select id="rFranja"><option value="">Seleccione</option><option>7-10</option><option>10-13</option><option>13-16</option><option>16-19</option><option>19-22</option></select></div>
         </div>
         <div class="row" style="margin-top:8px">
           <button class="btn-sec" id="btnAddRestriccion">Añadir restricción</button>
@@ -134,12 +211,11 @@
         </div>
         <div id="listaRestricciones" class="help" style="margin-top:6px"></div>
       </div>
-
       <div>
         <label for="inglesModo">Restricciones de Inglés</label>
         <select id="inglesModo">
-          <option value="solicitar" selected>Solicitar (opcional, no limita ejecución)</option>
-          <option value="ignorar">Ignorar (no solicitar)</option>
+          <option value="solicitar" selected>Solicitar (opcional)</option>
+          <option value="ignorar">Ignorar</option>
         </select>
         <div id="inglesConfig" style="margin-top:8px;display:none">
           <div class="grid col-3">
@@ -153,12 +229,11 @@
           </div>
           <div id="listaIngles" class="help" style="margin-top:6px"></div>
         </div>
-        <div class="help">Si se define un bloque para un ciclo, el algoritmo evitará asignar materias en ese bloque para dichos estudiantes.</div>
       </div>
     </div>
   </section>
 
-  <!-- Ejecución -->
+  <!-- Ejecutar -->
   <section class="card">
     <h2>3) Ejecutar asignación profesional</h2>
     <div class="row">
@@ -174,23 +249,23 @@
     <div class="lists">
       <div class="list" id="listaPlanDocente">
         <h3>Planificación docente</h3>
-        <div class="muted">DOCENTE, TITULO ACADÉMICO, DEDICACIÓN, MATERIA, CÓDIGO ANTHOLOGY, CARRERAS QUE COMPARTEN, PRE-REQUISITO, CODIGO, HORAS T/P/A, CREDITOS, CAMPO DE FORMACIÓN, CICLO MALLA, Nº ORDEN EN LA MALLA, PARALELO, DÍA, HORA, MODALIDAD, Nro. HORAS</div>
+        <div class="muted">Campos requeridos según su instrucción.</div>
         <div class="divider"></div><div id="itemsPlanDocente"></div>
       </div>
       <div class="list" id="listaPlanEstudiante">
         <h3>Planificación estudiante</h3>
-        <div class="muted">CARRERA, ESTUDIANTE, CICLO DEL ESTUDIANTE, MALLA, CICLO DE LA MATERIA EN LA MALLA, COMPARTIDA CON CARRERA, MATERIA, PARALELO, DÍA, HORA, MODALIDAD, NIVEL INGLES, OBSERVACIONES, DOCENTE</div>
+        <div class="muted">Campos requeridos según su instrucción.</div>
         <div class="divider"></div><div id="itemsPlanEstudiante"></div>
       </div>
       <div class="list" id="listaMaterias">
         <h3>Materias</h3>
-        <div class="muted">MALLA, CICLO DE LA MATERIA EN LA MALLA, COMPARTIDA CON CARRERA, MATERIA, PARALELO, DÍA, HORA, Número de estudiantes</div>
+        <div class="muted">Campos requeridos según su instrucción.</div>
         <div class="divider"></div><div id="itemsMaterias"></div>
       </div>
     </div>
   </section>
 
-  <!-- Modificación para estudiantes -->
+  <!-- Modificación estudiante -->
   <section class="card">
     <h2>5) Modificar asignación de un estudiante</h2>
     <div class="grid col-3">
@@ -204,7 +279,7 @@
     </div>
     <div class="row" style="margin-top:10px">
       <button class="btn-sec" id="btnModificarEst">Aplicar modificación</button>
-      <span class="help">Si existe cruce de horarios se indicará a continuación.</span>
+      <span class="help">Si hay cruce de horarios se indicará.</span>
     </div>
     <div id="modResultado"></div>
   </section>
@@ -212,508 +287,109 @@
 </div>
 
 <script>
-/* ===========================
-   Utilidades y estado global
-   =========================== */
-const DIA_MAP = {
-  "lun":"Lunes","lunes":"Lunes","Lunes":"Lunes",
-  "mar":"Martes","martes":"Martes","Martes":"Martes",
-  "mie":"Miércoles","mié":"Miércoles","miercoles":"Miércoles","miércoles":"Miércoles","Miercoles":"Miércoles","Miércoles":"Miércoles",
-  "jue":"Jueves","jueves":"Jueves","Jueves":"Jueves","jues":"Jueves",
-  "vie":"Viernes","viernes":"Viernes","Viernes":"Viernes"
-};
-const FRANJAS = ["7-10","10-13","13-16","16-19","19-22"];
-const NORMALIZA = s => (s??"").toString().normalize("NFD").replace(/\p{Diacritic}/gu,"").trim().toLowerCase();
-const trimStr = s => (s??"").toString().trim();
-
-function normalizaDia(d){
-  const s = NORMALIZA(d);
-  if(!s) return "";
-  if(s.startsWith("lun")) return "Lunes";
-  if(s.startsWith("mar")) return "Martes";
-  if(s.startsWith("mie")||s.startsWith("mi")||s.includes("mier")) return "Miércoles";
-  if(s.startsWith("jue")) return "Jueves";
-  if(s.startsWith("vie")) return "Viernes";
-  return DIA_MAP[s] || "";
-}
-function normalizaFranja(h){
-  const s = NORMALIZA(h).replace(/\s/g,"");
-  // Soporta 7-10, 07:00-10:00, 7a10, 7–10, 7—10, etc.
-  const m = s.match(/(\d{1,2})[:.]?\d{0,2}?(?:a|-|–|—)?(\d{1,2})/);
-  if(m){
-    const a = parseInt(m[1],10), b = parseInt(m[2],10);
-    const key = `${a}-${b}`;
-    if(FRANJAS.includes(key)) return key;
-  }
-  for(const f of FRANJAS){ if(s.includes(f.replace("-",""))) return f; }
-  return "";
-}
-function splitMulti(val){
-  if(val==null) return [];
-  return val.toString().split(/[/,;|]/).map(v=>trimStr(v)).filter(Boolean);
-}
-function sumHoursFromFranjas(fr){ return (fr?.length||0)*3; } // 3h por bloque
-
-let CANCELAR_LECTURA = false; // NUEVO
-
-let MALLA=[], DOCENTES=[], ESTUDIANTES=[];
-let RESTR_PRACTICAS=new Map(), RESTR_INGLES=new Map();
-let PLAN_DOCENTE=[], PLAN_ESTUDIANTE=[], PLAN_MATERIAS=[];
-
-const idxDocentesPorMateria=new Map(), idxMateriasPorCarreraCiclo=new Map();
-const cupoMateriaParalelo=new Map();
-const asignacionesDocenteDia=new Map(), asignacionesEstudianteDia=new Map();
-const slotsDocente=new Map(), slotsEstudiante=new Map(), slotsCicloCarrera=new Map();
-
-/* ===============
-   UI helpers
-   =============== */
-function setBusy(el, busy){
-  el.disabled = !!busy;
-  const spin = document.getElementById('spinLeer');
-  if(spin) spin.style.display = busy ? 'inline-block' : 'none';
-}
-function alerta(containerId, html, ok=false){
-  const el = document.getElementById(containerId);
-  el.innerHTML = `<div class="${ok?'ok':'error'}">${html}</div>`;
-}
-function statusMsg(msg){ document.getElementById('statusLectura').textContent = msg; }
-function yieldUI(){ return new Promise(r=>setTimeout(r,0)); } // NUEVO: ceder hilo a la UI
-
-/* ===========================
-   Lectura robusta de archivos
-   =========================== */
-async function leerExcel(file){
-  // Soporte xlsx/xls/xlsm/csv
-  const isCSV = /\.csv$/i.test(file.name);
-  const data = await file.arrayBuffer();
-  const wb = XLSX.read(data, {type:'array', WTF:false, cellDates:true, raw:false});
-  let json = [];
-  for(const name of wb.SheetNames){
-    const hoja = wb.Sheets[name];
-    if(!hoja) continue;
-    const arr = XLSX.utils.sheet_to_json(hoja,{defval:"", blankrows:false});
-    if(arr && arr.length) json = json.concat(arr);
-  }
-  return json;
-}
-function mapHeader(row){
-  const out={};
-  for(const k in row){
-    const key = NORMALIZA(k).replace(/\s+/g,"_").replace(/[^\w_]/g,"");
-    out[key]=row[k];
-  }
-  return out;
-}
-function construirIndices(){
-  idxDocentesPorMateria.clear();
-  DOCENTES.forEach((d,idx)=>{
-    if(d.materias.length===0){
-      const key="*";
-      if(!idxDocentesPorMateria.has(key)) idxDocentesPorMateria.set(key,[]);
-      idxDocentesPorMateria.get(key).push(idx);
-    }else{
-      d.materias.forEach(m=>{
-        const k = NORMALIZA(m);
-        if(!idxDocentesPorMateria.has(k)) idxDocentesPorMateria.set(k,[]);
-        idxDocentesPorMateria.get(k).push(idx);
-      });
-    }
-  });
-  idxMateriasPorCarreraCiclo.clear();
-  MALLA.forEach(m=>{
-    const key = `${m.carrera}|${m.ciclo}`;
-    if(!idxMateriasPorCarreraCiclo.has(key)) idxMateriasPorCarreraCiclo.set(key,[]);
-    idxMateriasPorCarreraCiclo.get(key).push(m);
-  });
-}
-
-/* ===========================
-   Botón: Leer y preparar datos
-   =========================== */
+/* ======= Utilidades, estado y lógica (idéntico a la versión anterior mejorada) ======= */
+const DIA_MAP={"lun":"Lunes","lunes":"Lunes","Lunes":"Lunes","mar":"Martes","martes":"Martes","Martes":"Martes","mie":"Miércoles","mié":"Miércoles","miercoles":"Miércoles","miércoles":"Miércoles","Miercoles":"Miércoles","Miércoles":"Miércoles","jue":"Jueves","jueves":"Jueves","Jueves":"Jueves","jues":"Jueves","vie":"Viernes","viernes":"Viernes","Viernes":"Viernes"};
+const FRANJAS=["7-10","10-13","13-16","16-19","19-22"];
+const NORMALIZA=s=>(s??"").toString().normalize("NFD").replace(/\p{Diacritic}/gu,"").trim().toLowerCase();
+const trimStr=s=>(s??"").toString().trim();
+function normalizaDia(d){const s=NORMALIZA(d);if(!s)return"";if(s.startsWith("lun"))return"Lunes";if(s.startsWith("mar"))return"Martes";if(s.startsWith("mie")||s.startsWith("mi")||s.includes("mier"))return"Miércoles";if(s.startsWith("jue"))return"Jueves";if(s.startsWith("vie"))return"Viernes";return DIA_MAP[s]||"";}
+function normalizaFranja(h){const s=NORMALIZA(h).replace(/\s/g,"");const m=s.match(/(\d{1,2})[:.]?\d{0,2}?(?:a|-|–|—)?(\d{1,2})/);if(m){const a=parseInt(m[1],10),b=parseInt(m[2],10);const key=`${a}-${b}`;if(FRANJAS.includes(key))return key;}for(const f of FRANJAS){if(s.includes(f.replace("-","")))return f;}return"";}
+function splitMulti(val){if(val==null)return[];return val.toString().split(/[/,;|]/).map(v=>trimStr(v)).filter(Boolean);}
+function sumHoursFromFranjas(fr){return(fr?.length||0)*3;}
+let CANCELAR_LECTURA=false,MALLA=[],DOCENTES=[],ESTUDIANTES=[],RESTR_PRACTICAS=new Map(),RESTR_INGLES=new Map(),PLAN_DOCENTE=[],PLAN_ESTUDIANTE=[],PLAN_MATERIAS=[];
+const idxDocentesPorMateria=new Map(),idxMateriasPorCarreraCiclo=new Map(),cupoMateriaParalelo=new Map(),asignacionesDocenteDia=new Map(),asignacionesEstudianteDia=new Map(),slotsDocente=new Map(),slotsEstudiante=new Map(),slotsCicloCarrera=new Map();
+function setBusy(el,busy){el.disabled=!!busy;const spin=document.getElementById('spinLeer');if(spin)spin.style.display=busy?'inline-block':'none';}
+function alerta(containerId,html,ok=false){const el=document.getElementById(containerId);el.innerHTML=`<div class="${ok?'ok':'error'}">${html}</div>`;}
+function statusMsg(msg){document.getElementById('statusLectura').textContent=msg;}
+function yieldUI(){return new Promise(r=>setTimeout(r,0));}
+async function leerExcel(file){const data=await file.arrayBuffer();const wb=XLSX.read(data,{type:'array',WTF:false,cellDates:true,raw:false});let json=[];for(const name of wb.SheetNames){const hoja=wb.Sheets[name];if(!hoja)continue;const arr=XLSX.utils.sheet_to_json(hoja,{defval:"",blankrows:false});if(arr&&arr.length)json=json.concat(arr);}return json;}
+function mapHeader(row){const out={};for(const k in row){const key=NORMALIZA(k).replace(/\s+/g,"_").replace(/[^\w_]/g,"");out[key]=row[k];}return out;}
+function construirIndices(){idxDocentesPorMateria.clear();DOCENTES.forEach((d,idx)=>{if(d.materias.length===0){const key="*";if(!idxDocentesPorMateria.has(key))idxDocentesPorMateria.set(key,[]);idxDocentesPorMateria.get(key).push(idx);}else{d.materias.forEach(m=>{const k=NORMALIZA(m);if(!idxDocentesPorMateria.has(k))idxDocentesPorMateria.set(k,[]);idxDocentesPorMateria.get(k).push(idx);});}});idxMateriasPorCarreraCiclo.clear();MALLA.forEach(m=>{const key=`${m.carrera}|${m.ciclo}`;if(!idxMateriasPorCarreraCiclo.has(key))idxMateriasPorCarreraCiclo.set(key,[]);idxMateriasPorCarreraCiclo.get(key).push(m);});}
+function validarColumnas(nombre,rows,esperadas){if(!rows.length)return;const keys=Object.keys(rows[0]||{});const faltantes=esperadas.filter(k=>!keys.includes(k));if(faltantes.length){const muestra=keys.slice(0,8).join(", ");const html=`<b>${nombre}:</b> faltan encabezados esperados: <b>${faltantes.join(", ")}</b>.<br>Encabezados detectados (ejemplo): ${muestra||"—"}.`;const cont=document.getElementById('alertasLectura');cont.innerHTML+=`<div class="error">${html}</div>`;}}
 async function handleLeer(){
-  CANCELAR_LECTURA = false;
-  const mFile = document.getElementById('fileMalla').files[0];
-  const dFile = document.getElementById('fileDocente').files[0];
-  const eFile = document.getElementById('fileEstudiante').files[0];
-  const alertas = 'alertasLectura';
-
-  if(!window.XLSX){
-    alerta(alertas, "No se cargó la librería XLSX. Revise su conexión a CDN.");
-    return;
-  }
-  if(!mFile || !dFile || !eFile){
-    alerta(alertas, "Cargue los tres archivos: Mallas, Docentes y Estudiantes.");
-    return;
-  }
-
-  // Deshabilitar controles mientras lee
-  setBusy(document.getElementById('btnLeer'), true);
-  document.getElementById('btnCancelar').disabled = false;
-  alerta(alertas, "");
-  statusMsg("Leyendo archivos…");
-
+  const alertas='alertasLectura';
+  try{await ensureXLSX();}catch(_){alerta(alertas,"No se cargó XLSX desde internet. Use el botón “Cargar librería XLSX local” o coloque <code>xlsx.full.min.js</code> junto al HTML.");return;}
+  CANCELAR_LECTURA=false;
+  const mFile=document.getElementById('fileMalla').files[0];
+  const dFile=document.getElementById('fileDocente').files[0];
+  const eFile=document.getElementById('fileEstudiante').files[0];
+  if(!mFile||!dFile||!eFile){alerta(alertas,"Cargue los tres archivos: Mallas, Docentes y Estudiantes.");return;}
+  setBusy(document.getElementById('btnLeer'),true);document.getElementById('btnCancelar').disabled=false;alerta(alertas,"");statusMsg("Leyendo archivos…");
   try{
-    statusMsg("(1/3) Leyendo Mallas…");
-    await yieldUI(); if(CANCELAR_LECTURA) throw new Error("Lectura cancelada por el usuario.");
-    const jm = await leerExcel(mFile);
-    if(!jm.length) throw new Error("Mallas: la hoja está vacía o sin filas legibles.");
-
-    statusMsg("(2/3) Leyendo Docentes…");
-    await yieldUI(); if(CANCELAR_LECTURA) throw new Error("Lectura cancelada por el usuario.");
-    const jd = await leerExcel(dFile);
-    if(!jd.length) throw new Error("Docentes: la hoja está vacía o sin filas legibles.");
-
-    statusMsg("(3/3) Leyendo Estudiantes…");
-    await yieldUI(); if(CANCELAR_LECTURA) throw new Error("Lectura cancelada por el usuario.");
-    const je = await leerExcel(eFile);
-    if(!je.length) throw new Error("Estudiantes: la hoja está vacía o sin filas legibles.");
-
-    statusMsg("Normalizando encabezados…");
-    await yieldUI();
-
-    const nm = jm.map(mapHeader);
-    const nd = jd.map(mapHeader);
-    const ne = je.map(mapHeader);
-
-    // Validación básica de columnas esperadas (solo alerta, no bloquea)
-    validarColumnas("Mallas", nm, ["malla","carrera","ciclo","materia"]);
-    validarColumnas("Docentes", nd, ["docente","disponibilidad_dias","disponibilidad_horas"]);
-    validarColumnas("Estudiantes", ne, ["carrera","estudiante","ciclo_del_estudiante","malla"]);
-
-    // Parse MALLA
-    MALLA = nm.map(r=>({
-      malla: trimStr(r["malla"]||r["nombre_malla"]||""),
-      carrera: trimStr(r["carrera"]||""),
-      ciclo: parseInt(r["ciclo"]||r["ciclo_malla"]||r["ciclo_de_la_materia_en_la_malla"]||r["nivel"]||"0",10)||0,
-      materia: trimStr(r["materia"]||r["asignatura"]||""),
-      codigo: trimStr(r["codigo"]||r["código"]||""),
-      codigo_anthology: trimStr(r["codigo_anthology"]||r["código_anthology"]||""),
-      prereq: trimStr(r["pre-requisito"]||r["prerequisito"]||r["pre_requisito"]||""),
-      horas_t: parseInt(r["horas_teoricas"]||r["horas_teóricas"]||"0",10)||0,
-      horas_p: parseInt(r["horas_practicas"]||"0",10)||0,
-      horas_a: parseInt(r["horas_autonomas"]||"0",10)||0,
-      creditos: parseFloat(r["creditos"]||r["créditos"]||"0")||0,
-      campo: trimStr(r["campo_de_formacion"]||r["campo"]||""),
-      orden_malla: trimStr(r["nº_orden_en_la_malla"]||r["n_orden_en_la_malla"]||r["orden"]||""),
-      compartida_con: splitMulti(r["compartida_con"]||r["compartida_con_carrera"]||"").join(" / "),
-      paralelo: trimStr(r["paralelo"]||""),
-      modalidad: trimStr(r["modalidad"]||"Presencial")
-    })).filter(x=>x.materia);
-
-    // Parse DOCENTES
-    DOCENTES = nd.map(r=>{
-      const dias = splitMulti(r["disponibilidad_dias"]||r["dias"]||r["disponibilidad"]||"").map(normalizaDia).filter(Boolean);
-      const fr = splitMulti(r["disponibilidad_horas"]||r["horas"]||"").map(normalizaFranja).filter(Boolean);
-      const slots = new Set();
-      for(const d of dias){ for(const f of fr){ slots.add(`${d}|${f}`); } }
-      return {
-        docente: trimStr(r["docente"]||r["nombre"]||""),
-        titulo: trimStr(r["titulo_academico"]||r["titulo"]||""),
-        dedicacion: trimStr(r["dedicacion"]||""),
-        materias: splitMulti(r["materias"]||r["materia"]||"").map(m=>m.toString().trim()).filter(Boolean),
-        disponibilidad: slots
-      };
-    }).filter(x=>x.docente);
-
-    // Parse ESTUDIANTES
-    ESTUDIANTES = ne.map(r=>({
-      carrera: trimStr(r["carrera"]||""),
-      estudiante: trimStr(r["estudiante"]||r["alumno"]||""),
-      ciclo_est: parseInt(r["ciclo_del_estudiante"]||r["ciclo"]||"0",10)||0,
-      malla: trimStr(r["malla"]||""),
-      nivel_ingles: trimStr(r["nivel_ingles"]||r["ingles"]||""),
-      observaciones: trimStr(r["observaciones"]||"")
-    })).filter(x=>x.estudiante);
-
-    statusMsg("Construyendo índices…");
-    await yieldUI();
-    construirIndices();
-
-    alerta(alertas, "Archivos leídos y normalizados correctamente.", true);
-    statusMsg("Listo.");
-  }catch(err){
-    console.error(err);
-    alerta(alertas, `Error: ${err.message || err}`, false);
-    statusMsg("");
-  }finally{
-    setBusy(document.getElementById('btnLeer'), false);
-    document.getElementById('btnCancelar').disabled = true;
-  }
+    statusMsg("(1/3) Leyendo Mallas…");await yieldUI();if(CANCELAR_LECTURA)throw new Error("Lectura cancelada.");
+    const jm=await leerExcel(mFile); if(!jm.length)throw new Error("Mallas: hoja vacía.");
+    statusMsg("(2/3) Leyendo Docentes…");await yieldUI();if(CANCELAR_LECTURA)throw new Error("Lectura cancelada.");
+    const jd=await leerExcel(dFile); if(!jd.length)throw new Error("Docentes: hoja vacía.");
+    statusMsg("(3/3) Leyendo Estudiantes…");await yieldUI();if(CANCELAR_LECTURA)throw new Error("Lectura cancelada.");
+    const je=await leerExcel(eFile); if(!je.length)throw new Error("Estudiantes: hoja vacía.");
+    statusMsg("Normalizando encabezados…");await yieldUI();
+    const nm=jm.map(mapHeader), nd=jd.map(mapHeader), ne=je.map(mapHeader);
+    validarColumnas("Mallas",nm,["malla","carrera","ciclo","materia"]);
+    validarColumnas("Docentes",nd,["docente","disponibilidad_dias","disponibilidad_horas"]);
+    validarColumnas("Estudiantes",ne,["carrera","estudiante","ciclo_del_estudiante","malla"]);
+    MALLA=nm.map(r=>({malla:trimStr(r["malla"]||r["nombre_malla"]||""),carrera:trimStr(r["carrera"]||""),ciclo:parseInt(r["ciclo"]||r["ciclo_malla"]||r["ciclo_de_la_materia_en_la_malla"]||r["nivel"]||"0",10)||0,materia:trimStr(r["materia"]||r["asignatura"]||""),codigo:trimStr(r["codigo"]||r["código"]||""),codigo_anthology:trimStr(r["codigo_anthology"]||r["código_anthology"]||""),prereq:trimStr(r["pre-requisito"]||r["prerequisito"]||r["pre_requisito"]||""),horas_t:parseInt(r["horas_teoricas"]||r["horas_teóricas"]||"0",10)||0,horas_p:parseInt(r["horas_practicas"]||"0",10)||0,horas_a:parseInt(r["horas_autonomas"]||"0",10)||0,creditos:parseFloat(r["creditos"]||r["créditos"]||"0")||0,campo:trimStr(r["campo_de_formacion"]||r["campo"]||""),orden_malla:trimStr(r["nº_orden_en_la_malla"]||r["n_orden_en_la_malla"]||r["orden"]||""),compartida_con:splitMulti(r["compartida_con"]||r["compartida_con_carrera"]||"").join(" / "),paralelo:trimStr(r["paralelo"]||""),modalidad:trimStr(r["modalidad"]||"Presencial")})).filter(x=>x.materia);
+    DOCENTES=nd.map(r=>{const dias=splitMulti(r["disponibilidad_dias"]||r["dias"]||r["disponibilidad"]||"").map(normalizaDia).filter(Boolean);const fr=splitMulti(r["disponibilidad_horas"]||r["horas"]||"").map(normalizaFranja).filter(Boolean);const slots=new Set();for(const d of dias){for(const f of fr){slots.add(`${d}|${f}`);}}return{docente:trimStr(r["docente"]||r["nombre"]||""),titulo:trimStr(r["titulo_academico"]||r["titulo"]||""),dedicacion:trimStr(r["dedicacion"]||""),materias:splitMulti(r["materias"]||r["materia"]||"").map(m=>m.toString().trim()).filter(Boolean),disponibilidad:slots};}).filter(x=>x.docente);
+    ESTUDIANTES=ne.map(r=>({carrera:trimStr(r["carrera"]||""),estudiante:trimStr(r["estudiante"]||r["alumno"]||""),ciclo_est:parseInt(r["ciclo_del_estudiante"]||r["ciclo"]||"0",10)||0,malla:trimStr(r["malla"]||""),nivel_ingles:trimStr(r["nivel_ingles"]||r["ingles"]||""),observaciones:trimStr(r["observaciones"]||"")})).filter(x=>x.estudiante);
+    statusMsg("Construyendo índices…");await yieldUI();construirIndices();
+    alerta(alertas,"Archivos leídos y normalizados correctamente.",true);statusMsg("Listo.");
+  }catch(err){console.error(err);alerta(alertas,`Error: ${err.message||err}`,false);statusMsg("");}
+  finally{setBusy(document.getElementById('btnLeer'),false);document.getElementById('btnCancelar').disabled=true;}
 }
-
-function validarColumnas(nombre, rows, esperadas){
-  if(!rows.length) return;
-  const keys = Object.keys(rows[0]||{});
-  const faltantes = esperadas.filter(k=>!keys.includes(k));
-  if(faltantes.length){
-    const muestra = keys.slice(0,8).join(", ");
-    const html = `<b>${nombre}:</b> faltan encabezados esperados: <b>${faltantes.join(", ")}</b>.<br>
-                  Encabezados detectados (ejemplo): ${muestra || "—"}.`;
-    const cont = document.getElementById('alertasLectura');
-    cont.innerHTML += `<div class="error">${html}</div>`;
-  }
-}
-
-/* ===========================
-   Restricciones
-   =========================== */
-function addRestriccion(ciclo, dia, franja, mapa, labelId){
-  ciclo = parseInt(ciclo,10)||0;
-  if(!ciclo || !dia || !franja) return;
-  if(!mapa.has(ciclo)) mapa.set(ciclo, new Set());
-  mapa.get(ciclo).add(`${dia}|${franja}`);
-  renderRestricciones(labelId, mapa);
-}
-function clearRestricciones(mapa, labelId){
-  mapa.clear();
-  renderRestricciones(labelId, mapa);
-}
-function renderRestricciones(labelId, mapa){
-  const el = document.getElementById(labelId);
-  if(mapa.size===0){ el.innerHTML = "<span class='muted'>Sin restricciones definidas.</span>"; return; }
-  let html = "";
-  [...mapa.entries()].sort((a,b)=>a[0]-b[0]).forEach(([ciclo, set])=>{
-    html += `<div class="pill">Ciclo ${ciclo}:</div> ` + [...set].map(s=>`<span class="tag">${s}</span>`).join(" ") + "<br/>";
-  });
-  el.innerHTML = html;
-}
-
-/* ===========================
-   Asignación
-   =========================== */
-function resetAsignaciones(){
-  PLAN_DOCENTE=[]; PLAN_ESTUDIANTE=[]; PLAN_MATERIAS=[];
-  cupoMateriaParalelo.clear(); asignacionesDocenteDia.clear(); asignacionesEstudianteDia.clear();
-  slotsDocente.clear(); slotsEstudiante.clear(); slotsCicloCarrera.clear();
-}
-function cicloNoChoca(carrera, ciclo, dia, franja){
-  const toggle = document.getElementById('ciclosNoChoque').value;
-  if(toggle!=="on") return true;
-  const vecinos = [ciclo-1, ciclo+1].filter(x=>x>0);
-  for(const v of vecinos){
-    const key = `${carrera}|${v}`;
-    const set = slotsCicloCarrera.get(key);
-    if(set && set.has(`${dia}|${franja}`)) return false;
-  }
-  return true;
-}
-function bloqueDisponibleEstudiante(est){
-  if(!slotsEstudiante.has(est.estudiante)) slotsEstudiante.set(est.estudiante, new Set());
-  return slotsEstudiante.get(est.estudiante);
-}
-function bloqueDisponibleDocente(doc){
-  if(!slotsDocente.has(doc.docente)) slotsDocente.set(doc.docente, new Set());
-  return slotsDocente.get(doc.docente);
-}
-function contarDia(map, key){ map.set(key, (map.get(key)||0)+1); }
-function limite2porDia(map, key){ return (map.get(key)||0) < 2; }
-function evitaRestriccionCiclo(carrera, ciclo, dia, franja){
-  const pr = RESTR_PRACTICAS.get(ciclo);
-  if(pr && pr.has(`${dia}|${franja}`)) return false;
-  const inb = RESTR_INGLES.get(ciclo);
-  if(inb && inb.has(`${dia}|${franja}`)) return false;
-  return true;
-}
-function docentesParaMateria(nombreMateria){
-  const k = NORMALIZA(nombreMateria);
-  const exact = idxDocentesPorMateria.get(k)||[];
-  const comodin = idxDocentesPorMateria.get("*")||[];
-  return [...exact, ...comodin];
-}
-function eligeSlotValido(doc, est, carrera, ciclo){
-  const dispDoc = doc.disponibilidad;
-  const dias = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
-  for(const d of dias){
-    const keyDocDia = `${doc.docente}|${d}`;
-    const keyEstDia = `${est.estudiante}|${d}`;
-    if(!limite2porDia(asignacionesDocenteDia, keyDocDia)) continue;
-    if(!limite2porDia(asignacionesEstudianteDia, keyEstDia)) continue;
-    for(const f of FRANJAS){
-      const slot = `${d}|${f}`;
-      if(!dispDoc.has(slot)) continue;
-      if(!evitaRestriccionCiclo(carrera, ciclo, d, f)) continue;
-      if(!cicloNoChoca(carrera, ciclo, d, f)) continue;
-      const usedDoc = bloqueDisponibleDocente(doc);
-      const usedEst = bloqueDisponibleEstudiante(est);
-      if(usedDoc.has(slot) || usedEst.has(slot)) continue;
-      return {dia:d, franja:f};
-    }
-  }
-  return null;
-}
-function asignar(){
-  resetAsignaciones();
-  for(const est of ESTUDIANTES){
-    const key = `${est.carrera}|${est.ciclo_est}`;
-    const materias = (idxMateriasPorCarreraCiclo.get(key)||[]).slice(0,50)
-      .sort((a,b)=>(parseInt(a.orden_malla)||999)-(parseInt(b.orden_malla)||999));
-    let asignadasEst = 0;
-    for(const m of materias){
-      if(asignadasEst>=6) break;
-      const candidatos = docentesParaMateria(m.materia);
-      let asignado = false;
-      for(const dIdx of candidatos){
-        const doc = DOCENTES[dIdx]; if(!doc) continue;
-        const slot = eligeSlotValido(doc, est, est.carrera, m.ciclo);
-        if(!slot) continue;
-        const slotKey = `${slot.dia}|${slot.franja}`;
-        const keyCiclo = `${est.carrera}|${m.ciclo}`;
-        if(!slotsCicloCarrera.has(keyCiclo)) slotsCicloCarrera.set(keyCiclo,new Set());
-        slotsCicloCarrera.get(keyCiclo).add(slotKey);
-        const usedDoc = bloqueDisponibleDocente(doc); usedDoc.add(slotKey);
-        const usedEst = bloqueDisponibleEstudiante(est); usedEst.add(slotKey);
-        contarDia(asignacionesDocenteDia, `${doc.docente}|${slot.dia}`);
-        contarDia(asignacionesEstudianteDia, `${est.estudiante}|${slot.dia}`);
-        const paralelo = m.paralelo || "A";
-        const matKey = `${m.materia}|${paralelo}|${slot.dia}|${slot.franja}`;
-        cupoMateriaParalelo.set(matKey, (cupoMateriaParalelo.get(matKey)||0)+1);
-        const nroHoras = sumHoursFromFranjas([slot.franja]);
-        PLAN_ESTUDIANTE.push({
-          carrera: est.carrera, estudiante: est.estudiante, ciclo_est: est.ciclo_est, malla: est.malla,
-          ciclo_materia: m.ciclo, compartida_con: m.compartida_con || "", materia: m.materia,
-          paralelo, dia: slot.dia, franja: slot.franja, modalidad: m.modalidad || "Presencial",
-          nivel_ingles: est.nivel_ingles, observaciones: est.observaciones, docente: doc.docente
-        });
-        PLAN_DOCENTE.push({
-          docente: doc.docente, titulo: doc.titulo, dedicacion: doc.dedicacion, materia: m.materia,
-          codigo_anthology: m.codigo_anthology, carreras_comparten: m.compartida_con || "",
-          prereq: m.prereq, codigo: m.codigo, horas_t: m.horas_t, horas_p: m.horas_p, horas_a: m.horas_a,
-          creditos: m.creditos, campo: m.campo, ciclo_malla: m.ciclo, orden_malla: m.orden_malla,
-          paralelo, dia: slot.dia, franja: slot.franja, modalidad: m.modalidad || "Presencial", nro_horas: nroHoras
-        });
-        asignado = true; asignadasEst++; break;
-      }
-      // si no se asigna, continúa con la siguiente materia
-    }
-  }
-  PLAN_MATERIAS = [];
-  cupoMateriaParalelo.forEach((count,key)=>{
-    const [materia,paralelo,dia,franja] = key.split("|");
-    const ref = MALLA.find(x=>x.materia===materia) || {};
-    PLAN_MATERIAS.push({
-      malla: ref.malla || "", ciclo_materia: ref.ciclo || "", compartida_con: ref.compartida_con || "",
-      materia, paralelo, dia, franja, num_estudiantes: count
-    });
-  });
-}
-
-/* ===========================
-   Render
-   =========================== */
+function addRestriccion(ciclo,dia,franja,mapa,labelId){ciclo=parseInt(ciclo,10)||0;if(!ciclo||!dia||!franja)return;if(!mapa.has(ciclo))mapa.set(ciclo,new Set());mapa.get(ciclo).add(`${dia}|${franja}`);renderRestricciones(labelId,mapa);}
+function clearRestricciones(mapa,labelId){mapa.clear();renderRestricciones(labelId,mapa);}
+function renderRestricciones(labelId,mapa){const el=document.getElementById(labelId);if(mapa.size===0){el.innerHTML="<span class='muted'>Sin restricciones definidas.</span>";return;}let html="";[...mapa.entries()].sort((a,b)=>a[0]-b[0]).forEach(([ciclo,set])=>{html+=`<div class="pill">Ciclo ${ciclo}:</div> `+[...set].map(s=>`<span class="tag">${s}</span>`).join(" ")+"<br/>";});el.innerHTML=html;}
+function resetAsignaciones(){PLAN_DOCENTE=[];PLAN_ESTUDIANTE=[];PLAN_MATERIAS=[];cupoMateriaParalelo.clear();asignacionesDocenteDia.clear();asignacionesEstudianteDia.clear();slotsDocente.clear();slotsEstudiante.clear();slotsCicloCarrera.clear();}
+function cicloNoChoca(carrera,ciclo,dia,franja){const toggle=document.getElementById('ciclosNoChoque').value;if(toggle!=="on")return true;const vecinos=[ciclo-1,ciclo+1].filter(x=>x>0);for(const v of vecinos){const key=`${carrera}|${v}`;const set=slotsCicloCarrera.get(key);if(set&&set.has(`${dia}|${franja}`))return false;}return true;}
+function bloqueDisponibleEstudiante(est){if(!slotsEstudiante.has(est.estudiante))slotsEstudiante.set(est.estudiante,new Set());return slotsEstudiante.get(est.estudiante);}
+function bloqueDisponibleDocente(doc){if(!slotsDocente.has(doc.docente))slotsDocente.set(doc.docente,new Set());return slotsDocente.get(doc.docente);}
+function contarDia(map,key){map.set(key,(map.get(key)||0)+1);}
+function limite2porDia(map,key){return(map.get(key)||0)<2;}
+function evitaRestriccionCiclo(carrera,ciclo,dia,franja){const pr=RESTR_PRACTICAS.get(ciclo);if(pr&&pr.has(`${dia}|${franja}`))return false;const inb=RESTR_INGLES.get(ciclo);if(inb&&inb.has(`${dia}|${franja}`))return false;return true;}
+function docentesParaMateria(nombreMateria){const k=NORMALIZA(nombreMateria);const exact=idxDocentesPorMateria.get(k)||[];const comodin=idxDocentesPorMateria.get("*")||[];return[...exact,...comodin];}
+function eligeSlotValido(doc,est,carrera,ciclo){const dispDoc=doc.disponibilidad;const dias=["Lunes","Martes","Miércoles","Jueves","Viernes"];for(const d of dias){const keyDocDia=`${doc.docente}|${d}`;const keyEstDia=`${est.estudiante}|${d}`;if(!limite2porDia(asignacionesDocenteDia,keyDocDia))continue;if(!limite2porDia(asignacionesEstudianteDia,keyEstDia))continue;for(const f of FRANJAS){const slot=`${d}|${f}`;if(!dispDoc.has(slot))continue;if(!evitaRestriccionCiclo(carrera,ciclo,d,f))continue;if(!cicloNoChoca(carrera,ciclo,d,f))continue;const usedDoc=bloqueDisponibleDocente(doc);const usedEst=bloqueDisponibleEstudiante(est);if(usedDoc.has(slot)||usedEst.has(slot))continue;return{dia:d,franja:f};}}return null;}
+function asignar(){resetAsignaciones();for(const est of ESTUDIANTES){const key=`${est.carrera}|${est.ciclo_est}`;const materias=(idxMateriasPorCarreraCiclo.get(key)||[]).slice(0,50).sort((a,b)=>(parseInt(a.orden_malla)||999)-(parseInt(b.orden_malla)||999));let asignadasEst=0;for(const m of materias){if(asignadasEst>=6)break;const candidatos=docentesParaMateria(m.materia);for(const dIdx of candidatos){const doc=DOCENTES[dIdx];if(!doc)continue;const slot=eligeSlotValido(doc,est,est.carrera,m.ciclo);if(!slot)continue;const slotKey=`${slot.dia}|${slot.franja}`;const keyCiclo=`${est.carrera}|${m.ciclo}`;if(!slotsCicloCarrera.has(keyCiclo))slotsCicloCarrera.set(keyCiclo,new Set());slotsCicloCarrera.get(keyCiclo).add(slotKey);const usedDoc=bloqueDisponibleDocente(doc);usedDoc.add(slotKey);const usedEst=bloqueDisponibleEstudiante(est);usedEst.add(slotKey);contarDia(asignacionesDocenteDia,`${doc.docente}|${slot.dia}`);contarDia(asignacionesEstudianteDia,`${est.estudiante}|${slot.dia}`);const paralelo=m.paralelo||"A";const matKey=`${m.materia}|${paralelo}|${slot.dia}|${slot.franja}`;cupoMateriaParalelo.set(matKey,(cupoMateriaParalelo.get(matKey)||0)+1);const nroHoras=sumHoursFromFranjas([slot.franja]);PLAN_ESTUDIANTE.push({carrera:est.carrera,estudiante:est.estudiante,ciclo_est:est.ciclo_est,malla:est.malla,ciclo_materia:m.ciclo,compartida_con:m.compartida_con||"",materia:m.materia,paralelo,dia:slot.dia,franja:slot.franja,modalidad:m.modalidad||"Presencial",nivel_ingles:est.nivel_ingles,observaciones:est.observaciones,docente:doc.docente});PLAN_DOCENTE.push({docente:doc.docente,titulo:doc.titulo,dedicacion:doc.dedicacion,materia:m.materia,codigo_anthology:m.codigo_anthology,carreras_comparten:m.compartida_con||"",prereq:m.prereq,codigo:m.codigo,horas_t:m.horas_t,horas_p:m.horas_p,horas_a:m.horas_a,creditos:m.creditos,campo:m.campo,ciclo_malla:m.ciclo,orden_malla:m.orden_malla,paralelo,dia:slot.dia,franja:slot.franja,modalidad:m.modalidad||"Presencial",nro_horas:nroHoras});asignadasEst++;break;}}}
+  PLAN_MATERIAS=[];cupoMateriaParalelo.forEach((count,key)=>{const[materia,paralelo,dia,franja]=key.split("|");const ref=MALLA.find(x=>x.materia===materia)||{};PLAN_MATERIAS.push({malla:ref.malla||"",ciclo_materia:ref.ciclo||"",compartida_con:ref.compartida_con||"",materia,paralelo,dia,franja,num_estudiantes:count});});}
 function renderPlanificacion(){
   const dEl=document.getElementById('itemsPlanDocente');
-  dEl.innerHTML = PLAN_DOCENTE.length? PLAN_DOCENTE.map(x=>(
-    `<div class="item">
-      <div class="row"><span class="pill">${x.docente}</span><span class="tag">${x.dia} ${x.franja}</span><span class="tag">${x.modalidad}</span></div>
-      <div class="muted"><b>Materia:</b> ${x.materia} — <b>Código Anthology:</b> ${x.codigo_anthology||"-"} — <b>Código:</b> ${x.codigo||"-"}</div>
-      <div class="muted"><b>Carreras que comparten:</b> ${x.carreras_comparten||"-"} — <b>Pre-requisito:</b> ${x.prereq||"-"}</div>
-      <div class="muted"><b>Horas T/P/A:</b> ${x.horas_t}/${x.horas_p}/${x.horas_a} — <b>Créditos:</b> ${x.creditos} — <b>Campo:</b> ${x.campo||"-"}</div>
-      <div class="muted"><b>Ciclo malla:</b> ${x.ciclo_malla} — <b>Nº orden en la malla:</b> ${x.orden_malla||"-"} — <b>Paralelo:</b> ${x.paralelo}</div>
-      <div class="muted"><b>Docente:</b> ${x.docente} — <b>Título:</b> ${x.titulo||"-"} — <b>Dedicación:</b> ${x.dedicacion||"-"}</div>
-      <div class="muted"><b>Nro. HORAS (asignadas):</b> ${x.nro_horas}</div>
-    </div>`
-  )).join("") : "<div class='muted'>Sin asignaciones para docentes.</div>";
-
+  dEl.innerHTML=PLAN_DOCENTE.length?PLAN_DOCENTE.map(x=>(`<div class="item"><div class="row"><span class="pill">${x.docente}</span><span class="tag">${x.dia} ${x.franja}</span><span class="tag">${x.modalidad}</span></div><div class="muted"><b>Materia:</b> ${x.materia} — <b>Código Anthology:</b> ${x.codigo_anthology||"-"} — <b>Código:</b> ${x.codigo||"-"}</div><div class="muted"><b>Carreras que comparten:</b> ${x.carreras_comparten||"-"} — <b>Pre-requisito:</b> ${x.prereq||"-"}</div><div class="muted"><b>Horas T/P/A:</b> ${x.horas_t}/${x.horas_p}/${x.horas_a} — <b>Créditos:</b> ${x.creditos} — <b>Campo:</b> ${x.campo||"-"}</div><div class="muted"><b>Ciclo malla:</b> ${x.ciclo_malla} — <b>Nº orden:</b> ${x.orden_malla||"-"} — <b>Paralelo:</b> ${x.paralelo}</div><div class="muted"><b>Docente:</b> ${x.docente} — <b>Título:</b> ${x.titulo||"-"} — <b>Dedicación:</b> ${x.dedicacion||"-"}</div><div class="muted"><b>Nro. HORAS:</b> ${x.nro_horas}</div></div>`)).join(""):"<div class='muted'>Sin asignaciones para docentes.</div>";
   const eEl=document.getElementById('itemsPlanEstudiante');
-  if(PLAN_ESTUDIANTE.length===0){
-    eEl.innerHTML = "<div class='muted'>Sin asignaciones para estudiantes.</div>";
-    document.getElementById('modEstudiante').innerHTML = "";
-  }else{
-    const combo = document.getElementById('modEstudiante');
-    combo.innerHTML = [...new Set(PLAN_ESTUDIANTE.map(x=>x.estudiante))].map(n=>`<option>${n}</option>`).join("");
-    eEl.innerHTML = PLAN_ESTUDIANTE.map(x=>(
-      `<div class="item">
-        <div class="row"><span class="pill">${x.estudiante}</span><span class="tag">${x.carrera}</span><span class="tag">Ciclo ${x.ciclo_est}</span><span class="tag">${x.dia} ${x.franja}</span></div>
-        <div class="muted"><b>Malla:</b> ${x.malla} — <b>Ciclo de la materia en la malla:</b> ${x.ciclo_materia}</div>
-        <div class="muted"><b>Compartida con carrera:</b> ${x.compartida_con||"-"} — <b>Materia:</b> ${x.materia} — <b>Paralelo:</b> ${x.paralelo} — <b>Modalidad:</b> ${x.modalidad}</div>
-        <div class="muted"><b>Nivel inglés:</b> ${x.nivel_ingles||"-"} — <b>Observaciones:</b> ${x.observaciones||"-"} — <b>Docente:</b> ${x.docente}</div>
-      </div>`
-    )).join("");
-  }
-
+  if(PLAN_ESTUDIANTE.length===0){eEl.innerHTML="<div class='muted'>Sin asignaciones para estudiantes.</div>";document.getElementById('modEstudiante').innerHTML="";}
+  else{const combo=document.getElementById('modEstudiante');combo.innerHTML=[...new Set(PLAN_ESTUDIANTE.map(x=>x.estudiante))].map(n=>`<option>${n}</option>`).join("");eEl.innerHTML=PLAN_ESTUDIANTE.map(x=>(`<div class="item"><div class="row"><span class="pill">${x.estudiante}</span><span class="tag">${x.carrera}</span><span class="tag">Ciclo ${x.ciclo_est}</span><span class="tag">${x.dia} ${x.franja}</span></div><div class="muted"><b>Malla:</b> ${x.malla} — <b>Ciclo de la materia en la malla:</b> ${x.ciclo_materia}</div><div class="muted"><b>Compartida con carrera:</b> ${x.compartida_con||"-"} — <b>Materia:</b> ${x.materia} — <b>Paralelo:</b> ${x.paralelo} — <b>Modalidad:</b> ${x.modalidad}</div><div class="muted"><b>Nivel inglés:</b> ${x.nivel_ingles||"-"} — <b>Observaciones:</b> ${x.observaciones||"-"} — <b>Docente:</b> ${x.docente}</div></div>`)).join("");}
   const mEl=document.getElementById('itemsMaterias');
-  mEl.innerHTML = PLAN_MATERIAS.length? PLAN_MATERIAS.map(x=>(
-    `<div class="item">
-      <div class="row"><span class="pill">${x.materia}</span><span class="tag">${x.dia} ${x.franja}</span><span class="tag">Paralelo ${x.paralelo}</span><span class="tag">Estudiantes: ${x.num_estudiantes}</span></div>
-      <div class="muted"><b>Malla:</b> ${x.malla||"-"} — <b>Ciclo materia:</b> ${x.ciclo_materia||"-"} — <b>Compartida con carrera:</b> ${x.compartida_con||"-"}</div>
-    </div>`
-  )).join("") : "<div class='muted'>Sin oferta consolidada de materias.</div>";
+  mEl.innerHTML=PLAN_MATERIAS.length?PLAN_MATERIAS.map(x=>(`<div class="item"><div class="row"><span class="pill">${x.materia}</span><span class="tag">${x.dia} ${x.franja}</span><span class="tag">Paralelo ${x.paralelo}</span><span class="tag">Estudiantes: ${x.num_estudiantes}</span></div><div class="muted"><b>Malla:</b> ${x.malla||"-"} — <b>Ciclo materia:</b> ${x.ciclo_materia||"-"} — <b>Compartida con carrera:</b> ${x.compartida_con||"-"}</div></div>`)).join(""):"<div class='muted'>Sin oferta consolidada de materias.</div>";
 }
-
-/* ===========================
-   Modificación estudiante
-   =========================== */
-function conflictoParaEstudiante(nombreEst, dia, franja){
-  const keyDia = `${nombreEst}|${dia}`;
-  if((asignacionesEstudianteDia.get(keyDia)||0) >= 2) return "El estudiante ya tiene 2 materias en ese día.";
-  const used = slotsEstudiante.get(nombreEst) || new Set();
-  if(used.has(`${dia}|${franja}`)) return "Existe un cruce: el estudiante ya tiene una materia en ese bloque.";
-  return "";
-}
+function conflictoParaEstudiante(nombreEst,dia,franja){const keyDia=`${nombreEst}|${dia}`;if((asignacionesEstudianteDia.get(keyDia)||0)>=2)return"El estudiante ya tiene 2 materias en ese día.";const used=slotsEstudiante.get(nombreEst)||new Set();if(used.has(`${dia}|${franja}`))return"Existe un cruce: el estudiante ya tiene una materia en ese bloque.";return"";}
 function aplicarModificacion(){
-  const estNom = document.getElementById('modEstudiante').value;
-  const materiaNueva = trimStr(document.getElementById('modMateria').value);
-  const dia = document.getElementById('modDia').value;
-  const franja = document.getElementById('modFranja').value;
-  const paralelo = trimStr(document.getElementById('modParalelo').value) || "A";
-  const out = document.getElementById('modResultado');
-
-  if(!estNom || !materiaNueva || !dia || !franja){
-    out.innerHTML = `<div class="error">Complete estudiante, materia, día y franja.</div>`;
-    return;
-  }
-  const conf = conflictoParaEstudiante(estNom, dia, franja);
-  if(conf){ out.innerHTML = `<div class="error">${conf}</div>`; return; }
-
-  const used = slotsEstudiante.get(estNom) || new Set();
-  used.add(`${dia}|${franja}`); slotsEstudiante.set(estNom, used);
-  asignacionesEstudianteDia.set(`${estNom}|${dia}`, (asignacionesEstudianteDia.get(`${estNom}|${dia}`)||0)+1);
-
-  let docenteAsignado = "Por definir";
-  for(const doc of DOCENTES){ if(doc.disponibilidad.has(`${dia}|${franja}`)){ docenteAsignado = doc.docente; break; } }
-
-  const refEst = ESTUDIANTES.find(e=>e.estudiante===estNom) || {carrera:"", ciclo_est:"", malla:"", nivel_ingles:"", observaciones:""};
-  PLAN_ESTUDIANTE.push({
-    carrera: refEst.carrera, estudiante: estNom, ciclo_est: refEst.ciclo_est, malla: refEst.malla,
-    ciclo_materia: "", compartida_con: "", materia: materiaNueva, paralelo, dia, franja,
-    modalidad: "Presencial", nivel_ingles: refEst.nivel_ingles, observaciones: refEst.observaciones, docente: docenteAsignado
-  });
-
-  renderPlanificacion();
-  out.innerHTML = `<div class="ok">Modificación aplicada correctamente.</div>`;
+  const estNom=document.getElementById('modEstudiante').value;
+  const materiaNueva=trimStr(document.getElementById('modMateria').value);
+  const dia=document.getElementById('modDia').value;
+  const franja=document.getElementById('modFranja').value;
+  const paralelo=trimStr(document.getElementById('modParalelo').value)||"A";
+  const out=document.getElementById('modResultado');
+  if(!estNom||!materiaNueva||!dia||!franja){out.innerHTML=`<div class="error">Complete estudiante, materia, día y franja.</div>`;return;}
+  const conf=conflictoParaEstudiante(estNom,dia,franja);if(conf){out.innerHTML=`<div class="error">${conf}</div>`;return;}
+  const used=slotsEstudiante.get(estNom)||new Set();used.add(`${dia}|${franja}`);slotsEstudiante.set(estNom,used);
+  asignacionesEstudianteDia.set(`${estNom}|${dia}`,(asignacionesEstudianteDia.get(`${estNom}|${dia}`)||0)+1);
+  let docenteAsignado="Por definir";for(const doc of DOCENTES){if(doc.disponibilidad.has(`${dia}|${franja}`)){docenteAsignado=doc.docente;break;}}
+  const refEst=ESTUDIANTES.find(e=>e.estudiante===estNom)||{carrera:"",ciclo_est:"",malla:"",nivel_ingles:"",observaciones:""};
+  PLAN_ESTUDIANTE.push({carrera:refEst.carrera,estudiante:estNom,ciclo_est:refEst.ciclo_est,malla:refEst.malla,ciclo_materia:"",compartida_con:"",materia:materiaNueva,paralelo,dia,franja,modalidad:"Presencial",nivel_ingles:refEst.nivel_ingles,observaciones:refEst.observaciones,docente:docenteAsignado});
+  renderPlanificacion();out.innerHTML=`<div class="ok">Modificación aplicada correctamente.</div>`;
 }
-
-/* ===========================
-   Eventos
-   =========================== */
+document.getElementById('xlsxLocalFile').addEventListener('change', (e)=>loadLocalXLSXFromFile(e.target.files[0]));
 document.getElementById('btnLeer').addEventListener('click', handleLeer);
-document.getElementById('btnCancelar').addEventListener('click', ()=>{ CANCELAR_LECTURA = true; statusMsg("Cancelando…"); });
-
-document.getElementById('btnAddRestriccion').addEventListener('click', ()=>{
-  addRestriccion(document.getElementById('rCiclo').value, document.getElementById('rDia').value, document.getElementById('rFranja').value, RESTR_PRACTICAS,'listaRestricciones');
-});
-document.getElementById('btnClearRestricciones').addEventListener('click', ()=>{ clearRestricciones(RESTR_PRACTICAS,'listaRestricciones'); });
-
-document.getElementById('inglesModo').addEventListener('change', (e)=>{
-  document.getElementById('inglesConfig').style.display = (e.target.value==="solicitar") ? "block":"none";
-});
-document.getElementById('btnAddIngles').addEventListener('click', ()=>{
-  addRestriccion(document.getElementById('inglesCiclo').value, document.getElementById('inglesDia').value, document.getElementById('inglesFranja').value, RESTR_INGLES,'listaIngles');
-});
-document.getElementById('btnClearIngles').addEventListener('click', ()=>{ clearRestricciones(RESTR_INGLES,'listaIngles'); });
-
+document.getElementById('btnCancelar').addEventListener('click', ()=>{CANCELAR_LECTURA=true;statusMsg("Cancelando…");});
+document.getElementById('btnAddRestriccion').addEventListener('click', ()=>{addRestriccion(document.getElementById('rCiclo').value,document.getElementById('rDia').value,document.getElementById('rFranja').value,RESTR_PRACTICAS,'listaRestricciones');});
+document.getElementById('btnClearRestricciones').addEventListener('click', ()=>{clearRestricciones(RESTR_PRACTICAS,'listaRestricciones');});
+document.getElementById('inglesModo').addEventListener('change',(e)=>{document.getElementById('inglesConfig').style.display=(e.target.value==="solicitar")?"block":"none";});
+document.getElementById('btnAddIngles').addEventListener('click', ()=>{addRestriccion(document.getElementById('inglesCiclo').value,document.getElementById('inglesDia').value,document.getElementById('inglesFranja').value,RESTR_INGLES,'listaIngles');});
+document.getElementById('btnClearIngles').addEventListener('click', ()=>{clearRestricciones(RESTR_INGLES,'listaIngles');});
 document.getElementById('btnAsignar').addEventListener('click', ()=>{
-  const alertas = 'alertasAsignacion';
-  if(MALLA.length===0 || DOCENTES.length===0 || ESTUDIANTES.length===0){
-    alerta(alertas, "Antes, cargue y lea los tres archivos (Mallas, Docentes y Estudiantes).");
-    return;
-  }
-  document.getElementById('statusAsignacion').textContent = "Asignando…";
-  asignar();
-  renderPlanificacion();
-  document.getElementById('statusAsignacion').textContent = "Listo.";
-  alerta(alertas, "Planificación generada de acuerdo con las restricciones establecidas.", true);
+  const alertas='alertasAsignacion';
+  if(MALLA.length===0||DOCENTES.length===0||ESTUDIANTES.length===0){alerta(alertas,"Antes, cargue y lea los tres archivos (Mallas, Docentes y Estudiantes).");return;}
+  document.getElementById('statusAsignacion').textContent="Asignando…";
+  asignar();renderPlanificacion();
+  document.getElementById('statusAsignacion').textContent="Listo.";
+  alerta(alertas,"Planificación generada de acuerdo con las restricciones establecidas.",true);
 });
 document.getElementById('btnModificarEst').addEventListener('click', aplicarModificacion);
 </script>
