@@ -266,21 +266,109 @@
   // Normalización de texto (claves)
   const norm = s => String(s||'').trim();
 
-  // Parse disponibilidad: "Lunes 7-10 / Martes 10-13"
-  function parseDisponibilidad(s){
-    const out = [];
-    norm(s).split(/[\/|,;]+/).forEach(tok=>{
-      const t = tok.trim();
-      if(!t) return;
-      const m = t.match(/(Lunes|Martes|Miércoles|Miercoles|Jueves|Viernes)\s+(7-10|10-13|13-16|16-19|19-22)/i);
-      if(m){
-        const dia = m[1].replace('Miercoles','Miércoles');
-        const slot = m[2];
-        out.push({dia, slot});
-      }
-    });
-    return out;
+/* ==== Normalización de encabezados desde Excel (admite sinónimos) ==== */
+const keyClean = k => String(k||'').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
+
+const MAP_MALLA_EQ = {
+  carrera: ['carrera','carreras','programa'],
+  malla: ['malla','planestudios','pensum'],
+  materia: ['materia','asignatura'],
+  codigoanthology: ['codigoanthology','códigoanthology','idanthology','anthology','codigo anthology'],
+  codigo: ['codigo','código','id'],
+  prereq: ['pre-requisito','prerequisito','pre requisito','prerrequisito','pre req','preq'],
+  ht: ['horas teoricas','horasteoricas','ht'],
+  hp: ['horas practicas','horaspracticas','hp'],
+  ha: ['horas autonomas','horasautonomas','ha'],
+  creditos: ['creditos','créditos','cr'],
+  campo: ['campodeformacion','campo','areaformacion','area'],
+  ciclo: ['ciclomalla','ciclo','semestre'],
+  norden: ['nº orden en la malla','n° orden en la malla','nordenenlamalla','nordenmalla','numorden','orden'],
+  compartida: ['compartida con','compartidacon','compartidaconcarrera','compartidas']
+};
+const MAP_DOC_EQ = {
+  docente:['docente','profesor','catedratico'],
+  titulo:['título académico','titulo academico','titulo','título'],
+  dedicacion:['dedicacion','dedicación','jornadalaboral'],
+  materia:['materia','materias','asignatura','asignaturas'],
+  disp:['disponibilidad','disponibilidadhoraria','horario'],
+  paralelo:['paralelo','par']
+};
+const MAP_EST_EQ = {
+  carrera:['carrera','programa'],
+  estudiante:['estudiante','alumno'],
+  cicloEst:['ciclo del estudiante','cicloestudiante','ciclodelestudiante','ciclo','semestre'],
+  malla:['malla','planestudios','pensum'],
+  nivelIng:['nivel inglés','nivel ingles','nivelingles'],
+  obs:['observaciones','obs','comentarios'],
+  ingles:['inglés','ingles','horarioingles'],
+  pract:['prácticas','practicas','practicascomunitarias']
+};
+
+function pick(obj, variants){
+  const keys = Object.keys(obj);
+  for(const v of variants){
+    const k = keys.find(x => keyClean(x) === keyClean(v));
+    if (k) return obj[k];
   }
+  return '';
+}
+
+function normalizeMallaRows(rows){
+  return rows.map(r=>({
+    'CARRERA': pick(r, MAP_MALLA_EQ.carrera),
+    'MALLA': pick(r, MAP_MALLA_EQ.malla),
+    'MATERIA': pick(r, MAP_MALLA_EQ.materia),
+    'CÓDIGO ANTHOLOGY': pick(r, MAP_MALLA_EQ.codigoanthology),
+    'CÓDIGO': pick(r, MAP_MALLA_EQ.codigo),
+    'PRE-REQUISITO': pick(r, MAP_MALLA_EQ.prereq),
+    'HORAS TEÓRICAS': pick(r, MAP_MALLA_EQ.ht),
+    'HORAS PRÁCTICAS': pick(r, MAP_MALLA_EQ.hp),
+    'HORAS AUTÓNOMAS': pick(r, MAP_MALLA_EQ.ha),
+    'CREDITOS': pick(r, MAP_MALLA_EQ.creditos),
+    'CAMPO DE FORMACIÓN': pick(r, MAP_MALLA_EQ.campo),
+    'CICLO MALLA': pick(r, MAP_MALLA_EQ.ciclo),
+    'Nº ORDEN EN LA MALLA': pick(r, MAP_MALLA_EQ.norden),
+    'COMPARTIDA CON': pick(r, MAP_MALLA_EQ.compartida)
+  }));
+}
+function normalizeDocRows(rows){
+  return rows.map(r=>({
+    'DOCENTE': pick(r, MAP_DOC_EQ.docente),
+    'TÍTULO ACADÉMICO': pick(r, MAP_DOC_EQ.titulo),
+    'DEDICACIÓN': pick(r, MAP_DOC_EQ.dedicacion),
+    'MATERIA': pick(r, MAP_DOC_EQ.materia),
+    'DISPONIBILIDAD': pick(r, MAP_DOC_EQ.disp),
+    'PARALELO': pick(r, MAP_DOC_EQ.paralelo)
+  }));
+}
+function normalizeEstRows(rows){
+  return rows.map(r=>({
+    'CARRERA': pick(r, MAP_EST_EQ.carrera),
+    'ESTUDIANTE': pick(r, MAP_EST_EQ.estudiante),
+    'CICLO DEL ESTUDIANTE': pick(r, MAP_EST_EQ.cicloEst),
+    'MALLA': pick(r, MAP_EST_EQ.malla),
+    'NIVEL INGLÉS': pick(r, MAP_EST_EQ.nivelIng),
+    'OBSERVACIONES': pick(r, MAP_EST_EQ.obs),
+    'INGLÉS': pick(r, MAP_EST_EQ.ingles),
+    'PRÁCTICAS': pick(r, MAP_EST_EQ.pract)
+  }));
+}
+  
+  // Parse disponibilidad: "Lunes 7-10 / Martes 10-13"
+function parseDisponibilidad(s){
+  const out = [];
+  norm(s).split(/[\n,;|/]+/).forEach(tok=>{
+    const t = tok.trim(); if(!t) return;
+    const m = t.match(/(Lunes|Martes|Miércoles|Miercoles|Jueves|Viernes)\s+([0-9]{1,2})(?::?00)?\s*-\s*([0-9]{1,2})(?::?00)?/i);
+    if(m){
+      const dia = m[1].replace('Miercoles','Miércoles');
+      const slot = `${m[2]}-${m[3]}`;
+      if(['7-10','10-13','13-16','16-19','19-22'].includes(slot)) out.push({dia, slot});
+    }
+  });
+  return out;
+}
+
 
   // Agregar restricción (Prácticas comunitarias por carrera y ciclo)
   $('#btnAgregarBloqueo').addEventListener('click', () => {
@@ -320,6 +408,11 @@
       [datosMalla, datosDocentes, datosEstudiantes] = await Promise.all([
         leerExcel(fM), leerExcel(fD), leerExcel(fE)
       ]);
+
+      datosMalla = normalizeMallaRows(datosMalla);
+datosDocentes = normalizeDocRows(datosDocentes);
+datosEstudiantes = normalizeEstRows(datosEstudiantes);
+
 
       status.textContent = 'Preparando índices…';
       const idxMalla = indexarMalla(datosMalla);
