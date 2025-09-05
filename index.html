@@ -1,740 +1,850 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Planificación Académica - UIDE</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        :root {
-            --azul: #04136C;
-            --mostaza: #DE912E;
-            --vino: #862B39;
-            --celeste: #9CBEE3;
-            --verde: #8A9520;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-        }
-        
-        .header {
-            background-color: var(--azul);
-            color: white;
-            padding: 15px 0;
-        }
-        
-        .logo-container {
-            display: flex;
-            align-items: center;
-        }
-        
-        .logo {
-            height: 60px;
-            margin-right: 15px;
-        }
-        
-        .nav-tabs .nav-link {
-            color: var(--azul);
-            font-weight: 500;
-        }
-        
-        .nav-tabs .nav-link.active {
-            background-color: var(--azul);
-            color: white;
-            border: none;
-        }
-        
-        .btn-uide {
-            background-color: var(--azul);
-            color: white;
-        }
-        
-        .btn-uide:hover {
-            background-color: var(--mostaza);
-            color: white;
-        }
-        
-        .card-header {
-            background-color: var(--celeste);
-            color: var(--azul);
-            font-weight: bold;
-        }
-        
-        .table th {
-            background-color: var(--azul);
-            color: white;
-        }
-        
-        .badge-primary {
-            background-color: var(--azul);
-        }
-        
-        .badge-secondary {
-            background-color: var(--mostaza);
-        }
-        
-        .badge-success {
-            background-color: var(--verde);
-        }
-        
-        .badge-danger {
-            background-color: var(--vino);
-        }
-        
-        .time-slot {
-            border: 1px solid #ddd;
-            padding: 5px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .time-slot.selected {
-            background-color: var(--celeste);
-            font-weight: bold;
-        }
-        
-        .time-slot.unavailable {
-            background-color: #f8d7da;
-            cursor: not-allowed;
-        }
-        
-        .restriction-panel {
-            border-left: 3px solid var(--mostaza);
-            background-color: #fff9e6;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .footer {
-            background-color: var(--azul);
-            color: white;
-            padding: 20px 0;
-            margin-top: 40px;
-        }
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Planificación Académica — UIDE</title>
+<!-- Dependencia única (lectura Excel) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+  :root{
+    --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
+    --bg:#f8fafc; --ink:#0f172a; --muted:#475569; --card:#ffffff; --ok:#16a34a; --warn:#b45309; --bad:#dc2626;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:4px solid var(--azul);background:linear-gradient(90deg,var(--azul),#0b1f9a)}
+  header img{height:64px;object-fit:contain}
+  header h1{margin:0;color:#fff;font-weight:800;letter-spacing:.2px}
+  header .tag{margin-left:auto;background:rgba(255,255,255,.16);color:#fff;padding:6px 10px;border-radius:999px;font-size:.85rem}
+  main{max-width:1400px;margin:24px auto;padding:0 20px 40px}
+  .card{background:var(--card);border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 6px 18px rgba(2,6,23,.06);margin-bottom:20px}
+  .card header{background:linear-gradient(90deg,var(--azul),var(--vino));padding:12px 16px;border:0;border-top-left-radius:16px;border-top-right-radius:16px}
+  .card header h2{margin:0;color:#fff;font-size:1.05rem}
+  .card .body{padding:16px}
+  .grid{display:grid;gap:14px}
+  @media (min-width:900px){ .grid.cols-3{grid-template-columns:repeat(3,1fr)} .grid.cols-2{grid-template-columns:1fr 1fr} }
+  label{font-size:.9rem;color:var(--muted)}
+  input[type="file"], select, input[type="text"], input[type="number"]{
+    width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff
+  }
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+  .btn.primary{background:var(--mostaza);color:#1f2937}
+  .btn.outline{background:#fff;border:2px solid var(--azul);color:var(--azul)}
+  .btn.warn{background:var(--vino);color:#fff}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:.75rem}
+  .pill.ok{background:#dcfce7;color:#166534}
+  .pill.bad{background:#fee2e2;color:#991b1b}
+  .note{font-size:.85rem;color:var(--muted)}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:8px}
+  thead th{position:sticky;top:0;background:#f1f5f9;border-bottom:2px solid #e2e8f0;padding:10px;text-align:left;font-size:.85rem;color:#1f2937;z-index:1}
+  tbody td{border-bottom:1px dashed #e5e7eb;padding:8px;font-size:.9rem}
+  tbody tr:hover{background:#f8fafc}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .legend{display:flex;gap:8px;flex-wrap:wrap}
+  .legend .item{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
+  .slot{font-variant-numeric:tabular-nums}
+  .warning{background:#fff7ed;border-left:4px solid var(--mostaza);padding:8px 10px;border-radius:8px;color:#7c2d12}
+  .success{background:#ecfeff;border-left:4px solid var(--celeste);padding:8px 10px;border-radius:8px;color:#0e7490}
+  .modal{position:fixed;inset:0;background:rgba(2,6,23,.4);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal .panel{background:#fff;border-radius:16px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(2,6,23,.3)}
+  .modal header{background:var(--azul);border-radius:16px 16px 0 0}
+  .modal header h3{color:#fff;margin:0;padding:12px 16px}
+  .modal .content{padding:16px}
+  .hl{background:linear-gradient(transparent 60%, rgba(222,145,46,.35) 0)}
+</style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="container">
-            <div class="logo-container">
-                <img src="https://via.placeholder.com/300x100/04136C/FFFFFF?text=UIDE-LOGO" alt="UIDE Ecuador" class="logo">
-                <h1>Sistema de Planificación Académica</h1>
-            </div>
-        </div>
+<header>
+  <img src="UIDE-Ecuador.png" alt="UIDE Ecuador" onerror="this.style.display='none'"/>
+  <h1>Planificación Académica — UIDE</h1>
+  <span class="tag">Colores institucionales • Azul #04136C · Mostaza #DE912E · Vino #862B39 · Celeste #9CBEE3 · Verde #8A9520</span>
+</header>
+
+<main>
+  <!-- CARGA DE ARCHIVOS -->
+  <section class="card">
+    <header><h2>1) Cargar Excel</h2></header>
+    <div class="body grid cols-3">
+      <div>
+        <label>Archivo <b>Malla.xlsx</b></label>
+        <input id="fileMalla" type="file" accept=".xlsx,.xls"/>
+        <div class="note">Debe contener: carrera, malla/plan, ciclo, materia, códigos, horas T/P/A, créditos, campo, orden, “compartida con”, prerrequisitos.</div>
+      </div>
+      <div>
+        <label>Archivo <b>Docente.xlsx</b></label>
+        <input id="fileDocente" type="file" accept=".xlsx,.xls"/>
+        <div class="note">Debe contener: docente, título, dedicación, <span class="hl">disponibilidad (días/horas)</span>, modalidad y/o materias que dicta (opcional).</div>
+      </div>
+      <div>
+        <label>Archivo <b>Estudiante.xlsx</b></label>
+        <input id="fileEst" type="file" accept=".xlsx,.xls"/>
+        <div class="note">Debe contener: carrera, estudiante, ciclo, malla, nivel de inglés, observaciones.</div>
+      </div>
     </div>
-
-    <!-- Main Content -->
-    <div class="container mt-4">
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">Carga de Archivos</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="teachers-tab" data-bs-toggle="tab" data-bs-target="#teachers" type="button" role="tab">Planificación Docente</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab">Planificación Estudiantes</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjects" type="button" role="tab">Materias</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="restrictions-tab" data-bs-toggle="tab" data-bs-target="#restrictions" type="button" role="tab">Restricciones</button>
-            </li>
-        </ul>
-        
-        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="myTabContent">
-            <!-- Upload Section -->
-            <div class="tab-pane fade show active" id="upload" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fas fa-table me-2"></i>Cargar Mallas
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Archivo Excel con información de mallas curriculares</p>
-                                <input type="file" class="form-control" id="malla-file" accept=".xlsx, .xls">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fas fa-chalkboard-teacher me-2"></i>Cargar Docentes
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Archivo Excel con información de docentes y disponibilidad</p>
-                                <input type="file" class="form-control" id="docente-file" accept=".xlsx, .xls">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fas fa-user-graduate me-2"></i>Cargar Estudiantes
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">Archivo Excel con información de estudiantes</p>
-                                <input type="file" class="form-control" id="estudiante-file" accept=".xlsx, .xls">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="text-center mt-3">
-                    <button id="process-btn" class="btn btn-uide btn-lg"><i class="fas fa-cogs me-2"></i>Procesar Archivos</button>
-                </div>
-                <div id="upload-status" class="mt-4"></div>
-            </div>
-            
-            <!-- Teachers Section -->
-            <div class="tab-pane fade" id="teachers" role="tabpanel">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Planificación Docente</h3>
-                    <button class="btn btn-uide"><i class="fas fa-download me-2"></i>Exportar</button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>DOCENTE</th>
-                                <th>TITULO ACADÉMICO</th>
-                                <th>DEDICACIÓN</th>
-                                <th>MATERIA</th>
-                                <th>CÓDIGO ANTHOLOGY</th>
-                                <th>CARRERAS QUE COMPARTEN</th>
-                                <th>PRE-REQUISITO</th>
-                                <th>CODIGO</th>
-                                <th>HORAS TEÓRICAS</th>
-                                <th>HORAS PRÁCTICAS</th>
-                                <th>HORAS AUTÓNOMAS</th>
-                                <th>CREDITOS</th>
-                                <th>CAMPO DE FORMACIÓN</th>
-                                <th>CICLO MALLA</th>
-                                <th>Nº ORDEN EN LA MALLA</th>
-                                <th>PARALELO</th>
-                                <th>DIA</th>
-                                <th>HORA</th>
-                                <th>MODALIDAD</th>
-                                <th>Nro. HORAS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="20" class="text-center">Cargue los archivos y procese la información</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Students Section -->
-            <div class="tab-pane fade" id="students" role="tabpanel">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Planificación Estudiantes</h3>
-                    <div>
-                        <button class="btn btn-uide me-2"><i class="fas fa-download me-2"></i>Exportar</button>
-                        <button class="btn btn-outline-uide" data-bs-toggle="modal" data-bs-target="#adjustModal"><i class="fas fa-edit me-2"></i>Ajustar Horarios</button>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>CARRERA</th>
-                                <th>ESTUDIANTE</th>
-                                <th>CICLO DEL ESTUDIANTE</th>
-                                <th>MALLA</th>
-                                <th>CICLO DE LA MATERIA EN LA MALLA</th>
-                                <th>COMPARTIDA CON CARRERA</th>
-                                <th>MATERIA</th>
-                                <th>PARALELO</th>
-                                <th>DIA</th>
-                                <th>HORA</th>
-                                <th>MODALIDAD</th>
-                                <th>NIVEL INGLES</th>
-                                <th>OBSERVACIONES</th>
-                                <th>DOCENTE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="14" class="text-center">Cargue los archivos y procese la información</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Subjects Section -->
-            <div class="tab-pane fade" id="subjects" role="tabpanel">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Materias</h3>
-                    <button class="btn btn-uide"><i class="fas fa-download me-2"></i>Exportar</button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>MALLA</th>
-                                <th>CICLO DE LA MATERIA EN LA MALLA</th>
-                                <th>COMPARTIDA CON CARRERA</th>
-                                <th>MATERIA</th>
-                                <th>PARALELO</th>
-                                <th>DIA</th>
-                                <th>HORA</th>
-                                <th>Número de estudiantes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="8" class="text-center">Cargue los archivos y procese la información</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Restrictions Section -->
-            <div class="tab-pane fade" id="restrictions" role="tabpanel">
-                <h3>Gestión de Restricciones</h3>
-                <div class="restriction-panel">
-                    <h4><i class="fas fa-exclamation-triangle me-2"></i>Prácticas Comunitarias</h4>
-                    <p>Defina horarios bloqueados para prácticas comunitarias por ciclo</p>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Ciclo:</label>
-                            <select class="form-select" id="practice-cycle">
-                                <option value="1">Primer Ciclo</option>
-                                <option value="2">Segundo Ciclo</option>
-                                <option value="3">Tercer Ciclo</option>
-                                <option value="4">Cuarto Ciclo</option>
-                                <option value="5">Quinto Ciclo</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Día:</label>
-                            <select class="form-select" id="practice-day">
-                                <option value="Lunes">Lunes</option>
-                                <option value="Martes">Martes</option>
-                                <option value="Miércoles">Miércoles</option>
-                                <option value="Jueves">Jueves</option>
-                                <option value="Viernes">Viernes</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Franja Horaria:</label>
-                            <select class="form-select" id="practice-time">
-                                <option value="7-10">7:00 - 10:00</option>
-                                <option value="10-13">10:00 - 13:00</option>
-                                <option value="13-16">13:00 - 16:00</option>
-                                <option value="16-19">16:00 - 19:00</option>
-                                <option value="19-22">19:00 - 22:00</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button class="btn btn-uide" id="add-practice-btn"><i class="fas fa-plus me-2"></i>Agregar Restricción</button>
-                </div>
-                
-                <div class="mt-4">
-                    <h4><i class="fas fa-list me-2"></i>Restricciones Activas</h4>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Ciclo</th>
-                                    <th>Día</th>
-                                    <th>Franja Horaria</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="restrictions-table">
-                                <tr>
-                                    <td colspan="4" class="text-center">No hay restricciones definidas</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="mt-4">
-                    <h4><i class="fas fa-language me-2"></i>Niveles de Inglés</h4>
-                    <p>Asigne horarios para los diferentes niveles de inglés</p>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label class="form-label">Nivel:</label>
-                            <select class="form-select" id="english-level">
-                                <option value="A1">A1 - Principiante</option>
-                                <option value="A2">A2 - Básico</option>
-                                <option value="B1">B1 - Intermedio</option>
-                                <option value="B2">B2 - Intermedio Alto</option>
-                                <option value="C1">C1 - Avanzado</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Día:</label>
-                            <select class="form-select" id="english-day">
-                                <option value="Lunes">Lunes</option>
-                                <option value="Martes">Martes</option>
-                                <option value="Miércoles">Miércoles</option>
-                                <option value="Jueves">Jueves</option>
-                                <option value="Viernes">Viernes</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Franja Horaria:</label>
-                            <select class="form-select" id="english-time">
-                                <option value="7-10">7:00 - 10:00</option>
-                                <option value="10-13">10:00 - 13:00</option>
-                                <option value="13-16">13:00 - 16:00</option>
-                                <option value="16-19">16:00 - 19:00</option>
-                                <option value="19-22">19:00 - 22:00</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Modalidad:</label>
-                            <select class="form-select" id="english-modality">
-                                <option value="Presencial">Presencial</option>
-                                <option value="Virtual">Virtual</option>
-                                <option value="Híbrido">Híbrido</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button class="btn btn-uide" id="add-english-btn"><i class="fas fa-plus me-2"></i>Agregar Horario Inglés</button>
-                </div>
-            </div>
-        </div>
+    <div class="body">
+      <div class="toolbar">
+        <button id="btnPreviewHeaders" class="btn outline">2) Previsualizar y mapear columnas</button>
+        <button id="btnPlanificar" class="btn primary" disabled>3) Ejecutar asignación profesional</button>
+        <button id="btnExportar" class="btn warn" disabled>Exportar a Excel</button>
+      </div>
+      <div id="msgLoad" class="note" style="margin-top:8px"></div>
     </div>
+  </section>
 
-    <!-- Adjust Modal -->
-    <div class="modal fade" id="adjustModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Ajuste de Horarios para Estudiantes</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Seleccionar Estudiante:</label>
-                        <select class="form-select" id="student-select">
-                            <option value="">Seleccione un estudiante</option>
-                        </select>
-                    </div>
-                    
-                    <div id="student-schedule" class="mt-4">
-                        <h6>Horario Actual del Estudiante</h6>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Hora</th>
-                                        <th>Lunes</th>
-                                        <th>Martes</th>
-                                        <th>Miércoles</th>
-                                        <th>Jueves</th>
-                                        <th>Viernes</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>7:00-10:00</td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td>10:00-13:00</td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td>13:00-16:00</td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td>16:00-19:00</td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td>19:00-22:00</td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <h6>Materias Disponibles para Cambio</h6>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Materia</th>
-                                        <th>Paralelo</th>
-                                        <th>Horario</th>
-                                        <th>Disponibilidad</th>
-                                        <th>Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td colspan="5" class="text-center">Seleccione un estudiante para ver las opciones</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-uide">Guardar Cambios</button>
-                </div>
-            </div>
-        </div>
+  <!-- RESTRICCIONES -->
+  <section class="card">
+    <header><h2>Restricciones (Inglés y Prácticas comunitarias)</h2></header>
+    <div class="body grid cols-3">
+      <div>
+        <label>Bloqueos por Inglés (por <b>estudiante</b>)</label>
+        <input id="inpBloqIngles" type="text" placeholder='Ej.: "Juan Pérez|Martes 10-13; Jueves 16-19", "Ana Vega|Lunes 19-22"'/>
+        <div class="note">Formato: <i>Nombre|Día Franja; Día Franja</i>. Opcional.</div>
+      </div>
+      <div>
+        <label>Bloqueo por Prácticas comunitarias (por <b>semestre</b>)</label>
+        <input id="inpBloqPracticas" type="text" placeholder='Ej.: "2|Miércoles 13-16", "5|Viernes 07-10"'/>
+        <div class="note">Formato: <i>Ciclo|Día Franja</i> (aplica a todo ese ciclo).</div>
+      </div>
+      <div>
+        <label>Capacidad por paralelo (opcional)</label>
+        <input id="inpCapParalelo" type="number" min="10" max="100" placeholder="p. ej., 35"/>
+        <div class="note">Si se define y se supera, se crean B, C, …</div>
+      </div>
     </div>
+    <div class="body">
+      <div class="legend">
+        <div class="item"><span class="pill ok">Regla</span> Máx. <b>2 materias/día</b> por docente y por estudiante</div>
+        <div class="item"><span class="pill ok">Regla</span> Evitar choques entre ciclos <b>adyacentes</b> de la misma carrera</div>
+        <div class="item"><span class="pill ok">Regla</span> Materias <b>no compartidas</b> entre carreras pueden coincidir en hora y día</div>
+      </div>
+    </div>
+  </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Universidad Internacional del Ecuador</h5>
-                    <p>Sistema de Planificación Académica</p>
-                </div>
-                <div class="col-md-6 text-end">
-                    <p>Desarrollado para la UIDE</p>
-                    <p>© 2023 - Todos los derechos reservados</p>
-                </div>
-            </div>
-        </div>
-    </footer>
+  <!-- RESULTADOS -->
+  <section class="card">
+    <header><h2>Planificación docente</h2></header>
+    <div class="body">
+      <div class="toolbar">
+        <input id="filtroDocente" type="text" placeholder="Filtrar por docente/materia/carrera…"/>
+      </div>
+      <div id="wrapDocente"></div>
+    </div>
+  </section>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Process button event
-            document.getElementById('process-btn').addEventListener('click', function() {
-                const mallaFile = document.getElementById('malla-file').files[0];
-                const docenteFile = document.getElementById('docente-file').files[0];
-                const estudianteFile = document.getElementById('estudiante-file').files[0];
-                
-                if (!mallaFile || !docenteFile || !estudianteFile) {
-                    showAlert('Por favor, cargue todos los archivos necesarios.', 'danger');
-                    return;
-                }
-                
-                showAlert('Procesando archivos...', 'info');
-                
-                // Simulate processing
-                setTimeout(function() {
-                    simulateDataProcessing();
-                    showAlert('Archivos procesados correctamente. Revise las pestañas de resultados.', 'success');
-                }, 2000);
-            });
-            
-            // Add practice restriction
-            document.getElementById('add-practice-btn').addEventListener('click', function() {
-                const cycle = document.getElementById('practice-cycle').value;
-                const day = document.getElementById('practice-day').value;
-                const time = document.getElementById('practice-time').value;
-                
-                const table = document.getElementById('restrictions-table');
-                
-                if (table.rows[0].cells[0].textContent === 'No hay restricciones definidas') {
-                    table.innerHTML = '';
-                }
-                
-                const newRow = table.insertRow();
-                newRow.innerHTML = `
-                    <td>Ciclo ${cycle}</td>
-                    <td>${day}</td>
-                    <td>${time}</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger remove-btn">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                
-                // Add event to remove button
-                newRow.querySelector('.remove-btn').addEventListener('click', function() {
-                    table.removeChild(newRow);
-                    if (table.rows.length === 0) {
-                        table.innerHTML = '<tr><td colspan="4" class="text-center">No hay restricciones definidas</td></tr>';
-                    }
-                });
-            });
-            
-            // Add english schedule
-            document.getElementById('add-english-btn').addEventListener('click', function() {
-                const level = document.getElementById('english-level').value;
-                const day = document.getElementById('english-day').value;
-                const time = document.getElementById('english-time').value;
-                const modality = document.getElementById('english-modality').value;
-                
-                showAlert(`Horario para inglés ${level} agregado: ${day} de ${time} (${modality})`, 'success');
-            });
-            
-            function showAlert(message, type) {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-                alertDiv.innerHTML = `
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                
-                document.getElementById('upload-status').appendChild(alertDiv);
-                
-                // Auto dismiss after 5 seconds
-                setTimeout(function() {
-                    alertDiv.classList.remove('show');
-                    setTimeout(function() {
-                        alertDiv.remove();
-                    }, 500);
-                }, 5000);
-            }
-            
-            function simulateDataProcessing() {
-                // Simulate teacher data
-                const teacherTable = document.querySelector('#teachers tbody');
-                teacherTable.innerHTML = `
-                    <tr>
-                        <td>González Pérez, Juan</td>
-                        <td>PhD. Administración</td>
-                        <td>Tiempo Completo</td>
-                        <td>Gestión Estratégica</td>
-                        <td>ADM-402</td>
-                        <td>Administración/Negocios Internacionales</td>
-                        <td>ADM-301</td>
-                        <td>ADM-402</td>
-                        <td>48</td>
-                        <td>32</td>
-                        <td>80</td>
-                        <td>6</td>
-                        <td>Profesional</td>
-                        <td>4</td>
-                        <td>12/10</td>
-                        <td>A</td>
-                        <td>Lunes/Miércoles</td>
-                        <td>7:00-8:30/10:00-11:30</td>
-                        <td>Presencial</td>
-                        <td>96</td>
-                    </tr>
-                    <tr>
-                        <td>Martínez López, María</td>
-                        <td>MSc. Finanzas</td>
-                        <td>Medio Tiempo</td>
-                        <td>Análisis Financiero</td>
-                        <td>FIN-350</td>
-                        <td>Administración/Contabilidad</td>
-                        <td>FIN-250</td>
-                        <td>FIN-350</td>
-                        <td>32</td>
-                        <td>48</td>
-                        <td>80</td>
-                        <td>5</td>
-                        <td>Profesional</td>
-                        <td>5</td>
-                        <td>15/12</td>
-                        <td>B</td>
-                        <td>Martes/Jueves</td>
-                        <td>16:00-17:30/19:00-20:30</td>
-                        <td>Híbrido</td>
-                        <td>80</td>
-                    </tr>
-                `;
-                
-                // Simulate student data
-                const studentTable = document.querySelector('#students tbody');
-                studentTable.innerHTML = `
-                    <tr>
-                        <td>Administración de Empresas</td>
-                        <td>Pérez García, Carlos</td>
-                        <td>4</td>
-                        <td>2023</td>
-                        <td>4</td>
-                        <td>Negocios Internacionales</td>
-                        <td>Gestión Estratégica</td>
-                        <td>A</td>
-                        <td>Lunes/Miércoles</td>
-                        <td>7:00-8:30/10:00-11:30</td>
-                        <td>Presencial</td>
-                        <td>B2</td>
-                        <td></td>
-                        <td>González Pérez, Juan</td>
-                    </tr>
-                    <tr>
-                        <td>Contabilidad</td>
-                        <td>Rodríguez Sánchez, Ana</td>
-                        <td>5</td>
-                        <td>2022</td>
-                        <td>5</td>
-                        <td>Administración</td>
-                        <td>Análisis Financiero</td>
-                        <td>B</td>
-                        <td>Martes/Jueves</td>
-                        <td>16:00-17:30/19:00-20:30</td>
-                        <td>Híbrido</td>
-                        <td>C1</td>
-                        <td>Prácticas comunitarias los viernes</td>
-                        <td>Martínez López, María</td>
-                    </tr>
-                `;
-                
-                // Simulate subject data
-                const subjectTable = document.querySelector('#subjects tbody');
-                subjectTable.innerHTML = `
-                    <tr>
-                        <td>2023</td>
-                        <td>4</td>
-                        <td>Administración/Negocios Internacionales</td>
-                        <td>Gestión Estratégica</td>
-                        <td>A</td>
-                        <td>Lunes/Miércoles</td>
-                        <td>7:00-8:30/10:00-11:30</td>
-                        <td>32</td>
-                    </tr>
-                    <tr>
-                        <td>2022</td>
-                        <td>5</td>
-                        <td>Administración/Contabilidad</td>
-                        <td>Análisis Financiero</td>
-                        <td>B</td>
-                        <td>Martes/Jueves</td>
-                        <td>16:00-17:30/19:00-20:30</td>
-                        <td>28</td>
-                    </tr>
-                `;
-            }
+  <section class="card">
+    <header><h2>Planificación estudiante</h2></header>
+    <div class="body">
+      <div class="toolbar">
+        <input id="filtroEst" type="text" placeholder="Filtrar por estudiante/carrera/materia…"/>
+      </div>
+      <div id="wrapEst"></div>
+      <div class="note" style="margin-top:8px">Edición habilitada <b>solo</b> para estudiantes (reasignación de materia/franja con validación de choques).</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <header><h2>Materias</h2></header>
+    <div class="body">
+      <div class="toolbar">
+        <input id="filtroMat" type="text" placeholder="Filtrar por malla/carrera/materia…"/>
+      </div>
+      <div id="wrapMat"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <header><h2>Validaciones y avisos</h2></header>
+    <div class="body">
+      <div id="avisos" class="warning">Pendiente de ejecución.</div>
+    </div>
+  </section>
+</main>
+
+<!-- MODALES -->
+<div id="modalMapeo" class="modal" role="dialog" aria-modal="true">
+  <div class="panel">
+    <header><h3>Mapeo de columnas</h3></header>
+    <div class="content">
+      <p class="note">Seleccione qué columna de su Excel corresponde a cada campo requerido. El sistema no asume nombres.</p>
+      <div id="mapeos" class="grid cols-3"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="btn outline" onclick="closeModal('modalMapeo')">Cancelar</button>
+        <button class="btn primary" id="btnGuardarMapeo">Guardar mapeos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modalEditar" class="modal" role="dialog" aria-modal="true">
+  <div class="panel">
+    <header><h3>Editar asignación de estudiante</h3></header>
+    <div class="content" id="editarContenido">
+      <!-- dinámico -->
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================
+   Utilidades y constantes
+========================== */
+const FRANJAS = [
+  {id:"07-10", start:7, end:10},
+  {id:"10-13", start:10, end:13},
+  {id:"13-16", start:13, end:16},
+  {id:"16-19", start:16, end:19},
+  {id:"19-22", start:19, end:22},
+];
+const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const DIA_ALIASES = {
+  "lu":"Lunes","lun":"Lunes","lunes":"Lunes","mon":"Lunes",
+  "ma":"Martes","mar":"Martes","martes":"Martes","tue":"Martes",
+  "mi":"Miércoles","mie":"Miércoles","mié":"Miércoles","miercoles":"Miércoles","miércoles":"Miércoles","wed":"Miércoles",
+  "ju":"Jueves","jue":"Jueves","jueves":"Jueves","thu":"Jueves",
+  "vi":"Viernes","vie":"Viernes","viernes":"Viernes","fri":"Viernes"
+};
+const SLOT_RX = /(0?\d{1,2})(?::?\d{0,2})?\s*[-–a]\s*(0?\d{1,2})(?::?\d{0,2})?/i;
+const COLORS = {azul:"#04136C", mostaza:"#DE912E", vino:"#862B39", celeste:"#9CBEE3", verde:"#8A9520"};
+
+// Datos en memoria
+let datos = { malla:[], docente:[], estudiante:[] };
+let headers = { malla:[], docente:[], estudiante:[] };
+let map = { malla:{}, docente:{}, estudiante:{} };
+let resultados = { planDocente:[], planEstudiante:[], materias:[] };
+let relaciones = { dispDocente:{}, bloquesIngles:{}, bloquesPracticas:{} };
+let paraleloCap = null;
+
+// Elementos
+const el = s => document.querySelector(s);
+const msg = (t, ok=false)=>{ el('#avisos').className = ok?'success':'warning'; el('#avisos').textContent = t; };
+
+// Normalizaciones
+function normDia(raw){
+  if(!raw) return null;
+  const t = String(raw).trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,"");
+  return DIA_ALIASES[t] || (DIAS.includes(capitalize(raw)) ? capitalize(raw) : null);
+}
+function normSlot(raw){
+  if(!raw) return null;
+  const m = String(raw).replace(/\s/g,'').replace('–','-').match(SLOT_RX);
+  if(!m) return null;
+  const a = parseInt(m[1],10), b = parseInt(m[2],10);
+  const id = `${pad(a)}-${pad(b)}`;
+  return FRANJAS.some(f=>f.id===id) ? id : null;
+}
+function pad(n){ return (n<10?'0':'') + n; }
+function capitalize(s){ return s? s[0].toUpperCase()+s.slice(1).toLowerCase() : s; }
+
+// Leer Excel -> Array de objetos
+async function leerExcel(file){
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type:"array"});
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const arr = XLSX.utils.sheet_to_json(sheet, {defval:""});
+  return { arr, headers: arr.length? Object.keys(arr[0]) : [] };
+}
+
+// Render tabla simple
+function renderTabla(containerId, rows, cols, editableCb=null, filterInputId=null){
+  const cont = el(containerId);
+  if(!rows.length){ cont.innerHTML = '<div class="note">Sin datos.</div>'; return; }
+  const filtro = filterInputId? el(filterInputId).value.trim().toLowerCase() : "";
+  const vis = filtro? rows.filter(r=> Object.values(r).some(v=> String(v).toLowerCase().includes(filtro))) : rows;
+  const thead = '<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead>';
+  const tbody = '<tbody>'+vis.map((r,i)=>'<tr>'+
+    cols.map(c=>{
+      if(c==="_acciones" && editableCb){
+        return `<td><button class="btn outline" data-idx="${r._idx||i}" data-action="edit">Editar</button></td>`;
+      }
+      return `<td>${r[c]??""}</td>`;
+    }).join('')+'</tr>').join('')+'</tbody>';
+  cont.innerHTML = `<div style="overflow:auto;max-height:520px;border:1px solid #e5e7eb;border-radius:12px">${'<table>'+thead+tbody+'</table>'}</div>`;
+  if(editableCb){
+    cont.querySelectorAll('button[data-action="edit"]').forEach(b=>b.onclick = ()=> editableCb(parseInt(b.dataset.idx,10)));
+  }
+}
+
+// MODALES
+function openModal(id){ el('#'+id).style.display='flex'; }
+function closeModal(id){ el('#'+id).style.display='none'; }
+
+// Construir UI de mapeo
+function buildMapUI(){
+  const wrap = el('#mapeos');
+  wrap.innerHTML = "";
+
+  const campos = {
+    malla: [
+      ["CARRERA","CARRERA"],["MALLA","MALLA"],["CICLO_MALLA","CICLO / SEMESTRE"],
+      ["MATERIA","MATERIA"],["CODIGO_ANTHOLOGY","CÓDIGO ANTHOLOGY"],["CODIGO","CÓDIGO (INTERNO)"],
+      ["PRE_REQUISITO","PRE-REQUISITO(S)"],["HORAS_T","HORAS TEÓRICAS"],["HORAS_P","HORAS PRÁCTICAS"],["HORAS_A","HORAS AUTÓNOMAS"],
+      ["CREDITOS","CRÉDITOS"],["CAMPO_FORMACION","CAMPO DE FORMACIÓN"],["NRO_ORDEN_MALLA","Nº ORDEN EN LA MALLA"],
+      ["COMPARTIDA_CON","COMPARTIDA CON CARRERA (separe por /)"]
+    ],
+    docente: [
+      ["DOCENTE","DOCENTE"],["TITULO_ACADEMICO","TÍTULO ACADÉMICO"],["DEDICACION","DEDICACIÓN"],
+      ["DISPONIBILIDAD","DISPONIBILIDAD (texto por días/horas)"],["LUNES","Lunes (columna opcional)"],["MARTES","Martes"],["MIERCOLES","Miércoles"],
+      ["JUEVES","Jueves"],["VIERNES","Viernes"],["MODALIDAD","MODALIDAD (opcional)"],["MATERIAS_DICTA","MATERIAS QUE DICTA (opcional)"]
+    ],
+    estudiante: [
+      ["CARRERA","CARRERA"],["ESTUDIANTE","ESTUDIANTE"],["CICLO_ESTUDIANTE","CICLO DEL ESTUDIANTE"],
+      ["MALLA","MALLA"],["NIVEL_INGLES","NIVEL INGLÉS"],["OBSERVACIONES","OBSERVACIONES"]
+    ]
+  };
+
+  const bloques = [
+    ["malla","Malla.xlsx", headers.malla],
+    ["docente","Docente.xlsx", headers.docente],
+    ["estudiante","Estudiante.xlsx", headers.estudiante],
+  ];
+
+  bloques.forEach(([key,titulo,heads])=>{
+    campos[key].forEach(([id,label])=>{
+      const sel = document.createElement("div");
+      sel.innerHTML = `
+        <label><b>${titulo}</b> — ${label}</label>
+        <select data-map="${key}:${id}">
+          <option value="">— Sin asignar —</option>
+          ${heads.map(h=>`<option value="${h}">${h}</option>`).join('')}
+        </select>
+      `;
+      wrap.appendChild(sel);
+      // autoselección heurística
+      const select = sel.querySelector('select');
+      const guess = heads.find(h => normalizarHeader(h).includes(normalizarHeader(id)));
+      if(guess) select.value = guess;
+    });
+  });
+  openModal('modalMapeo');
+}
+function normalizarHeader(h){
+  return String(h).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/\s|_|-/g,'');
+}
+function guardarMapeo(){
+  const selects = [...el('#mapeos').querySelectorAll('select[data-map]')];
+  map = { malla:{}, docente:{}, estudiante:{} };
+  selects.forEach(s=>{
+    const [tabla,campo] = s.dataset.map.split(':');
+    if(s.value) map[tabla][campo] = s.value;
+  });
+  closeModal('modalMapeo');
+  el('#btnPlanificar').disabled = false;
+  msg("Mapeos guardados. Puede ejecutar la asignación.", true);
+}
+
+/* ==========================
+   Disponibilidad docente
+========================== */
+function parseDisponibilidadDocente(rowD){
+  // Reúne de columna general y/o columnas por día
+  const slots = []; // ["Lunes|07-10", ...]
+  const add = (diaTxt, horasTxt)=>{
+    const d = normDia(diaTxt);
+    if(!d) return;
+    // horasTxt puede tener múltiples rangos separados por ; , /
+    const piezas = String(horasTxt||"").split(/[,;/]+/);
+    piezas.forEach(p=>{
+      const s = normSlot(p);
+      if(s) slots.push(`${d}|${s}`);
+    });
+  };
+  // Columna general
+  if(map.docente["DISPONIBILIDAD"]){
+    const texto = rowD[ map.docente["DISPONIBILIDAD"] ];
+    if(texto){
+      // Ejemplos: "Lun y Mié 7-10; Jue 16-19"
+      // Separar por días detectados
+      const lower = String(texto).toLowerCase();
+      // Expandir a tokens
+      const candidatos = [
+        ["Lunes",/(lu[n]?\b|lunes|mon)/gi],
+        ["Martes",/(ma[r]?\b|martes|tue)/gi],
+        ["Miércoles",/(mi[eé]?|miercoles|miércoles|wed)/gi],
+        ["Jueves",/(ju[e]?\b|jueves|thu)/gi],
+        ["Viernes",/(vi[e]?\b|viernes|fri)/gi],
+      ];
+      let tmp = lower;
+      // Reemplazar nombres por marcadores
+      candidatos.forEach(([dia,rex],i)=>{ tmp = tmp.replace(rex, `|${dia}|`); });
+      // Ahora tmp tiene |Día| alrededor de los nombres
+      const partes = tmp.split('|').map(s=>s.trim()).filter(Boolean);
+      for(let i=0;i<partes.length;i++){
+        if(DIAS.includes(capitalize(partes[i]))){
+          const dia = partes[i];
+          const horas = (partes[i+1]||"").split(/[,;]+/).filter(Boolean).join(',');
+          add(dia, horas);
+        }
+      }
+    }
+  }
+  // Columnas por día (opcionales)
+  [["LUNES","Lunes"],["MARTES","Martes"],["MIERCOLES","Miércoles"],["JUEVES","Jueves"],["VIERNES","Viernes"]].forEach(([mKey,dia]){
+    if(map.docente[mKey]){
+      add(dia, rowD[ map.docente[mKey] ]);
+    }
+  });
+  return Array.from(new Set(slots)); // únicos
+}
+
+/* ==========================
+   Motor de asignación
+========================== */
+function planificar(){
+  // Parámetros adicionales
+  paraleloCap = parseInt(el('#inpCapParalelo').value||"0",10) || null;
+
+  // Bloqueos por Inglés (estudiante)
+  relaciones.bloquesIngles = {}; // { "Nombre": Set(["Martes|10-13", ...]) }
+  String(el('#inpBloqIngles').value||"").split(/"\s*,\s*"|, */).forEach(item=>{
+    item = item.replace(/^"+|"+$/g,'').trim();
+    if(!item) return;
+    const [nom,rest] = item.split('|');
+    if(!nom || !rest) return;
+    const key = nom.trim();
+    rest.split(/; */).forEach(tok=>{
+      const [dRaw, sRaw] = tok.trim().split(/\s+/);
+      const d = normDia(dRaw);
+      const s = normSlot(sRaw);
+      if(d && s){
+        if(!relaciones.bloquesIngles[key]) relaciones.bloquesIngles[key] = new Set();
+        relaciones.bloquesIngles[key].add(`${d}|${s}`);
+      }
+    });
+  });
+
+  // Bloqueos por Prácticas (por ciclo)
+  relaciones.bloquesPracticas = {}; // { cicloNum: Set(["Miércoles|13-16"]) }
+  String(el('#inpBloqPracticas').value||"").split(/"\s*,\s*"|, */).forEach(item=>{
+    item = item.replace(/^"+|"+$/g,'').trim();
+    if(!item) return;
+    const [cicloRaw, tok] = item.split('|');
+    const ciclo = parseInt(cicloRaw,10);
+    if(!ciclo || !tok) return;
+    const [dRaw, sRaw] = tok.trim().split(/\s+/);
+    const d = normDia(dRaw);
+    const s = normSlot(sRaw);
+    if(d && s){
+      if(!relaciones.bloquesPracticas[ciclo]) relaciones.bloquesPracticas[ciclo] = new Set();
+      relaciones.bloquesPracticas[ciclo].add(`${d}|${s}`);
+    }
+  });
+
+  // Prepara disponibilidad docente y contadores por día
+  const docentes = datos.docente.map((row,idx)=>({
+    idx,
+    DOCENTE: val(row, map.docente["DOCENTE"]),
+    TITULO_ACADEMICO: val(row, map.docente["TITULO_ACADEMICO"]),
+    DEDICACION: val(row, map.docente["DEDICACION"]),
+    MODALIDAD: map.docente["MODALIDAD"]? val(row,map.docente["MODALIDAD"]) : "Presencial",
+    MATERIAS_DICTA: map.docente["MATERIAS_DICTA"]? String(val(row,map.docente["MATERIAS_DICTA"])).split(/[;,/]+/).map(s=>s.trim()).filter(Boolean) : [],
+    DISP: parseDisponibilidadDocente(row), // ["Lunes|07-10", ...]
+    cargaDia: {} // { "Lunes": n, ... }
+  })).filter(d=>d.DOCENTE);
+
+  // Estudiantes agrupados por carrera & ciclo
+  const estudiantes = datos.estudiante.map((row,idx)=>({
+    idx,
+    CARRERA: val(row, map.estudiante["CARRERA"]),
+    ESTUDIANTE: val(row, map.estudiante["ESTUDIANTE"]),
+    CICLO: parseInt(val(row, map.estudiante["CICLO_ESTUDIANTE"])) || null,
+    MALLA: val(row, map.estudiante["MALLA"]),
+    NIVEL_INGLES: val(row, map.estudiante["NIVEL_INGLES"]),
+    OBSERVACIONES: val(row, map.estudiante["OBSERVACIONES"]),
+  })).filter(e=>e.CARRERA && e.ESTUDIANTE && e.CICLO);
+
+  const gruposEst = {}; // key = carrera|ciclo|malla -> array estudiantes
+  estudiantes.forEach(e=>{
+    const key = `${e.CARRERA}|${e.CICLO}|${e.MALLA}`;
+    if(!gruposEst[key]) gruposEst[key] = [];
+    gruposEst[key].push(e);
+  });
+
+  // Materias por carrera/ciclo
+  const materiasRaw = datos.malla.map(row=>({
+    CARRERA: val(row, map.malla["CARRERA"]),
+    MALLA: val(row, map.malla["MALLA"]),
+    CICLO_MALLA: parseInt(val(row, map.malla["CICLO_MALLA"])) || null,
+    MATERIA: val(row, map.malla["MATERIA"]),
+    CODIGO_ANTHOLOGY: val(row, map.malla["CODIGO_ANTHOLOGY"]),
+    CODIGO: val(row, map.malla["CODIGO"]),
+    PRE_REQUISITO: val(row, map.malla["PRE_REQUISITO"]),
+    HORAS_T: num(val(row, map.malla["HORAS_T"])),
+    HORAS_P: num(val(row, map.malla["HORAS_P"])),
+    HORAS_A: num(val(row, map.malla["HORAS_A"])),
+    CREDITOS: num(val(row, map.malla["CREDITOS"])),
+    CAMPO_FORMACION: val(row, map.malla["CAMPO_FORMACION"]),
+    NRO_ORDEN_MALLA: val(row, map.malla["NRO_ORDEN_MALLA"]),
+    COMPARTIDA_CON: (val(row, map.malla["COMPARTIDA_CON"])||"").split(/[;/]+/).map(s=>s.trim()).filter(Boolean)
+  })).filter(m=>m.CARRERA && m.CICLO_MALLA && m.MATERIA);
+
+  // Generar calendarios de ciclos para evitar choques adyacentes
+  const usadoCiclo = {}; // key = CARRERA|CICLO -> Set("Día|Franja")
+  function cicloKey(carrera,ciclo){ return `${carrera}|${ciclo}`; }
+
+  // Resultado intermedios
+  const planDoc = []; // filas tabla docente
+  const planEst = []; // filas tabla estudiante
+  const planMat = []; // filas tabla materias (por paralelo)
+
+  // Para cada grupo de estudiantes (carrera/ciclo/malla), asignar materias de ese ciclo
+  Object.entries(gruposEst).forEach(([key,listaEst])=>{
+    const [CARRERA, CICLO, MALLA] = key.split('|'); const cicloNum = parseInt(CICLO);
+    const materiasCiclo = materiasRaw.filter(m=> m.CARRERA===CARRERA && m.MALLA===MALLA && m.CICLO_MALLA===cicloNum);
+
+    // Determinar paralelos por capacidad (si procede)
+    let paralelos = ["A"];
+    if(paraleloCap){
+      const n = listaEst.length;
+      const cuantos = Math.ceil(n / paraleloCap);
+      paralelos = Array.from({length:cuantos}, (_,i)=> String.fromCharCode(65+i)); // A,B,C...
+    }
+
+    // Asignar materias una por una
+    materiasCiclo.forEach(mat=>{
+      const horasContacto = (mat.HORAS_T||0) + (mat.HORAS_P||0); // NO agenda horas autónomas
+      const slotsNecesarios = Math.max(1, Math.ceil(horasContacto / 3)); // 3 horas por franja
+
+      // Por cada paralelo
+      paralelos.forEach((PARA, pIdx)=>{
+        // Elegir slots y docente
+        const asignaciones = escogerSlotsYDocente(CARRERA, cicloNum, mat, slotsNecesarios, docentes, usadoCiclo);
+
+        // Registrar "Materias" (conteo estudiantes por paralelo)
+        planMat.push({
+          "MALLA": MALLA,
+          "CICLO DE LA MATERIA EN LA MALLA": cicloNum,
+          "COMPARTIDA CON CARRERA": mat.COMPARTIDA_CON.join(' / '),
+          "MATERIA": mat.MATERIA,
+          "PARALELO": PARA,
+          "DIA": asignaciones.map(a=>a.dia).join(' / '),
+          "HORA": asignaciones.map(a=>a.slot).join(' / '),
+          "Número de estudiantes": Math.ceil(listaEst.length / paralelos.length)
         });
-    </script>
+
+        // Planificación docente + estudiante
+        asignaciones.forEach(asg=>{
+          // Docente
+          planDoc.push({
+            "DOCENTE": asg.docente.DOCENTE,
+            "TITULO ACADÉMICO": asg.docente.TITULO_ACADEMICO,
+            "DEDICACIÓN": asg.docente.DEDICACION,
+            "MATERIA": mat.MATERIA,
+            "CÓDIGO ANTHOLOGY": mat.CODIGO_ANTHOLOGY,
+            "CARRERAS QUE COMPARTEN": [mat.CARRERA, ...(mat.COMPARTIDA_CON||[])].filter(Boolean).join(' / '),
+            "PRE-REQUISITO": mat.PRE_REQUISITO,
+            "CODIGO": mat.CODIGO,
+            "HORAS TEÓRICAS": mat.HORAS_T||0,
+            "HORAS PRÁCTICAS": mat.HORAS_P||0,
+            "HORAS AUTÓNOMAS": mat.HORAS_A||0,
+            "CREDITOS": mat.CREDITOS||0,
+            "CAMPO DE FORMACIÓN": mat.CAMPO_FORMACION,
+            "CICLO MALLA": mat.CICLO_MALLA,
+            "Nº ORDEN EN LA MALLA": mat.NRO_ORDEN_MALLA||"",
+            "PARALELO": PARA,
+            "DIA": asg.dia,
+            "HORA": asg.slot,
+            "MODALIDAD": asg.docente.MODALIDAD,
+            "Nro. HORAS": 3 // por franja
+          });
+        });
+
+        // Estudiantes: asignar (máx. 6 materias, validar bloqueos y 2 materias/día)
+        listaEst.forEach((est, idxEst)=>{
+          // Distribuir estudiantes a paralelos de manera simple
+          const asignadoAEsteParalelo = (idxEst % paralelos.length) === pIdx;
+          if(!asignadoAEsteParalelo) return;
+
+          // Limitar a 6 materias totales por estudiante
+          const yaAsignadas = planEst.filter(r => r.ESTUDIANTE===est.ESTUDIANTE).length;
+          if(yaAsignadas >= 6) return;
+
+          asignaciones.forEach(asg=>{
+            // Validar bloqueos por Inglés (estudiante)
+            const keyIng = `${est.ESTUDIANTE}`;
+            const bloqueEst = relaciones.bloquesIngles[keyIng];
+            const bloqueCiclo = relaciones.bloquesPracticas[est.CICLO];
+            if( (bloqueEst && bloqueEst.has(`${asg.dia}|${asg.slot}`)) || (bloqueCiclo && bloqueCiclo.has(`${asg.dia}|${asg.slot}`)) ){
+              return; // salta esta franja para ese estudiante
+            }
+            // Máx 2 materias por día para el estudiante
+            const countDay = planEst.filter(r=> r.ESTUDIANTE===est.ESTUDIANTE && r.DIA===asg.dia).length;
+            if(countDay >= 2) return;
+
+            planEst.push({
+              "CARRERA": est.CARRERA,
+              "ESTUDIANTE": est.ESTUDIANTE,
+              "CICLO DEL ESTUDIANTE": est.CICLO,
+              "MALLA": est.MALLA,
+              "CICLO DE LA MATERIA EN LA MALLA": mat.CICLO_MALLA,
+              "COMPARTIDA CON\tCARRERA": mat.COMPARTIDA_CON.join(' / '),
+              "MATERIA": mat.MATERIA,
+              "PARALELO": PARA,
+              "DIA": asg.dia,
+              "HORA": asg.slot,
+              "MODALIDAD": "Presencial",
+              "NIVEL INGLES": est.NIVEL_INGLES||"",
+              "OBSERVACIONES": est.OBSERVACIONES||"",
+              "DOCENTE": asg.docente.DOCENTE,
+              "_idx": planEst.length // para edición
+            });
+          });
+        });
+
+      }); // paralelos
+    }); // materias ciclo
+  }); // grupos
+
+  resultados.planDocente = compactarHorasDocente(planDoc);
+  resultados.planEstudiante = planEst;
+  resultados.materias = planMat;
+
+  // Render
+  renderTodo();
+
+  // Validaciones
+  const avisos = validarCruces(resultados);
+  msg(avisos.length? `Revisiones: ${avisos.length} hallazgos` : "Sin choques detectados. Asignación completada.", !avisos.length);
+}
+
+/* Escoger slots y docente con reglas */
+function escogerSlotsYDocente(CARRERA, cicloNum, mat, slotsNecesarios, docentes, usadoCiclo){
+  const asignaciones = [];
+  const keyCiclo = (c)=> `${CARRERA}|${c}`;
+
+  for(let n=0; n<slotsNecesarios; n++){
+    // Buscar la primera combinación Día|Franja donde:
+    // - Cumpla disponibilidad del docente
+    // - No supere 2 materias/día docente
+    // - No choque con ciclos adyacentes (ciclo-1, ciclo, ciclo+1)
+    // - Si la materia es compartida, se prioriza mantener misma franja reutilizable
+    let elegido = null;
+
+    // Preferencia de franjas: distribuir a lo largo de la semana
+    for(const dia of DIAS){
+      // Evitar choque con ciclos adyacentes
+      const ady = [cicloNum-1,cicloNum,cicloNum+1].filter(x=>x>0);
+      const ocupadosAdy = new Set([].concat(...ady.map(c=> Array.from((usadoCiclo[keyCiclo(c)]||new Set())) )));
+      for(const fr of FRANJAS){
+        const marca = `${dia}|${fr.id}`;
+        if(ocupadosAdy.has(marca)) continue;
+
+        // Elegir docente disponible en esta marca
+        const candidatos = docentes.filter(d=>{
+          if(!d.DISP.includes(marca)) return false;
+          const carga = d.cargaDia[dia]||0;
+          if(carga>=2) return false; // máx 2 materias/día por docente
+          // Si declara materias que dicta, intentar coincidir por nombre
+          if(d.MATERIAS_DICTA.length){
+            return d.MATERIAS_DICTA.some(x=> normalizarHeader(x)===normalizarHeader(mat.MATERIA));
+          }
+          return true;
+        });
+
+        if(candidatos.length){
+          // balancear carga eligiendo el de menor carga diaria/total
+          candidatos.sort((a,b)=> ( (a.cargaDia[dia]||0) - (b.cargaDia[dia]||0) ));
+          const dsel = candidatos[0];
+          elegido = { dia, slot: fr.id, docente: dsel };
+          // Marcar uso
+          dsel.cargaDia[dia] = (dsel.cargaDia[dia]||0)+1;
+          if(!usadoCiclo[keyCiclo(cicloNum)]) usadoCiclo[keyCiclo(cicloNum)] = new Set();
+          usadoCiclo[keyCiclo(cicloNum)].add(marca);
+          break;
+        }
+      }
+      if(elegido) break;
+    }
+
+    // Si no se encontró (caso extremo), colocar en la primera celda libre ignorando adyacencia
+    if(!elegido){
+      outer:
+      for(const dia of DIAS){
+        for(const fr of FRANJAS){
+          const marca = `${dia}|${fr.id}`;
+          const cand = docentes.find(d=> d.DISP.includes(marca) && (d.cargaDia[dia]||0) < 2 );
+          if(cand){
+            elegido = { dia, slot: fr.id, docente: cand };
+            cand.cargaDia[dia] = (cand.cargaDia[dia]||0)+1;
+            break outer;
+          }
+        }
+      }
+    }
+
+    if(elegido) asignaciones.push(elegido);
+  }
+  return asignaciones;
+}
+
+/* Compactar Nro. HORAS por docente+materia+paralelo sumando franjas de la misma fila lógica */
+function compactarHorasDocente(rows){
+  // Agrupar por DOCENTE|MATERIA|PARALELO
+  const keyOf = r => [r.DOCENTE,r.MATERIA,r.PARALELO].join("|");
+  const map = {};
+  rows.forEach(r=>{
+    const k = keyOf(r);
+    if(!map[k]){
+      map[k] = {...r};
+    }else{
+      map[k].DIA += ` / ${r.DIA}`;
+      map[k].HORA += ` / ${r.HORA}`;
+      map[k]["Nro. HORAS"] += r["Nro. HORAS"];
+    }
+  });
+  return Object.values(map);
+}
+
+/* Validaciones finales */
+function validarCruces(rs){
+  const avisos = [];
+
+  // Docente: >2 materias por día
+  const porDocDia = {};
+  rs.planDocente.forEach(r=>{
+    const k = `${r.DOCENTE}|${r.DIA}`;
+    porDocDia[k] = (porDocDia[k]||0) + r["Nro. HORAS"]/3; // 1 por franja
+  });
+  Object.entries(porDocDia).forEach(([k,v])=>{
+    if(v>2) avisos.push(`Docente con más de 2 materias en un día: ${k}`);
+  });
+
+  // Estudiante: >2 materias por día o >6 materias totales
+  const porEstDia = {};
+  const porEstTot = {};
+  rs.planEstudiante.forEach(r=>{
+    const kd = `${r.ESTUDIANTE}|${r.DIA}`;
+    porEstDia[kd] = (porEstDia[kd]||0) + 1;
+    porEstTot[r.ESTUDIANTE] = (porEstTot[r.ESTUDIANTE]||0) + 1;
+  });
+  Object.entries(porEstDia).forEach(([k,v])=>{
+    if(v>2) avisos.push(`Estudiante con más de 2 materias en un día: ${k}`);
+  });
+  Object.entries(porEstTot).forEach(([k,v])=>{
+    if(v>6) avisos.push(`Estudiante con más de 6 materias: ${k} (${v})`);
+  });
+
+  return avisos;
+}
+
+/* Render general */
+function renderTodo(){
+  // DOCENTE
+  const colsDoc = ["DOCENTE","TITULO ACADÉMICO","DEDICACIÓN","MATERIA","CÓDIGO ANTHOLOGY","CARRERAS QUE COMPARTEN","PRE-REQUISITO","CODIGO","HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","CREDITOS","CAMPO DE FORMACIÓN","CICLO MALLA","Nº ORDEN EN LA MALLA","PARALELO","DIA","HORA","MODALIDAD","Nro. HORAS"];
+  renderTabla("#wrapDocente", resultados.planDocente, colsDoc, null, "#filtroDocente");
+
+  // ESTUDIANTE (con columna de acciones para editar)
+  const colsEst = ["CARRERA","ESTUDIANTE","CICLO DEL ESTUDIANTE","MALLA","CICLO DE LA MATERIA EN LA MALLA","COMPARTIDA CON\tCARRERA","MATERIA","PARALELO","DIA","HORA","MODALIDAD","NIVEL INGLES","OBSERVACIONES","DOCENTE","_acciones"];
+  renderTabla("#wrapEst", resultados.planEstudiante, colsEst, editarEstudiante, "#filtroEst");
+
+  // MATERIAS
+  const colsMat = ["MALLA","CICLO DE LA MATERIA EN LA MALLA","COMPARTIDA CON CARRERA","MATERIA","PARALELO","DIA","HORA","Número de estudiantes"];
+  renderTabla("#wrapMat", resultados.materias, colsMat, null, "#filtroMat");
+
+  // Habilitar export
+  el('#btnExportar').disabled = false;
+}
+
+/* Editor de estudiante */
+function editarEstudiante(idx){
+  const fila = resultados.planEstudiante[idx];
+  if(!fila) return;
+  const contenido = el('#editarContenido');
+  // Opciones de franja (todas) y de materia (del mismo ciclo y carrera)
+  const opcionesMateria = resultados.materias
+    .filter(m => m["CICLO DE LA MATERIA EN LA MALLA"]===fila["CICLO DE LA MATERIA EN LA MALLA"] && m["MALLA"]===fila["MALLA"])
+    .map(m => ({ materia:m["MATERIA"], paralelo:m["PARALELO"], dia:m["DIA"], hora:m["HORA"] }));
+  const optsMat = [...new Set(opcionesMateria.map(o=>`${o.materia} | Paralelo ${o.paralelo}`))];
+
+  const optsDia = DIAS;
+  const optsSlot = FRANJAS.map(f=>f.id);
+
+  contenido.innerHTML = `
+    <div class="grid cols-2">
+      <div><label>Estudiante</label><input type="text" value="${fila.ESTUDIANTE}" disabled/></div>
+      <div><label>Carrera</label><input type="text" value="${fila.CARRERA}" disabled/></div>
+      <div><label>Materia</label>
+        <select id="edMateria">${optsMat.map(x=>`<option ${x.startsWith(fila.MATERIA)?'selected':''}>${x}</option>`).join('')}</select>
+      </div>
+      <div><label>Día</label>
+        <select id="edDia">${optsDia.map(d=>`<option ${d===fila.DIA?'selected':''}>${d}</option>`).join('')}</select>
+      </div>
+      <div><label>Hora</label>
+        <select id="edHora">${optsSlot.map(s=>`<option ${s===fila.HORA?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn outline" onclick="closeModal('modalEditar')">Cerrar</button>
+      <button class="btn primary" onclick="guardarEdicion(${idx})">Guardar cambios</button>
+    </div>
+    <div class="note" style="margin-top:8px">Se validará si hay cruce de horarios (máx. 2 materias/día para el estudiante). Para docentes no se edita desde aquí.</div>
+  `;
+  openModal('modalEditar');
+}
+function guardarEdicion(idx){
+  const fila = resultados.planEstudiante[idx];
+  const dia = el('#edDia').value;
+  const hora = el('#edHora').value;
+  const matSel = el('#edMateria').value.split(' | ')[0];
+
+  // Validar choques: mismo estudiante, mismo día, más de 2
+  const ya = resultados.planEstudiante.filter((r,i)=> i!==idx && r.ESTUDIANTE===fila.ESTUDIANTE && r.DIA===dia);
+  if(ya.length >= 2){
+    alert("No es posible: el estudiante ya tiene 2 materias ese día.");
+    return;
+  }
+  // Aplicar
+  fila.DIA = dia; fila.HORA = hora; fila.MATERIA = matSel;
+  renderTodo();
+  closeModal('modalEditar');
+}
+
+/* Helpers */
+function val(row, col){ return col? row[col] : ""; }
+function num(v){ const n = parseFloat(String(v).replace(',','.')); return isNaN(n)? 0 : n; }
+
+/* Exportar a Excel */
+function exportar(){
+  const wb = XLSX.utils.book_new();
+  const toSheet = (arr)=>XLSX.utils.json_to_sheet(arr);
+  XLSX.utils.book_append_sheet(wb, toSheet(resultados.planDocente), "Planificación docente");
+  XLSX.utils.book_append_sheet(wb, toSheet(resultados.planEstudiante), "Planificación estudiante");
+  XLSX.utils.book_append_sheet(wb, toSheet(resultados.materias), "Materias");
+  XLSX.writeFile(wb, "Planificacion_UIDE.xlsx");
+}
+
+/* ==========================
+   Eventos UI
+========================== */
+el('#btnPreviewHeaders').onclick = async ()=>{
+  const mallaF = el('#fileMalla').files[0];
+  const docF = el('#fileDocente').files[0];
+  const estF = el('#fileEst').files[0];
+  if(!mallaF || !docF || !estF){ msg("Cargue los tres archivos Excel (Malla, Docente, Estudiante)."); return; }
+
+  el('#msgLoad').textContent = "Leyendo Excel…";
+  const [mres, dres, eres] = await Promise.all([leerExcel(mallaF), leerExcel(docF), leerExcel(estF)]);
+  datos.malla = mres.arr; headers.malla = mres.headers;
+  datos.docente = dres.arr; headers.docente = dres.headers;
+  datos.estudiante = eres.arr; headers.estudiante = eres.headers;
+  el('#msgLoad').textContent = `Hojas leídas. Encabezados detectados — Malla: ${headers.malla.length} • Docente: ${headers.docente.length} • Estudiante: ${headers.estudiante.length}`;
+  buildMapUI();
+};
+el('#btnGuardarMapeo').onclick = guardarMapeo;
+el('#btnPlanificar').onclick = ()=>{
+  try{
+    planificar();
+  }catch(e){
+    console.error(e);
+    msg("Error en la asignación. Revise mapeos y datos (disponibilidad, ciclos y materias).");
+  }
+};
+el('#btnExportar').onclick = exportar;
+el('#filtroDocente').oninput = ()=> renderTodo();
+el('#filtroEst').oninput = ()=> renderTodo();
+el('#filtroMat').oninput = ()=> renderTodo();
+</script>
 </body>
 </html>
