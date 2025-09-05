@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Planificador Académico — Matriz Consolidada (v2)</title>
+  <title>Planificador Académico — Matriz Consolidada (v4)</title>
   <style>
     :root{ --bg:#f8fafc; --fg:#0f172a; --muted:#475569; --accent:#0ea5e9; --border:#e2e8f0; --chip:#eef2ff; }
     html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,"Helvetica Neue",Arial;}
@@ -35,8 +35,8 @@
 </head>
 <body>
   <header>
-    <h1>Planificador Académico — Matriz consolidada (v2)</h1>
-    <div class="sub">Cargue <strong>Mallas.xlsx</strong> y <strong>Docentes.xlsx</strong>. Esta versión admite encabezados con tildes/variantes.</div>
+    <h1>Planificador Académico — Matriz consolidada (v4)</h1>
+    <div class="sub">Cargue <strong>Mallas.xlsx</strong> y <strong>Docentes.xlsx</strong>. Soporta encabezados con tildes/variantes y respeta disponibilidad del docente.</div>
   </header>
 
   <main>
@@ -76,6 +76,7 @@
         <div class="chip">Máx. 2 asignaturas/día por ciclo</div>
         <div class="chip">Evitar choques entre ciclos contiguos</div>
         <div class="chip">Paralelos A, B, C… (round-robin por docente)</div>
+        <div class="chip">Respeta disponibilidad de docente</div>
       </div>
       <div id="warnings" class="note"></div>
     </section>
@@ -144,8 +145,9 @@
     function ready(){ btn.disabled = !(mFile.files.length && dFile.files.length); status.textContent = btn.disabled? 'Cargue ambos archivos.' : 'Listo.'; }
     mFile.addEventListener('change', ready); dFile.addEventListener('change', ready);
 
-    // === Normalización de texto y llaves ===
-    const normalize = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    // Utilidades de texto/números
+    const strip = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,''); // quitar tildes
+    const normalize = s => strip(s).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
     const norm = s => String(s ?? '').trim();
     const toNum = v => { if(v==null||v==='') return 0; const n = Number(String(v).replace(',', '.')); return Number.isFinite(n)? n : 0; };
 
@@ -156,21 +158,24 @@
       ciclo_malla:["ciclo malla","ciclo","semestre","nivel"],
       norden:["n orden en la malla","nro orden en la malla","no orden en la malla","n° orden en la malla","num orden en la malla","numero orden malla"],
       materia:["materia","asignatura","nombre","nombre asignatura"],
-      prereq:["pre-requisito","prerequisito","pre requisito"],
+      prereq:["pre-requisito","prerequisito","pre requisito","prerrequisito","prerrequsito"],
       codigo:["codigo","código","code"],
       codigo_anth:["codigo anthology","código anthology","anthology","cod anthology","codigo anth"],
       horas_t:["horas teoricas","horas t","ht"],
       horas_p:["horas practicas","horas p","hp"],
       horas_a:["horas autonomas","horas a","ha"],
       creditos:["creditos","créditos","cr"],
-      campo:["campo de formacion","campo formacion","area formacion","area de formacion"],
+      campo:["campo de formacion","campo formacion","area formacion","area de formacion","campo de formaci\u00f3n"],
       modalidad:["modalidad","modalidad de estudio","mode"],
       estudiantes:["estudiantes","n estudiantes","nro estudiantes","nro. estudiantes","matriculados","inscritos"],
 
       d_docente:["docente","profesor","teacher","nombre docente"],
-      d_titulo:["titulo academico","título academico","título académico","grado academico"],
+      d_titulo:["titulo academico","título academico","título académico","grado academico","titulo academico"],
       d_dedic:["dedicacion","dedicación","jornada","contrato"],
       d_materia:["materia","asignatura"],
+      d_dia:["dia disponible","dia","dias disponibles","disponibilidad dia"],
+      d_hora:["hora disponible","horario disponible","hora","disponibilidad hora"],
+      d_modalidad:["modalidad","modalidad preferida"]
     };
 
     function valueByAliases(row, aliases){
@@ -179,7 +184,7 @@
         const nk = normalize(k);
         for(const a of aliases){ if(nk === normalize(a)) return row[k]; }
       }
-      // búsqueda contiene
+      // búsqueda por inclusión
       for(const k of keys){
         const nk = normalize(k);
         for(const a of aliases){ if(nk.includes(normalize(a))) return row[k]; }
@@ -207,13 +212,62 @@
       };
     }
 
+    function parseAvail(diaStr, horaStr){
+      // Devuelve Set("dayIndex|slotIndex")
+      const set = new Set();
+      if(!diaStr && !horaStr) return set; // vacío => sin restricción
+      const dayMap = new Map([
+        ["lunes",0],["lun",0],
+        ["martes",1],["mar",1],
+        ["miercoles",2],["miércoles",2],["mie",2],["mié",2],
+        ["jueves",3],["jue",3],
+        ["viernes",4],["vie",4]
+      ]);
+      function parseDays(s){
+        if(!s) return [0,1,2,3,4];
+        const parts = String(s).split(/[;\\/\,\| ]+/).map(x=>x.trim()).filter(Boolean);
+        const out = new Set();
+        for(const p of parts){
+          const key = normalize(p);
+          if(key==="todos"||key==="cualquiera"){ [0,1,2,3,4].forEach(d=>out.add(d)); continue; }
+          if(dayMap.has(key)) out.add(dayMap.get(key));
+        }
+        return out.size? Array.from(out): [0,1,2,3,4];
+      }
+      function slotIndexFromRange(tok){
+        // Acepta "07:00–10:00", "7-10", "10 – 13", o etiqueta exacta
+        const t = String(tok).trim();
+        const labIdx = SLOTS.findIndex(sl=> sl.label === t);
+        if(labIdx>=0) return [labIdx];
+        const m = t.match(/(\d{1,2})(?::\d{2})?\s*[–-]\s*(\d{1,2})(?::\d{2})?/);
+        if(m){
+          const a = parseInt(m[1],10), b = parseInt(m[2],10);
+          const idx = SLOTS.findIndex(sl=> sl.start===a && sl.end===b);
+          if(idx>=0) return [idx];
+        }
+        // palabras clave
+        const low = normalize(t);
+        if(low.includes("manana")||low.includes("mañana")) return [0,1];
+        if(low.includes("tarde")) return [2,3];
+        if(low.includes("noche")) return [4];
+        return [0,1,2,3,4]; // cualquier slot
+      }
+      const days = parseDays(diaStr);
+      const slotTokens = String(horaStr||"").split(/[;\\/\,\|]+/).filter(Boolean);
+      const slots = slotTokens.length? Array.from(new Set(slotTokens.flatMap(slotIndexFromRange))) : [0,1,2,3,4];
+      for(const d of days){ for(const s of slots){ set.add(d+"|"+s); } }
+      return set;
+    }
+
     function getDocenteRow(row){
-      return {
-        DOCENTE: norm(valueByAliases(row, ALIAS.d_docente)),
-        TITULO: norm(valueByAliases(row, ALIAS.d_titulo)),
-        DED: norm(valueByAliases(row, ALIAS.d_dedic)),
-        MATERIA: norm(valueByAliases(row, ALIAS.d_materia)),
-      };
+      const DOC = norm(valueByAliases(row, ALIAS.d_docente));
+      const TIT = norm(valueByAliases(row, ALIAS.d_titulo));
+      const DED = norm(valueByAliases(row, ALIAS.d_dedic));
+      const MAT = norm(valueByAliases(row, ALIAS.d_materia));
+      const DIA = norm(valueByAliases(row, ALIAS.d_dia));
+      const HOR = norm(valueByAliases(row, ALIAS.d_hora));
+      const MOD = norm(valueByAliases(row, ALIAS.d_modalidad));
+      return { DOCENTE:DOC, TITULO:TIT, DED:DED, MATERIA:MAT, DIA, HORA:HOR, MODALIDAD:MOD };
     }
 
     // Lectura xlsx (todas las hojas)
@@ -231,20 +285,30 @@
     });
 
     function indexDocentes(docRows){
-      const map = new Map(); // materia -> [docentes]
+      const mapByMateria = new Map(); // materia -> [docentes]
       const generics = [];
+      const availByDoc = new Map();   // DOCENTE -> Set(day|slot)
       for(const r of docRows){
         const d = getDocenteRow(r);
-        const entry = {DOCENTE:d.DOCENTE, TITULO:d.TITULO, DED:d.DED};
+        const entry = {DOCENTE:d.DOCENTE, TITULO:d.TITULO, DED:d.DED, MODALIDAD:d.MODALIDAD};
+        // disponibilidad
+        if(d.DOCENTE){
+          const set = parseAvail(d.DIA, d.HORA);
+          if(set.size){
+            if(!availByDoc.has(d.DOCENTE)) availByDoc.set(d.DOCENTE, new Set());
+            const acc = availByDoc.get(d.DOCENTE);
+            set.forEach(v=> acc.add(v));
+          }
+        }
         if(d.MATERIA){
           const key = d.MATERIA.toLowerCase();
-          if(!map.has(key)) map.set(key, []);
-          map.get(key).push(entry);
+          if(!mapByMateria.has(key)) mapByMateria.set(key, []);
+          mapByMateria.get(key).push(entry);
         } else if (d.DOCENTE){
           generics.push(entry);
         }
       }
-      return {byMateria:map, generic:generics};
+      return {byMateria:mapByMateria, generic:generics, availByDoc};
     }
 
     function groupMallas(mRows){
@@ -269,19 +333,24 @@
       return groups;
     }
 
-    function schedule(items, cicloPrincipal){
+    function schedule(items, cicloPrincipal, availByDoc){
       const usedByCycle = new Map(); // ciclo -> Set(day|slot)
       const perDayCountByCycle = new Map();
-      const usedByDocente = new Map();
+      const usedByDocente = new Map(); // docente -> Set(day|slot)
       const slotKey = (d,s)=> d+'|'+s;
 
       function isAvailable(ciclo, docente, d, s){
         const key = slotKey(d,s);
+        // disponibilidad del docente (si existe)
+        if(docente && availByDoc && availByDoc.get(docente) && !availByDoc.get(docente).has(key)) return false;
+        // choques por ciclo y contiguos
         if(usedByCycle.get(ciclo)?.has(key)) return false;
         if(usedByCycle.get(ciclo-1)?.has(key)) return false;
         if(usedByCycle.get(ciclo+1)?.has(key)) return false;
+        // máx 2 asignaturas por día en el ciclo
         const dm = perDayCountByCycle.get(ciclo) || new Map();
-        if((dm.get(d)||0) >= 2) return false; // máx 2 por día
+        if((dm.get(d)||0) >= 2) return false;
+        // docente no duplicado
         if(docente && usedByDocente.get(docente)?.has(key)) return false;
         return true;
       }
@@ -318,11 +387,12 @@
       for(const c of order){
         const list = (byCycle.get(c)||[]).sort((a,b)=> norm(a.materia).localeCompare(norm(b.materia)) || norm(a.paralelo).localeCompare(norm(b.paralelo)) );
         for(const it of list){
-          const hours = it.hoursSchedule; // numérico
+          const hours = it.hoursSchedule; // HT+HP
           if(hours<=0){ out.push({...it, dia:'', hora:'', nroHoras:0}); continue; }
           const placed = place(Number(it.ciclo)||0, it.docente, hours);
           if(!placed){
-            warns.push(`Sin hueco: ${it.materia} (C${it.ciclo}, Paralelo ${it.paralelo}).`);
+            const who = it.docente? `Docente ${it.docente}` : 'Docente (sin asignar)';
+            warns.push(`Sin hueco para ${it.materia} (C${it.ciclo}, Paralelo ${it.paralelo}). ${who} sin disponibilidad suficiente o conflicto de ciclo.`);
             out.push({...it, dia:'', hora:'', nroHoras:hours});
           } else {
             for(const p of placed){ out.push({...it, dia:DAYS[p.d], hora:SLOTS[p.s].label, nroHoras:3}); }
@@ -360,12 +430,11 @@
           const totalEst = g.totalEst>0? g.totalEst : cap; // si no hay dato, asuma 1 paralelo
           const nPar = Math.max(1, Math.ceil(totalEst / cap));
           // ciclo dominante (modo numérico)
-          const cicloNums = g.ciclos.map(x=>Number(x)).filter(n=>!isNaN(n));
+          const cicloNums = g.ciclos.map(x=> parseInt(String(x).match(/\d+/)?.[0]||'0',10)).filter(n=>!isNaN(n));
           const cycleCount = new Map(); cicloNums.forEach(n=> cycleCount.set(n,(cycleCount.get(n)||0)+1));
           const cicloDom = cicloNums.length? Array.from(cycleCount.entries()).sort((a,b)=>b[1]-a[1])[0][0] : 0;
           // horas para programar: use max de (HT+HP) entre carreras
-          const toN = v=> (v==null||v==='')?0:Number(String(v).replace(',', '.'));
-          const hoursMax = Math.max(0, ...g.ht.map((x,i)=> toN(x)+toN(g.hp[i])));
+          const hoursMax = Math.max(0, ...g.ht.map((x,i)=> toNum(x)+toNum(g.hp[i])));
           // slash-joined
           const join = arr => arr.map(v=> (v==null||v==='')? '' : String(v)).join(' / ');
 
@@ -373,7 +442,7 @@
           const keyMateria = g.materia.toLowerCase();
           const docs = docentesIdx.byMateria.get(keyMateria) || docentesIdx.generic;
           for(let p=0;p<nPar;p++){
-            const doc = docs.length? docs[p % docs.length] : {DOCENTE:'', TITULO:'', DED:''};
+            const doc = docs.length? docs[p % docs.length] : {DOCENTE:'', TITULO:'', DED:'', MODALIDAD:''};
             items.push({
               docente: doc.DOCENTE,
               titulo: doc.TITULO,
@@ -392,7 +461,7 @@
               ciclo: String(cicloDom||''),
               norden: join(g.norden),
               paralelo: PARALLELS[p] || ('P'+(p+1)),
-              dia: '', hora: '', modalidad: join(g.modalidades),
+              dia: '', hora: '', modalidad: join(g.modalidades) || doc.MODALIDAD || '',
               hoursSchedule: hoursMax // numérico
             });
           }
@@ -400,12 +469,12 @@
 
         // ordenar y programar
         items.sort((a,b)=> (Number(a.ciclo)||0)-(Number(b.ciclo)||0) || norm(a.materia).localeCompare(norm(b.materia)) || norm(a.paralelo).localeCompare(norm(b.paralelo)) );
-        const {rowsOut, warnings} = schedule(items, cicloP);
-        warningsEl.innerHTML = warnings.length? `<div class="warning">${warnings.map(w=>`<div>• ${w}</div>`).join('')}</div>` : '<div class="ok">Programación generada sin conflictos entre ciclos contiguos.</div>';
+        const {rowsOut, warnings} = schedule(items, cicloP, docentesIdx.availByDoc);
+        warningsEl.innerHTML = warnings.length? `<div class="warning">${warnings.map(w=>`<div>• ${w}</div>`).join('')}</div>` : '<div class="ok">Programación generada sin conflictos entre ciclos contiguos y respetando disponibilidades.</div>';
         render(rowsOut);
         status.textContent='Completado.';
       }catch(err){
-        console.error(err); status.textContent='Error procesando archivos.'; warningsEl.innerHTML = '<div class="warning">Revise que los encabezados existan (materia, ciclo, horas, etc.). Esta versión acepta variaciones y tildes.</div>';
+        console.error(err); status.textContent='Error procesando archivos.'; warningsEl.innerHTML = '<div class="warning">Revise que los encabezados existan (materia, ciclo, horas, docentes con disponibilidad). Esta versión acepta variaciones y tildes.</div>';
       } finally{ btn.disabled=false; }
     });
 
