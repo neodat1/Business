@@ -6,41 +6,39 @@
 <title>Planificación Académica – Generador de Matriz</title>
 <style>
   :root{
-    --bg:#f8f9fb;
-    --ink:#1d2630;
-    --muted:#6b7785;
-    --accent:#0b5cff;
-    --ok:#198754;
-    --warn:#d39e00;
-    --bad:#dc3545;
-    --table-border:#e5e7eb;
+    --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
+    --bg:#f8f9fb; --ink:#1d2630; --muted:#6b7785; --table:#e5e7eb;
   }
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Noto Sans',sans-serif}
-  header{padding:16px 20px;background:white;border-bottom:1px solid var(--table-border);position:sticky;top:0;z-index:10}
-  h1{margin:0;font-size:20px}
+  header{padding:14px 20px;background:white;border-bottom:2px solid var(--azul);position:sticky;top:0;z-index:10}
+  h1{margin:0;font-size:20px;color:var(--azul)}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{height:42px}
   .wrap{max-width:1300px;margin:0 auto;padding:18px}
-  .card{background:white;border:1px solid var(--table-border);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card{background:white;border:1px solid var(--table);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
   label{font-weight:600;font-size:14px}
   input[type="file"]{display:block;font-size:14px}
-  button{appearance:none;border:1px solid var(--ink);background:var(--ink);color:white;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
-  button.ghost{background:white;color:var(--ink)}
+  button{appearance:none;border:1px solid var(--azul);background:var(--azul);color:white;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+  button.ghost{background:white;color:var(--azul)}
   button:disabled{opacity:.5;cursor:not-allowed}
   .hint{color:var(--muted);font-size:12px}
   table{width:100%;border-collapse:separate;border-spacing:0}
-  thead th{position:sticky;top:0;background:#f3f4f6;z-index:5}
-  th,td{border-bottom:1px solid var(--table-border);padding:8px 10px;font-size:13px;text-align:left;vertical-align:top}
+  thead th{position:sticky;top:0;background:linear-gradient(0deg, #f3f4f6, #f3f4f6);z-index:5;border-bottom:2px solid var(--vino);color:var(--azul)}
+  th,td{border-bottom:1px solid var(--table);padding:8px 10px;font-size:13px;text-align:left;vertical-align:top}
   tbody tr:nth-child(odd){background:#fafbfc}
-  .badge{display:inline-block;padding:.15rem .45rem;border-radius:6px;font-size:11px;border:1px solid var(--table-border);background:#fff;color:var(--muted)}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:.15rem .5rem;border-radius:999px;font-size:11px;border:1px solid var(--table-border);background:#fff;color:var(--muted)}
-  .log{white-space:pre-wrap;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;font-size:12px;color:#374151;background:#f9fafb;border:1px dashed #e5e7eb;border-radius:10px;padding:10px;max-height:200px;overflow:auto}
+  .log{white-space:pre-wrap;font-family:ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;font-size:12px;color:#374151;background:#f9fafb;border:1px dashed var(--celeste);border-radius:10px;padding:10px;max-height:220px;overflow:auto}
   .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-block;padding:.2rem .5rem;border:1px solid var(--mostaza);border-radius:999px;color:var(--vino);font-size:12px;background:#fff8ec}
 </style>
 </head>
 <body>
 <header>
   <div class="row" style="justify-content:space-between">
-    <h1>Planificación Académica — Generador de Matriz</h1>
+    <div class="brand">
+      <img src="UIDE-Ecuador.png" alt="UIDE Ecuador" onerror="this.style.display='none'">
+      <h1>Planificación Académica — Generador de Matriz</h1>
+    </div>
     <div class="controls">
       <button id="btnGenerar" disabled>Generar planificación</button>
       <button id="btnLimpiar" class="ghost">Limpiar</button>
@@ -54,12 +52,12 @@
       <div>
         <label for="fileMallas">Mallas.xlsx</label>
         <input type="file" id="fileMallas" accept=".xlsx,.xls" />
-        <div class="hint">Contiene: CARRERA, MATERIA, CÓDIGO, PRE-REQUISITO, HORAS TEÓRICAS/PRÁCTICAS/AUTÓNOMAS, CRÉDITOS, CAMPO DE FORMACIÓN, CICLO, Nº ORDEN, PARALELO, MODALIDAD, CÓDIGO ANTHOLOGY (si aplica).</div>
+        <div class="hint">CARRERA, MATERIA, CÓDIGO / CÓDIGO ANTHOLOGY, PRE-REQUISITO, HT/HP/HA, CRÉDITOS, CAMPO FORMAC., CICLO, Nº ORDEN, PARALELO, MODALIDAD…</div>
       </div>
       <div>
         <label for="fileDocentes">Docentes.xlsx</label>
         <input type="file" id="fileDocentes" accept=".xlsx,.xls" />
-        <div class="hint">Contiene: DOCENTE, TÍTULO ACADÉMICO, DEDICACIÓN, MATERIA/CÓDIGO, DISPONIBILIDAD (p. ej., “Lunes 7-10”, “Martes 10-13”, ...), CÓDIGO ANTHOLOGY (si aplica).</div>
+        <div class="hint">DOCENTE, TÍTULO, DEDICACIÓN, MATERIA/CÓDIGO/ANTHOLOGY, CARRERA, columnas de disponibilidad (p. ej., “Lunes 7-10”, “Mié 07:00-10:00”, “Jue 7 a 10”…).</div>
       </div>
     </div>
   </div>
@@ -67,21 +65,18 @@
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:flex-end">
       <div>
-        <div style="font-weight:700;margin-bottom:6px">Parámetros</div>
-        <div class="hint">Franja horaria fija: Lunes–Viernes en 7-10, 10-13, 13-16, 16-19, 19-22. &nbsp;•&nbsp; Máximo 2 asignaturas por docente por día. &nbsp;•&nbsp; No choques entre ciclos adyacentes (n con n-1 y n+1) dentro de la misma carrera. &nbsp;•&nbsp; Se asignan <b>solamente</b> horas de contacto (teóricas + prácticas).</div>
-      </div>
-      <div>
-        <span class="pill"><span>Slots de 3 h</span></span>
+        <div class="pill">Slots fijos: Lunes–Viernes en 7-10, 10-13, 13-16, 16-19, 19-22</div>
+        <div class="hint">Máximo <b>2 asignaturas por día</b> (controlado por ciclo) · Evita choques entre ciclos adyacentes (n con n-1 y n+1) en la misma carrera · Se programan HT+HP.</div>
       </div>
     </div>
   </div>
 
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-weight:700">Matriz generada</div>
-      <div class="hint">Las filas representan bloques asignados de 3 horas (o el remanente final).</div>
+      <div style="font-weight:700;color:var(--azul)">Matriz generada (una fila por asignatura)</div>
+      <div class="hint">Si una asignatura usa varios bloques, <b>DIA</b> y <b>HORA</b> se listan separados por “ / ”. <b>Nro. HORAS</b> = suma de bloques asignados.</div>
     </div>
-    <div style="overflow:auto; border:1px solid var(--table-border);border-radius:10px;max-height:55vh">
+    <div style="overflow:auto;border:1px solid var(--table);border-radius:10px;max-height:55vh">
       <table id="tbl">
         <thead>
           <tr>
@@ -111,64 +106,44 @@
       </table>
     </div>
     <div style="margin-top:10px">
-      <div style="font-weight:700;margin-bottom:6px">Registro</div>
+      <div style="font-weight:700;margin-bottom:6px;color:var(--vino)">Registro</div>
       <div id="log" class="log"></div>
     </div>
   </div>
 </div>
 
-<!-- SheetJS (XLSX) -->
+<!-- SheetJS -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
 (() => {
   const btnGenerar = document.getElementById('btnGenerar');
-  const btnLimpiar  = document.getElementById('btnLimpiar');
-  const fileMallas  = document.getElementById('fileMallas');
-  const fileDocentes= document.getElementById('fileDocentes');
-  const tblBody     = document.querySelector('#tbl tbody');
-  const logEl       = document.getElementById('log');
+  const btnLimpiar = document.getElementById('btnLimpiar');
+  const fileMallas = document.getElementById('fileMallas');
+  const fileDocentes = document.getElementById('fileDocentes');
+  const tblBody = document.querySelector('#tbl tbody');
+  const logEl = document.getElementById('log');
 
   const TIMESLOTS = [
-    {day:'Lunes',   range:'7-10',  hours:3},
-    {day:'Lunes',   range:'10-13', hours:3},
-    {day:'Lunes',   range:'13-16', hours:3},
-    {day:'Lunes',   range:'16-19', hours:3},
-    {day:'Lunes',   range:'19-22', hours:3},
-    {day:'Martes',  range:'7-10',  hours:3},
-    {day:'Martes',  range:'10-13', hours:3},
-    {day:'Martes',  range:'13-16', hours:3},
-    {day:'Martes',  range:'16-19', hours:3},
-    {day:'Martes',  range:'19-22', hours:3},
-    {day:'Miércoles',range:'7-10', hours:3},
-    {day:'Miércoles',range:'10-13',hours:3},
-    {day:'Miércoles',range:'13-16',hours:3},
-    {day:'Miércoles',range:'16-19',hours:3},
-    {day:'Miércoles',range:'19-22',hours:3},
-    {day:'Jueves',  range:'7-10',  hours:3},
-    {day:'Jueves',  range:'10-13', hours:3},
-    {day:'Jueves',  range:'13-16', hours:3},
-    {day:'Jueves',  range:'16-19', hours:3},
-    {day:'Jueves',  range:'19-22', hours:3},
-    {day:'Viernes', range:'7-10',  hours:3},
-    {day:'Viernes', range:'10-13', hours:3},
-    {day:'Viernes', range:'13-16', hours:3},
-    {day:'Viernes', range:'16-19', hours:3},
-    {day:'Viernes', range:'19-22', hours:3},
+    {day:'Lunes',range:'7-10',hours:3},{day:'Lunes',range:'10-13',hours:3},{day:'Lunes',range:'13-16',hours:3},{day:'Lunes',range:'16-19',hours:3},{day:'Lunes',range:'19-22',hours:3},
+    {day:'Martes',range:'7-10',hours:3},{day:'Martes',range:'10-13',hours:3},{day:'Martes',range:'13-16',hours:3},{day:'Martes',range:'16-19',hours:3},{day:'Martes',range:'19-22',hours:3},
+    {day:'Miércoles',range:'7-10',hours:3},{day:'Miércoles',range:'10-13',hours:3},{day:'Miércoles',range:'13-16',hours:3},{day:'Miércoles',range:'16-19',hours:3},{day:'Miércoles',range:'19-22',hours:3},
+    {day:'Jueves',range:'7-10',hours:3},{day:'Jueves',range:'10-13',hours:3},{day:'Jueves',range:'13-16',hours:3},{day:'Jueves',range:'16-19',hours:3},{day:'Jueves',range:'19-22',hours:3},
+    {day:'Viernes',range:'7-10',hours:3},{day:'Viernes',range:'10-13',hours:3},{day:'Viernes',range:'13-16',hours:3},{day:'Viernes',range:'16-19',hours:3},{day:'Viernes',range:'19-22',hours:3},
   ];
 
   const FIELD_MAP = {
-    carrera: ['CARRERA','CARRERAS','PROGRAMA','CARRERA/PROGRAMA'],
-    materia: ['MATERIA','ASIGNATURA','NOMBRE ASIGNATURA','NOMBRE MATERIA'],
-    codigo:  ['CODIGO','CÓDIGO','CÓDIGO MATERIA','COD MATERIA','CODIGO MATERIA'],
-    codigoAnth: ['CÓDIGO ANTHOLOGY','CODIGO ANTHOLOGY','ANTHOLOGY'],
-    prereq:  ['PRE-REQUISITO','PRERREQUISITO','PRERREQUISITOS','REQUISITOS'],
+    carrera:['CARRERA','CARRERAS','PROGRAMA','CARRERA/PROGRAMA'],
+    materia:['MATERIA','ASIGNATURA','NOMBRE ASIGNATURA','NOMBRE MATERIA'],
+    codigo:['CODIGO','CÓDIGO','CÓDIGO MATERIA','COD MATERIA','CODIGO MATERIA'],
+    codigoAnth:['CÓDIGO ANTHOLOGY','CODIGO ANTHOLOGY','ANTHOLOGY'],
+    prereq:['PRE-REQUISITO','PRERREQUISITO','PRERREQUISITOS','REQUISITOS'],
     horasTeo:['HORAS TEÓRICAS','HORAS TEORICAS','H TEORICAS','HT'],
     horasPra:['HORAS PRÁCTICAS','HORAS PRACTICAS','H PRACTICAS','HP'],
     horasAut:['HORAS AUTÓNOMAS','HORAS AUTONOMAS','H AUTONOMAS','HA'],
     creditos:['CREDITOS','CRÉDITOS','CR'],
     campoForm:['CAMPO DE FORMACIÓN','CAMPO FORMACION','CAMPO'],
-    ciclo:   ['CICLO MALLA','CICLO','SEMESTRE','NIVEL'],
+    ciclo:['CICLO MALLA','CICLO','SEMESTRE','NIVEL'],
     ordenMalla:['Nº ORDEN EN LA MALLA','N ORDEN','ORDEN','N° ORDEN','NO. ORDEN'],
     paralelo:['PARALELO','PAR','SECCION','SECCIÓN'],
     modalidad:['MODALIDAD','MOD']
@@ -184,431 +159,243 @@
     carrera:['CARRERA','PROGRAMA']
   };
 
-  const DAY_ALIASES = {
-    'lunes':'Lunes','lun':'Lunes',
-    'martes':'Martes','mar':'Martes',
-    'miercoles':'Miércoles','miércoles':'Miércoles','mie':'Miércoles','mié':'Miércoles',
-    'jueves':'Jueves','jue':'Jueves',
-    'viernes':'Viernes','vie':'Viernes'
-  };
+  const DAY_ALIASES = {'lunes':'Lunes','lun':'Lunes','martes':'Martes','mar':'Martes','miercoles':'Miércoles','miércoles':'Miércoles','mie':'Miércoles','mié':'Miércoles','jueves':'Jueves','jue':'Jueves','viernes':'Viernes','vie':'Viernes'};
 
   function log(msg){ logEl.textContent += (msg + "\n"); }
-
-  function readWorkbook(file){
-    return new Promise((resolve,reject)=>{
-      const reader = new FileReader();
-      reader.onload = e => {
-        try{
-          const data = new Uint8Array(e.target.result);
-          const wb = XLSX.read(data, {type:'array'});
-          resolve(wb);
-        }catch(err){ reject(err); }
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
-  }
-
-  function sheetToJSONAllSheets(wb){
-    const rows = [];
-    wb.SheetNames.forEach(name => {
-      const ws = wb.Sheets[name];
-      if(!ws) return;
-      const json = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
-      json.forEach(r => { r.__sheet = name; rows.push(r); });
-    });
-    return rows;
-  }
-
   function normStr(v){ return (v==null? '': String(v)).trim(); }
+  function strip(s){ return normStr(s).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase(); }
+  function cleanCode(s){ return strip(s).replace(/[^a-z0-9]/g,''); }
+  function sameText(a,b){ return strip(a)===strip(b); }
   function num(v){ const n = parseFloat(String(v).replace(',','.')); return isNaN(n)?0:n; }
-  function truthy(v){
-    if(v===null || v===undefined) return false;
-    const s = String(v).trim().toLowerCase();
-    if(s==='' ) return false;
-    return ['x','si','sí','disponible','ok','true','1','y','yes'].includes(s) || (!isNaN(parseFloat(s)) && parseFloat(s)>0);
-  }
+  function truthy(v){ if(v==null) return false; const s=strip(v); if(s==='') return false; return ['x','si','sí','disponible','ok','true','1','y','yes'].includes(s) || (!isNaN(parseFloat(s)) && parseFloat(s)>0); }
 
+  async function readWorkbook(file){
+    const buf = await file.arrayBuffer();
+    return XLSX.read(new Uint8Array(buf), {type:'array'});
+  }
+  function sheetToJSONAllSheets(wb){
+    const rows=[]; wb.SheetNames.forEach(n=>{ const ws=wb.Sheets[n]; if(!ws) return; const json=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false}); json.forEach(r=>{ r.__sheet=n; rows.push(r); });}); return rows;
+  }
   function findCol(obj, keys){
-    const cols = Object.keys(obj);
-    for(const k of keys){
-      for(const col of cols){
-        if(normStr(col).toLowerCase() === normStr(k).toLowerCase()) return col;
-      }
-    }
-    // softer match (includes)
-    for(const k of keys){
-      for(const col of cols){
-        if(normStr(col).toLowerCase().includes(normStr(k).toLowerCase())) return col;
-      }
-    }
+    const cols=Object.keys(obj);
+    for(const k of keys){ for(const c of cols){ if(strip(c)===strip(k)) return c; } }
+    for(const k of keys){ for(const c of cols){ if(strip(c).includes(strip(k))) return c; } }
     return null;
   }
-
-  function getField(obj, key){
-    const keys = FIELD_MAP[key];
-    const col = findCol(obj, keys);
-    return col? obj[col] : '';
-  }
-  function getDField(obj, key){
-    const keys = DFIELD_MAP[key];
-    const col = findCol(obj, keys);
-    return col? obj[col] : '';
-  }
+  function getField(obj,key){ const col = findCol(obj, FIELD_MAP[key]); return col? obj[col]:''; }
+  function getDField(obj,key){ const col = findCol(obj, DFIELD_MAP[key]); return col? obj[col]:''; }
 
   function parseCycle(v){
-    const s = normStr(v).toLowerCase();
-    const map = {'primero':1,'segundo':2,'tercero':3,'cuarto':4,'quinto':5,'sexto':6,'séptimo':7,'septimo':7,'octavo':8,'noveno':9,'décimo':10,'decimo':10};
-    if(map[s]) return map[s];
-    const nn = parseInt(s,10);
-    return isNaN(nn)? 0: nn;
+    const s=strip(v), map={'primero':1,'segundo':2,'tercero':3,'cuarto':4,'quinto':5,'sexto':6,'septimo':7,'octavo':8,'noveno':9,'decimo':10};
+    if(map[s]) return map[s]; const n=parseInt(s,10); return isNaN(n)?0:n;
   }
 
+  // disponibilidad en varios formatos
+  const VALID_RANGES = new Set(['7-10','10-13','13-16','16-19','19-22']);
+  function normalizeRange(text){
+    const t = strip(text).replace(/\s+/g,' ');
+    const m = t.match(/(0?7(?::00)?)\s*[-–—a]\s*(10(?::00)?)/) ||
+              t.match(/(10(?::00)?)\s*[-–—a]\s*(13(?::00)?)/) ||
+              t.match(/(13(?::00)?)\s*[-–—a]\s*(16(?::00)?)/) ||
+              t.match(/(16(?::00)?)\s*[-–—a]\s*(19(?::00)?)/) ||
+              t.match(/(19(?::00)?)\s*[-–—a]\s*(22(?::00)?)/);
+    if(!m) return null;
+    const a=m[1], b=m[2];
+    const norm = (a.startsWith('7')&&b.startsWith('10'))?'7-10':
+                 (a.startsWith('10')&&b.startsWith('13'))?'10-13':
+                 (a.startsWith('13')&&b.startsWith('16'))?'13-16':
+                 (a.startsWith('16')&&b.startsWith('19'))?'16-19':
+                 (a.startsWith('19')&&b.startsWith('22'))?'19-22':null;
+    return VALID_RANGES.has(norm)? norm:null;
+  }
   function detectAvailabilityHeaders(sampleRow){
-    const headers = Object.keys(sampleRow||{});
-    const out = [];
-    headers.forEach(h => {
-      const hs = normStr(h).toLowerCase();
-      for(const k in DAY_ALIASES){
-        if(hs.includes(k)){
-          // try to find ranges like 7-10, 10-13, etc.
-          const m = hs.match(/(7\s*-\s*10|10\s*-\s*13|13\s*-\s*16|16\s*-\s*19|19\s*-\s*22)/);
-          if(m){
-            out.push({header:h, day:DAY_ALIASES[k], range:m[1].replace(/\s*/g,'')});
-            break;
-          }
-        }
-      }
+    const headers=Object.keys(sampleRow||{}), out=[];
+    headers.forEach(h=>{
+      const hs=strip(h); let day=null;
+      for(const k in DAY_ALIASES){ if(hs.includes(strip(k))){ day=DAY_ALIASES[k]; break; } }
+      if(!day) return;
+      const rng=normalizeRange(h); if(rng){ out.push({header:h,day,range:rng}); }
     });
-    // deduplicate
-    const seen = new Set();
-    return out.filter(x=>{
-      const key = x.day+'|'+x.range;
-      if(seen.has(key)) return false;
-      seen.add(key); return true;
-    });
+    const seen=new Set(); return out.filter(x=>{ const key=x.day+'|'+x.range; if(seen.has(key)) return false; seen.add(key); return true; });
   }
 
   function buildDocentes(rawDocRows){
-    if(rawDocRows.length===0) return {list:[], byName:{}};
-
-    // detect availability headers once
+    if(!rawDocRows.length) return {list:[], index:{}};
     const availHeaders = detectAvailabilityHeaders(rawDocRows[0]);
-    const docentes = [];
-    const byName = {};
+    const docentes=[]; const idxAnth={}, idxCode={}, idxMateria={};
 
-    rawDocRows.forEach(r => {
-      const nombre = normStr(getDField(r,'docente'));
-      if(!nombre) return;
-
-      const d = {
-        docente: nombre,
-        titulo: normStr(getDField(r,'titulo')),
-        dedicacion: normStr(getDField(r,'dedicacion')),
-        materia: normStr(getDField(r,'materia')),
-        codigo: normStr(getDField(r,'codigo')),
-        codigoAnth: normStr(getDField(r,'codigoAnth')),
-        carrera: normStr(getDField(r,'carrera')),
-        disponibilidad: new Set()
+    rawDocRows.forEach(r=>{
+      const nombre=normStr(getDField(r,'docente')); if(!nombre) return;
+      const d={
+        docente:nombre, titulo:normStr(getDField(r,'titulo')), dedicacion:normStr(getDField(r,'dedicacion')),
+        materia:normStr(getDField(r,'materia')), codigo:normStr(getDField(r,'codigo')),
+        codigoAnth:normStr(getDField(r,'codigoAnth')), carrera:normStr(getDField(r,'carrera')),
+        disponibilidad:new Set()
       };
-
-      // availability
-      availHeaders.forEach(h => {
-        const v = r[h.header];
-        if(truthy(v)){
-          d.disponibilidad.add(h.day+'|'+h.range);
-        }
-      });
-
+      availHeaders.forEach(h=>{ if(truthy(r[h.header])) d.disponibilidad.add(h.day+'|'+h.range); });
       docentes.push(d);
-      if(!byName[nombre]) byName[nombre] = [];
-      byName[nombre].push(d);
+      if(d.codigoAnth) idxAnth[cleanCode(d.codigoAnth)]=d;
+      if(d.codigo)     idxCode[cleanCode(d.codigo)]=d;
+      if(d.materia)    idxMateria[strip(d.materia)]=d;
     });
-
-    return {list: docentes, byName, availHeaders};
+    return {list:docentes, availHeaders, index:{idxAnth, idxCode, idxMateria}};
   }
 
   function keySubject(m){
-    // prefer ANTHOLOGY or CODIGO; fallback to materia
-    const k1 = normStr(m.codigoAnth);
-    const k2 = normStr(m.codigo);
-    const k3 = normStr(m.materia);
-    return (k1 || k2 || k3 || '').toLowerCase();
+    const k1=cleanCode(m.codigoAnth), k2=cleanCode(m.codigo), k3=strip(m.materia);
+    return k1 || k2 || k3 || '';
   }
 
   function buildMaterias(rawMallas){
-    const materias = [];
-    rawMallas.forEach(r => {
-      // if row does not look like a subject, skip
-      const nombre = normStr(getField(r,'materia'));
-      const carrera= normStr(getField(r,'carrera'));
+    const materias=[];
+    rawMallas.forEach(r=>{
+      const nombre=normStr(getField(r,'materia')), carrera=normStr(getField(r,'carrera'));
       if(!nombre && !carrera) return;
-
-      const m = {
-        carrera,
-        materia: nombre,
-        codigoAnth: normStr(getField(r,'codigoAnth')),
-        codigo: normStr(getField(r,'codigo')),
-        prereq: normStr(getField(r,'prereq')),
-        horasTeo: num(getField(r,'horasTeo')),
-        horasPra: num(getField(r,'horasPra')),
-        horasAut: num(getField(r,'horasAut')),
-        creditos: num(getField(r,'creditos')),
-        campoForm: normStr(getField(r,'campoForm')),
-        ciclo: parseCycle(getField(r,'ciclo')),
-        cicloRaw: normStr(getField(r,'ciclo')),
-        ordenMalla: normStr(getField(r,'ordenMalla')),
-        paralelo: normStr(getField(r,'paralelo')),
-        modalidad: normStr(getField(r,'modalidad'))
+      const m={
+        carrera, materia:nombre, codigoAnth:normStr(getField(r,'codigoAnth')), codigo:normStr(getField(r,'codigo')),
+        prereq:normStr(getField(r,'prereq')), horasTeo:num(getField(r,'horasTeo')), horasPra:num(getField(r,'horasPra')), horasAut:num(getField(r,'horasAut')),
+        creditos:num(getField(r,'creditos')), campoForm:normStr(getField(r,'campoForm')),
+        ciclo:parseCycle(getField(r,'ciclo')), cicloRaw:normStr(getField(r,'ciclo')),
+        ordenMalla:normStr(getField(r,'ordenMalla')), paralelo:normStr(getField(r,'paralelo')), modalidad:normStr(getField(r,'modalidad'))
       };
+      m.totalContacto = Math.max(0,(m.horasTeo||0)+(m.horasPra||0));
       materias.push(m);
     });
 
-    // compartir carreras
-    const byKey = {};
-    materias.forEach(m => {
-      const k = keySubject(m);
-      if(!k) return;
-      if(!byKey[k]) byKey[k] = [];
-      byKey[k].push(m);
-    });
-
-    // columnas compartidas
-    materias.forEach(m => {
-      const k = keySubject(m);
-      const group = byKey[k] || [m];
-      const carreras = Array.from(new Set(group.map(x=>x.carrera).filter(Boolean)));
-      const ordenes  = Array.from(new Set(group.map(x=>x.ordenMalla).filter(Boolean)));
+    const byKey={};
+    materias.forEach(m=>{ const k=keySubject(m); if(!k) return; (byKey[k]??=[]).push(m); });
+    materias.forEach(m=>{
+      const k=keySubject(m), group=byKey[k]||[m];
+      const carreras=[...new Set(group.map(x=>x.carrera).filter(Boolean))];
+      const ordenes =[...new Set(group.map(x=>x.ordenMalla).filter(Boolean))];
       m.carrerasComparten = carreras.join(' / ');
       m.ordenJoined = ordenes.join(' / ');
     });
-
     return materias;
   }
 
   function matchDocenteParaMateria(m, docentes){
-    // estrategia: buscar por códigoAnth, luego código, luego nombre de materia
-    const kAnth = normStr(m.codigoAnth).toLowerCase();
-    const kCod  = normStr(m.codigo).toLowerCase();
-    const kNom  = normStr(m.materia).toLowerCase();
-
-    let cand = docentes.list.filter(d => {
-      const dm = normStr(d.materia).toLowerCase();
-      const dc = normStr(d.codigo).toLowerCase();
-      const da = normStr(d.codigoAnth).toLowerCase();
-      return (kAnth && da===kAnth) || (kCod && dc===kCod) || (kNom && dm===kNom);
-    });
-
-    if(cand.length===0){
-      // fallback: cualquiera con misma carrera (si viene)
-      if(m.carrera){
-        cand = docentes.list.filter(d => normStr(d.carrera).toLowerCase()===normStr(m.carrera).toLowerCase());
-      }
-    }
-
-    // devolver el primero con algo de disponibilidad; sino cualquiera
-    const withAvail = cand.find(d => d.disponibilidad && d.disponibilidad.size>0);
-    return withAvail || cand[0] || null;
+    const {idxAnth, idxCode, idxMateria}=docentes.index;
+    const a=cleanCode(m.codigoAnth); if(a && idxAnth[a]) return idxAnth[a];
+    const c=cleanCode(m.codigo);     if(c && idxCode[c]) return idxCode[c];
+    const nm=strip(m.materia);       if(nm && idxMateria[nm]) return idxMateria[nm];
+    // fallback por carrera
+    const cand = docentes.list.filter(d=> d.carrera && sameText(d.carrera,m.carrera));
+    return cand.find(d=>d.disponibilidad.size>0) || cand[0] || null;
   }
 
-  function schedule(materias, docentes){
-    // estructuras de control
-    const assignedRows = [];
-    const ocupacionDoc = {}; // docente -> day -> [ranges]
-    const perDayCount  = {}; // docente|day -> count (máx 2)
-    const ocupacionCiclo = {}; // carrera|ciclo -> Set(day|range)
+  // Programación y consolidación
+  function scheduleAndAggregate(materias, docentes){
+    const ocupacionDoc={}, ocupacionCiclo={}, perDayCycleCount={};
+    function cicloKey(carrera,ciclo){ return strip(carrera)+'|'+String(ciclo||0); }
+    function cycleDayKey(carrera,ciclo,day){ return strip(carrera)+'|'+String(ciclo||0)+'|'+day; }
+    function markDocente(dname,day,range){ (ocupacionDoc[dname]??={}); (ocupacionDoc[dname][day]??=new Set()).add(range); }
+    function docenteLibre(dname,day,range){ if(!dname) return false; if(!ocupacionDoc[dname]) return true; if(!ocupacionDoc[dname][day]) return true; return !ocupacionDoc[dname][day].has(range); }
+    function vecinoChoca(carrera,ciclo,day,range){ const ks=[cicloKey(carrera,(ciclo||0)-1),cicloKey(carrera,(ciclo||0)+1)]; for(const k of ks){ const set=ocupacionCiclo[k]; if(set && set.has(day+'|'+range)) return true; } return false; }
+    function marcarCiclo(carrera,ciclo,day,range){ const k=cicloKey(carrera,ciclo); (ocupacionCiclo[k]??=new Set()).add(day+'|'+range); const k2=cycleDayKey(carrera,ciclo,day); perDayCycleCount[k2]=(perDayCycleCount[k2]||0)+1; }
+    function topeCicloDia(carrera,ciclo,day){ const k2=cycleDayKey(carrera,ciclo,day); return (perDayCycleCount[k2]||0)>=2; }
 
-    function markDocente(dname, day, range){
-      if(!ocupacionDoc[dname]) ocupacionDoc[dname] = {};
-      if(!ocupacionDoc[dname][day]) ocupacionDoc[dname][day] = new Set();
-      ocupacionDoc[dname][day].add(range);
-      const key = dname+'|'+day;
-      perDayCount[key] = (perDayCount[key]||0) + 1;
-    }
+    // clave única por asignatura para consolidar
+    function rowKey(m,d){ return [strip(m.carrera), cleanCode(m.codigoAnth)||cleanCode(m.codigo)||strip(m.materia), strip(m.paralelo), strip(d?.docente||'')].join('|'); }
 
-    function docenteLibre(dname, day, range){
-      if(!dname) return true;
-      if(!ocupacionDoc[dname]) return true;
-      if(!ocupacionDoc[dname][day]) return true;
-      return !ocupacionDoc[dname][day].has(range);
-    }
+    const agregadas = new Map();
 
-    function docenteTopeDia(dname, day){
-      if(!dname) return false;
-      const key = dname+'|'+day;
-      return (perDayCount[key]||0) >= 2;
-    }
+    // ordenar para estabilidad
+    materias.sort((a,b)=> (a.carrera||'').localeCompare(b.carrera||'') || (a.ciclo||0)-(b.ciclo||0) || (a.paralelo||'').localeCompare(b.paralelo||'') || (a.materia||'').localeCompare(b.materia||''));
 
-    function cicloKey(carrera, ciclo){ return normStr(carrera)+'|'+String(ciclo||0); }
-
-    function vecinoChoca(carrera, ciclo, day, range){
-      // no choques de ciclo n con n-1 y n+1 en la MISMA carrera
-      const ks = [cicloKey(carrera, (ciclo||0)-1), cicloKey(carrera, (ciclo||0)+1)];
-      for(const k of ks){
-        const set = ocupacionCiclo[k];
-        if(set && set.has(day+'|'+range)) return true;
-      }
-      return false;
-    }
-
-    function marcarCiclo(carrera, ciclo, day, range){
-      const k = cicloKey(carrera, ciclo);
-      if(!ocupacionCiclo[k]) ocupacionCiclo[k] = new Set();
-      ocupacionCiclo[k].add(day+'|'+range);
-    }
-
-    // ordenar materias por ciclo (podría ayudar a reducir choques)
-    materias.sort((a,b)=> (a.carrera||'').localeCompare(b.carrera||'') || (a.ciclo||0)-(b.ciclo||0));
-
-    materias.forEach(m => {
-      const contacto = Math.max(0, (m.horasTeo||0) + (m.horasPra||0)); // solo contacto
-      if(contacto<=0){
-        log(`Sin horas de contacto para: ${m.carrera} – ${m.materia}. Se omite la asignación de slots.`);
-        return;
-      }
-      let horasPend = contacto;
+    materias.forEach(m=>{
+      if((m.totalContacto||0)<=0){ log(`Sin horas de contacto: ${m.carrera} – ${m.materia}.`); return; }
       const docente = matchDocenteParaMateria(m, docentes);
-      const dname   = docente? docente.docente : '';
+      if(!docente){ log(`⚠️ Sin docente: ${m.carrera} – ${m.materia}. No se programa.`); return; }
 
-      if(!docente){
-        log(`No se encontró docente asignado para: ${m.carrera} – ${m.materia}. Se intentará ubicar sin disponibilidad específica.`);
+      let horasPend = m.totalContacto;
+      const slots = TIMESLOTS.slice();
+      if(docente.disponibilidad && docente.disponibilidad.size){
+        const pref=slots.filter(s=>docente.disponibilidad.has(s.day+'|'+s.range));
+        const resto=slots.filter(s=>!docente.disponibilidad.has(s.day+'|'+s.range));
+        slots.length=0; slots.push(...pref,...resto);
       }
 
-      // candidato de slots en orden determinista
-      const slotsOrden = TIMESLOTS.slice();
-
-      // si hay docente y disponibilidad, priorizar sus slots disponibles
-      let pref = [];
-      if(docente && docente.disponibilidad && docente.disponibilidad.size>0){
-        pref = slotsOrden.filter(s => docente.disponibilidad.has(s.day+'|'+s.range));
-        // luego el resto
-        const resto = slotsOrden.filter(s => !docente.disponibilidad.has(s.day+'|'+s.range));
-        slotsOrden.length = 0;
-        slotsOrden.push(...pref, ...resto);
-      }
-
-      for(const s of slotsOrden){
-        if(horasPend<=0) break;
-
-        // tope de 2 asignaturas por día (por docente)
-        if(docenteTopeDia(dname, s.day)) continue;
-
-        // disponibilidad del docente (si existe)
-        if(docente && docente.disponibilidad && docente.disponibilidad.size>0){
-          if(!docente.disponibilidad.has(s.day+'|'+s.range)) continue;
-        }
-
-        // docente libre en ese bloque
-        if(!docenteLibre(dname, s.day, s.range)) continue;
-
-        // no choque con ciclos vecinos
-        if(vecinoChoca(m.carrera, m.ciclo, s.day, s.range)) continue;
-
-        // asignar
-        const horasEsteBloque = Math.min(s.hours, horasPend);
-        assignedRows.push({
-          docente: dname,
-          titulo: docente? docente.titulo : '',
-          dedicacion: docente? docente.dedicacion : '',
-          materia: m.materia,
-          codigoAnth: m.codigoAnth,
-          carrerasComparten: m.carrerasComparten || m.carrera || '',
-          prereq: m.prereq,
-          codigo: m.codigo,
-          horasTeo: m.horasTeo,
-          horasPra: m.horasPra,
-          horasAut: m.horasAut,
-          creditos: m.creditos,
-          campoForm: m.campoForm,
-          ciclo: m.cicloRaw || m.ciclo,
-          ordenMalla: m.ordenJoined || m.ordenMalla,
-          paralelo: m.paralelo,
-          dia: s.day,
-          hora: s.range,
-          modalidad: m.modalidad,
-          nroHoras: horasEsteBloque
+      const k = rowKey(m,docente);
+      if(!agregadas.has(k)){
+        agregadas.set(k,{
+          docente:docente.docente, titulo:docente.titulo, dedicacion:docente.dedicacion, materia:m.materia,
+          codigoAnth:m.codigoAnth, carrerasComparten:m.carrerasComparten||m.carrera||'', prereq:m.prereq, codigo:m.codigo,
+          horasTeo:m.horasTeo, horasPra:m.horasPra, horasAut:m.horasAut, creditos:m.creditos, campoForm:m.campoForm,
+          ciclo:m.cicloRaw||m.ciclo, ordenMalla:m.ordenJoined||m.ordenMalla, paralelo:m.paralelo, modalidad:m.modalidad,
+          dias:[], horas:[], nroHoras:0, carrera:m.carrera, cicloNum:m.ciclo
         });
-
-        // marcar ocupaciones
-        if(dname) markDocente(dname, s.day, s.range);
-        marcarCiclo(m.carrera, m.ciclo, s.day, s.range);
-        horasPend -= horasEsteBloque;
       }
+      const agg = agregadas.get(k);
 
-      if(horasPend>0){
-        log(`⚠️ Horas no asignadas (${horasPend}h) para: ${m.carrera} – ${m.materia}. Revise disponibilidad o conflictos.`);
+      for(const s of slots){
+        if(horasPend<=0) break;
+        if(topeCicloDia(m.carrera,m.ciclo,s.day)) continue;
+        if(!docenteLibre(docente.docente,s.day,s.range)) continue;
+        if(vecinoChoca(m.carrera,m.ciclo,s.day,s.range)) continue;
+
+        const asign = Math.min(3, horasPend);
+        // registrar en agregada
+        agg.dias.push(s.day); agg.horas.push(s.range); agg.nroHoras += asign;
+
+        markDocente(docente.docente,s.day,s.range);
+        marcarCiclo(m.carrera,m.ciclo,s.day,s.range);
+        horasPend -= asign;
       }
+      if(horasPend>0){ log(`⚠️ Quedaron ${horasPend} h sin asignar: ${m.carrera} – ${m.materia}.`); }
     });
 
-    return assignedRows;
+    // a filas finales (ordenadas)
+    const rows = Array.from(agregadas.values())
+      .filter(r=>r.nroHoras>0)
+      .sort((a,b)=> (a.carrera||'').localeCompare(b.carrera||'') || (a.cicloNum||0)-(b.cicloNum||0) || (a.paralelo||'').localeCompare(b.paralelo||'') || (a.materia||'').localeCompare(b.materia||''));
+
+    // mapear campos visibles
+    return rows.map(r=>({
+      docente:r.docente, titulo:r.titulo, dedicacion:r.dedicacion, materia:r.materia, codigoAnth:r.codigoAnth,
+      carrerasComparten:r.carrerasComparten, prereq:r.prereq, codigo:r.codigo,
+      horasTeo:r.horasTeo, horasPra:r.horasPra, horasAut:r.horasAut, creditos:r.creditos, campoForm:r.campoForm,
+      ciclo:r.ciclo, ordenMalla:r.ordenMalla, paralelo:r.paralelo,
+      dia:[...new Set(r.dias)].join(' / '), hora:[...new Set(r.horas)].join(' / '),
+      modalidad:r.modalidad, nroHoras:r.nroHoras
+    }));
   }
 
   function render(rows){
-    tblBody.innerHTML = '';
-    const frag = document.createDocumentFragment();
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      const cells = [
-        r.docente, r.titulo, r.dedicacion, r.materia, r.codigoAnth, r.carrerasComparten,
-        r.prereq, r.codigo, r.horasTeo, r.horasPra, r.horasAut, r.creditos,
-        r.campoForm, r.ciclo, r.ordenMalla, r.paralelo, r.dia, r.hora, r.modalidad, r.nroHoras
-      ];
-      cells.forEach(v => {
-        const td = document.createElement('td');
-        td.textContent = (v===undefined || v===null)? '': String(v);
-        tr.appendChild(td);
-      });
+    tblBody.innerHTML='';
+    const frag=document.createDocumentFragment();
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      const cells=[r.docente,r.titulo,r.dedicacion,r.materia,r.codigoAnth,r.carrerasComparten,r.prereq,r.codigo,r.horasTeo,r.horasPra,r.horasAut,r.creditos,r.campoForm,r.ciclo,r.ordenMalla,r.paralelo,r.dia,r.hora,r.modalidad,r.nroHoras];
+      cells.forEach(v=>{ const td=document.createElement('td'); td.textContent=(v==null)?'':String(v); tr.appendChild(td); });
       frag.appendChild(tr);
     });
     tblBody.appendChild(frag);
   }
 
-  let wbMallas = null, wbDocentes=null;
-  fileMallas.addEventListener('change', ()=>{
-    btnGenerar.disabled = !(fileMallas.files[0] && fileDocentes.files[0]);
-  });
-  fileDocentes.addEventListener('change', ()=>{
-    btnGenerar.disabled = !(fileMallas.files[0] && fileDocentes.files[0]);
-  });
+  // UI
+  fileMallas.addEventListener('change', ()=>{ btnGenerar.disabled = !(fileMallas.files[0] && fileDocentes.files[0]); });
+  fileDocentes.addEventListener('change', ()=>{ btnGenerar.disabled = !(fileMallas.files[0] && fileDocentes.files[0]); });
 
   btnLimpiar.addEventListener('click', ()=>{
-    tblBody.innerHTML = '';
-    logEl.textContent = '';
-    fileMallas.value = '';
-    fileDocentes.value = '';
-    btnGenerar.disabled = true;
+    tblBody.innerHTML=''; logEl.textContent=''; fileMallas.value=''; fileDocentes.value=''; btnGenerar.disabled=true;
   });
 
   btnGenerar.addEventListener('click', async ()=>{
     try{
-      tblBody.innerHTML = '';
-      logEl.textContent = 'Procesando archivos…\n';
-      const [wb1, wb2] = await Promise.all([
-        readWorkbook(fileMallas.files[0]),
-        readWorkbook(fileDocentes.files[0])
-      ]);
+      tblBody.innerHTML=''; logEl.textContent='Procesando archivos…\n';
+      const [wb1, wb2] = await Promise.all([ readWorkbook(fileMallas.files[0]), readWorkbook(fileDocentes.files[0]) ]);
       log('Archivos leídos. Extrayendo datos…');
-
-      const rawMallas   = sheetToJSONAllSheets(wb1);
+      const rawMallas = sheetToJSONAllSheets(wb1);
       const rawDocentes = sheetToJSONAllSheets(wb2);
-
-      if(rawMallas.length===0){ log('No se encontraron filas en Mallas.'); return; }
-      if(rawDocentes.length===0){ log('No se encontraron filas en Docentes.'); }
-
+      if(!rawMallas.length){ log('No se encontraron filas en Mallas.'); return; }
+      if(!rawDocentes.length){ log('No se encontraron filas en Docentes.'); }
       const materias = buildMaterias(rawMallas);
       const docentes = buildDocentes(rawDocentes);
-
       log(`Materias detectadas: ${materias.length}`);
       log(`Docentes detectados: ${docentes.list.length}`);
-      if(docentes.availHeaders && docentes.availHeaders.length){
-        const ah = docentes.availHeaders.map(a=>`${a.day} ${a.range}`).join(', ');
-        log(`Cabeceras de disponibilidad detectadas: ${ah}`);
-      }else{
-        log('No se detectaron cabeceras de disponibilidad. Se intentará asignar sin restricciones de disponibilidad.');
-      }
-
-      const rows = schedule(materias, docentes);
-      log(`Bloques asignados: ${rows.length}`);
+      const rows = scheduleAndAggregate(materias, docentes);
+      log(`Asignaturas programadas: ${rows.length}`);
       render(rows);
       log('Listo.');
     }catch(err){
