@@ -145,7 +145,7 @@
     mFile.addEventListener('change', ready); dFile.addEventListener('change', ready);
 
     // === Normalización de texto y llaves ===
-    const normalize = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    const normalize = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
     const norm = s => String(s ?? '').trim();
     const toNum = v => { if(v==null||v==='') return 0; const n = Number(String(v).replace(',', '.')); return Number.isFinite(n)? n : 0; };
 
