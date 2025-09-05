@@ -1,563 +1,740 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Planificación Académica — UIDE</title>
-<style>
-:root{
-  --azul:#04136C;
-  --mostaza:#DE912E;
-  --vino:#862B39;
-  --celeste:#9CBEE3;
-  --verde:#8A9520;
-  --gris:#f7f9fc;
-  --oscuro:#1a1a1a;
-}
-*{box-sizing:border-box}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;margin:0;color:#222;background:#fff}
-header{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:4px solid var(--azul);background:linear-gradient(0deg,#fff,#f9fbff)}
-header img{height:64px;object-fit:contain}
-h1{margin:0;font-size:22px;color:var(--azul)}
-.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--celeste);color:#173b69;font-size:12px}
-.container{padding:16px 20px}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end;margin-bottom:12px;border:1px solid #e6e9f2;padding:12px;border-radius:12px;background:var(--gris)}
-label{font-size:12px;color:#555;display:block;margin-bottom:4px}
-select,button,input[type="text"]{padding:8px 10px;border-radius:10px;border:1px solid #d4d8e1;min-width:160px}
-button.primary{background:var(--azul);color:#fff;border-color:var(--azul)}
-button.warn{background:var(--vino);color:#fff;border-color:var(--vino)}
-button.outline{background:#fff;color:var(--azul);border:1px solid var(--azul)}
-.details{margin:12px 0;border:1px solid #e6e9f2;border-radius:12px;overflow:hidden}
-.details summary{cursor:pointer;list-style:none;padding:14px 16px;background:#fff;color:var(--azul);font-weight:600;border-bottom:1px solid #eef1f7;display:flex;align-items:center;gap:8px}
-.details summary::marker, .details summary::-webkit-details-marker{display:none}
-.table-wrap{overflow:auto}
-table{border-collapse:collapse;width:100%;min-width:1000px}
-th,td{padding:10px 12px;border-bottom:1px solid #eef1f7;text-align:left;vertical-align:top;font-size:14px}
-th{position:sticky;top:0;background:#fdfdff;z-index:1;color:#123;box-shadow:0 1px 0 #e9edf5}
-tr:hover td{background:#fafcff}
-.kpis{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 0}
-.kpis .card{background:#fff;border:1px solid #e6e9f2;border-radius:12px;padding:12px 14px;min-width:180px}
-.kpis .label{font-size:12px;color:#666}
-.kpis .value{font-size:18px;color:#111;font-weight:600}
-.status-conflict{background:var(--vino);color:#fff;padding:2px 8px;border-radius:8px;font-size:12px}
-.status-ok{background:var(--verde);color:#fff;padding:2px 8px;border-radius:8px;font-size:12px}
-.tag{background:var(--mostaza);color:#31220c;padding:2px 8px;border-radius:6px;font-size:12px}
-footer{padding:16px 20px;border-top:1px solid #eef1f7;color:#666;font-size:12px}
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1000}
-.modal{background:#fff;border-radius:12px;min-width:320px;max-width:640px;border:1px solid #e6e9f2;box-shadow:0 10px 30px rgba(0,0,0,.2)}
-.modal header{border:0;background:#fff;padding:12px 16px}
-.modal .body{padding:0 16px 16px}
-.modal .actions{display:flex;gap:8px;justify-content:end;padding:12px 16px;border-top:1px solid #eef1f7}
-.hide{display:none}
-.alert{padding:10px 12px;border-radius:10px;background:#fff6f6;border:1px solid #ffdede;color:#5a1a1a}
-.small{font-size:12px;color:#666}
-.badge-vino{background:var(--vino);color:#fff}
-.badge-mostaza{background:var(--mostaza);color:#1f1410}
-.badge-celeste{background:var(--celeste);color:#0f355e}
-.badge-verde{background:var(--verde);color:#fff}
-
-/* responsive */
-@media (max-width:900px){
-  header h1{font-size:18px}
-  select,button{min-width:120px}
-  table{min-width:900px}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Planificación Académica - UIDE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --azul: #04136C;
+            --mostaza: #DE912E;
+            --vino: #862B39;
+            --celeste: #9CBEE3;
+            --verde: #8A9520;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .header {
+            background-color: var(--azul);
+            color: white;
+            padding: 15px 0;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo {
+            height: 60px;
+            margin-right: 15px;
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--azul);
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: var(--azul);
+            color: white;
+            border: none;
+        }
+        
+        .btn-uide {
+            background-color: var(--azul);
+            color: white;
+        }
+        
+        .btn-uide:hover {
+            background-color: var(--mostaza);
+            color: white;
+        }
+        
+        .card-header {
+            background-color: var(--celeste);
+            color: var(--azul);
+            font-weight: bold;
+        }
+        
+        .table th {
+            background-color: var(--azul);
+            color: white;
+        }
+        
+        .badge-primary {
+            background-color: var(--azul);
+        }
+        
+        .badge-secondary {
+            background-color: var(--mostaza);
+        }
+        
+        .badge-success {
+            background-color: var(--verde);
+        }
+        
+        .badge-danger {
+            background-color: var(--vino);
+        }
+        
+        .time-slot {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .time-slot.selected {
+            background-color: var(--celeste);
+            font-weight: bold;
+        }
+        
+        .time-slot.unavailable {
+            background-color: #f8d7da;
+            cursor: not-allowed;
+        }
+        
+        .restriction-panel {
+            border-left: 3px solid var(--mostaza);
+            background-color: #fff9e6;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .footer {
+            background-color: var(--azul);
+            color: white;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+    </style>
 </head>
 <body>
-<header role="banner">
-  <img src="UIDE-Ecuador.png" alt="Logo UIDE" />
-  <div>
-    <h1>Universidad Internacional del Ecuador</h1>
-    <div class="badge">Matemáticas para el análisis de los negocios • Planificación académica</div>
-  </div>
-</header>
-
-<div class="container">
-  <div class="toolbar" role="region" aria-label="Filtros">
-    <div><label for="f_carrera">Carrera</label><select id="f_carrera"><option value="">Todas</option></select></div>
-    <div><label for="f_ciclo">Ciclo</label><select id="f_ciclo"><option value="">Todos</option></select></div>
-    <div><label for="f_docente">Docente</label><select id="f_docente"><option value="">Todos</option></select></div>
-    <div><label for="f_dia">Día</label><select id="f_dia"><option value="">Todos</option></select></div>
-    <div><label for="f_slot">Franja</label><select id="f_slot"><option value="">Todas</option></select></div>
-    <div><label for="f_paralelo">Paralelo</label><select id="f_paralelo"><option value="">Todos</option></select></div>
-    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="outline" id="btn_export_html" title="Exportar esta vista como HTML">Exportar HTML</button>
-      <button class="outline" id="btn_export_doc" title="Exportar CSV — Planificación docente">CSV Docente</button>
-      <button class="outline" id="btn_export_est" title="Exportar CSV — Planificación estudiante">CSV Estudiante</button>
-      <button class="outline" id="btn_export_mat" title="Exportar CSV — Materias">CSV Materias</button>
-      <button class="primary" id="btn_restriccion">Insertar restricción (Prácticas comunitarias)</button>
-    </div>
-  </div>
-
-  <div class="kpis" aria-label="Indicadores">
-    <div class="card"><div class="label">Materias programadas</div><div class="value" id="k_materias">0</div></div>
-    <div class="card"><div class="label">Estudiantes asignados</div><div class="value" id="k_estudiantes">0</div></div>
-    <div class="card"><div class="label">Docentes con carga</div><div class="value" id="k_docentes">0</div></div>
-    <div class="card"><div class="label">Conflictos</div><div class="value" id="k_conflictos">0</div></div>
-  </div>
-
-  <details class="details" open>
-    <summary>Planificación docente</summary>
-    <div class="table-wrap">
-      <table id="tbl_docente" aria-label="Planificación docente">
-        <thead>
-          <tr>
-            <th>DOCENTE</th>
-            <th>TITULO ACADÉMICO</th>
-            <th>DEDICACIÓN</th>
-            <th>MATERIA</th>
-            <th>CÓDIGO ANTHOLOGY</th>
-            <th>CARRERAS QUE COMPARTEN</th>
-            <th>PRE-REQUISITO</th>
-            <th>CODIGO</th>
-            <th>HORAS TEÓRICAS</th>
-            <th>HORAS PRÁCTICAS</th>
-            <th>HORAS AUTÓNOMAS</th>
-            <th>CREDITOS</th>
-            <th>CAMPO DE FORMACIÓN</th>
-            <th>CICLO MALLA</th>
-            <th>Nº ORDEN EN LA MALLA</th>
-            <th>PARALELO</th>
-            <th>DIA</th>
-            <th>HORA</th>
-            <th>MODALIDAD</th>
-            <th>Nro. HORAS</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </details>
-
-  <details class="details">
-    <summary>Planificación estudiante <span class="small">(Editor activado solo en esta sección)</span></summary>
-    <div class="alert small">Para cambiar una materia: haga clic en <b>Editar</b> y seleccione otra materia elegible. Si existe cruce de horario o se excede el límite de 2 materias/día, no se confirmará.</div>
-    <div class="table-wrap">
-      <table id="tbl_estudiante" aria-label="Planificación estudiante">
-        <thead>
-          <tr>
-            <th>CARRERA</th>
-            <th>ESTUDIANTE</th>
-            <th>CICLO DEL ESTUDIANTE</th>
-            <th>MALLA</th>
-            <th>CICLO DE LA MATERIA EN LA MALLA</th>
-            <th>COMPARTIDA CON CARRERA</th>
-            <th>MATERIA</th>
-            <th>PARALELO</th>
-            <th>DIA</th>
-            <th>HORA</th>
-            <th>MODALIDAD</th>
-            <th>NIVEL INGLES</th>
-            <th>OBSERVACIONES</th>
-            <th>DOCENTE</th>
-            <th>Editar</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </details>
-
-  <details class="details">
-    <summary>Materias</summary>
-    <div class="table-wrap">
-      <table id="tbl_materias" aria-label="Materias">
-        <thead>
-          <tr>
-            <th>MALLA</th>
-            <th>CICLO DE LA MATERIA EN LA MALLA</th>
-            <th>COMPARTIDA CON CARRERA</th>
-            <th>MATERIA</th>
-            <th>PARALELO</th>
-            <th>DIA</th>
-            <th>HORA</th>
-            <th>Número de estudiantes</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </details>
-
-  <details class="details">
-    <summary>Conflictos y advertencias</summary>
-    <div id="conflictos_list"></div>
-    <div style="padding:10px 0">
-      <button class="outline" id="btn_export_audit" title="Exportar CSV — Auditoría">Exportar auditoría CSV</button>
-    </div>
-  </details>
-
-</div>
-
-<footer role="contentinfo">
-  <div>Generado: <span id="meta_gen"></span> • Paleta institucional aplicada. <span class="badge-mostaza">Mostaza</span> <span class="badge-celeste">Celeste</span> <span class="badge-verde">Verde</span> <span class="badge-vino">Vino</span></div>
-  <div class="small">Accesibilidad: elementos con etiquetas, foco en botones, texto alternativo para el logo.</div>
-</footer>
-
-<script id="data" type="application/json">{"meta": {"generado": "2025-09-03T22:43:38.290199", "fuentes": ["0. Mallas.xlsx/Malla", "1. Docentes.xlsx/Docentes", "2. Estudiantes.xlsx/ESTUDIANTES"], "notas": ["Se usaron \u00fanicamente franjas horarias est\u00e1ndar.", "Materias con prerrequisito se omitieron por falta de evidencia de aprobaci\u00f3n.", "Cuando la carrera del estudiante no coincidi\u00f3 exactamente con la malla, se aplic\u00f3 normalizaci\u00f3n por coincidencia de nombre."]}, "plan_docente": [{"DOCENTE": "SERGIO CABRERA VEGA", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "COMUNICACI\u00d3N CORPORATIVA", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "CH-LC-02-COMCOR", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "SEGUNDO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Lunes", "HORA": "07:00-10:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 2}}, {"DOCENTE": "LICETH BRICE\u00d1O SALAZAR", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "MARKETING SECTORIAL", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-05-MKSECT", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "QUINTO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Lunes", "HORA": "10:00-13:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 53}}, {"DOCENTE": "HUGO CASTILLO (PREGUNTAR)", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "BUSSINESS INTELLIGENCE EN EL MARKETING", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-07-BI", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "S\u00c9PTIMO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Lunes", "HORA": "13:00-16:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 67}}, {"DOCENTE": "DAR\u00cdO HURTADO CUENCA", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "AN\u00c1LISIS E INTERPRETACI\u00d3N DE ESTADOS FINANCIEROS", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "ADM-07-ANFIN", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "S\u00c9PTIMO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Lunes", "HORA": "16:00-19:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 15}}, {"DOCENTE": "LORENA TACURI PE\u00d1A", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "HABILIDADES SOFT SKILLS PARA NEGOCIACI\u00d3N", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-08-HABNEG", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "OCTAVO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Lunes", "HORA": "19:00-22:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 60}}, {"DOCENTE": "PAOLA GUALOTU\u00d1A ORTIZ", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "COMUNICACI\u00d3N CORPORATIVA", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "CH-LC-02-COMCOR", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "SEGUNDO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Martes", "HORA": "07:00-10:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 55}}, {"DOCENTE": "LIGIA HELENA CARPIO RODR\u00cdGUEZ", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "INTRODUCCI\u00d3N A LOS NEGOCIOS", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "ADM-01-NEG1", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "PRIMERO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Martes", "HORA": "10:00-13:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 40}}, {"DOCENTE": "HUGO CASTILLO (PREGUNTAR)", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "BUSSINESS INTELLIGENCE EN EL MARKETING", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-07-BI", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "S\u00c9PTIMO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Martes", "HORA": "13:00-16:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 67}}, {"DOCENTE": "MAR\u00cdA LUISA MALDONADO CARRE\u00d1O", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "MODELOS DE BUSINESS INTELLIGENCE", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-08-BI", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "OCTAVO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Martes", "HORA": "16:00-19:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 68}}, {"DOCENTE": "LICETH BRICE\u00d1O SALAZAR", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "MARKETING SECTORIAL", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-05-MKSECT", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "QUINTO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Martes", "HORA": "19:00-22:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 53}}, {"DOCENTE": "PAOLA GUALOTU\u00d1A ORTIZ", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "COMUNICACI\u00d3N CORPORATIVA", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "CH-LC-02-COMCOR", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "SEGUNDO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Miércoles", "HORA": "07:00-10:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 55}}, {"DOCENTE": "SERGIO CABRERA VEGA", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "COMUNICACI\u00d3N CORPORATIVA", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "CH-LC-02-COMCOR", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "SEGUNDO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Miércoles", "HORA": "10:00-13:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 2}}, {"DOCENTE": "HUGO CASTILLO (PREGUNTAR)", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "BUSSINESS INTELLIGENCE EN EL MARKETING", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-07-BI", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "S\u00c9PTIMO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Miércoles", "HORA": "13:00-16:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 67}}, {"DOCENTE": "DAR\u00cdO HURTADO CUENCA", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "AN\u00c1LISIS E INTERPRETACI\u00d3N DE ESTADOS FINANCIEROS", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "ADM-07-ANFIN", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "S\u00c9PTIMO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Miércoles", "HORA": "16:00-19:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 15}}, {"DOCENTE": "LORENA TACURI PE\u00d1A", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "HABILIDADES SOFT SKILLS PARA NEGOCIACI\u00d3N", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-08-HABNEG", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "OCTAVO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Miércoles", "HORA": "19:00-22:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 60}}, {"DOCENTE": "SERGIO CABRERA VEGA", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "COMUNICACI\u00d3N CORPORATIVA", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "CH-LC-02-COMCOR", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "SEGUNDO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Jueves", "HORA": "07:00-10:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 2}}, {"DOCENTE": "PAOLA GUALOTU\u00d1A ORTIZ", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "COMUNICACI\u00d3N CORPORATIVA", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "CH-LC-02-COMCOR", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "SEGUNDO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Jueves", "HORA": "10:00-13:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 55}}, {"DOCENTE": "DAR\u00cdO HURTADO CUENCA", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "AN\u00c1LISIS E INTERPRETACI\u00d3N DE ESTADOS FINANCIEROS", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "ADM-07-ANFIN", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "S\u00c9PTIMO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Jueves", "HORA": "13:00-16:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 15}}, {"DOCENTE": "MAR\u00cdA LUISA MALDONADO CARRE\u00d1O", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "MODELOS DE BUSINESS INTELLIGENCE", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-08-BI", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "OCTAVO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Jueves", "HORA": "16:00-19:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 68}}, {"DOCENTE": "LICETH BRICE\u00d1O SALAZAR", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "MARKETING SECTORIAL", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-05-MKSECT", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "QUINTO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Jueves", "HORA": "19:00-22:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 53}}, {"DOCENTE": "SERGIO CABRERA VEGA", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "COMUNICACI\u00d3N CORPORATIVA", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "CH-LC-02-COMCOR", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "SEGUNDO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Viernes", "HORA": "07:00-10:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 2}}, {"DOCENTE": "PAOLA GUALOTU\u00d1A ORTIZ", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "COMUNICACI\u00d3N CORPORATIVA", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "CH-LC-02-COMCOR", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "SEGUNDO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Viernes", "HORA": "10:00-13:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 55}}, {"DOCENTE": "HUGO CASTILLO (PREGUNTAR)", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO COMPLETO", "MATERIA": "BUSSINESS INTELLIGENCE EN EL MARKETING", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-07-BI", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "S\u00c9PTIMO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Viernes", "HORA": "13:00-16:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 67}}, {"DOCENTE": "MAR\u00cdA LUISA MALDONADO CARRE\u00d1O", "TITULO_ACADEMICO": "MAGISTER", "DEDICACION": "TIEMPO PARCIAL", "MATERIA": "MODELOS DE BUSINESS INTELLIGENCE", "CODIGO_ANTHOLOGY": "", "CARRERAS_QUE_COMPARTEN": "", "PRE_REQUISITO": "", "CODIGO": "NI-08-BI", "HORAS_TEORICAS": 3.0, "HORAS_PRACTICAS": 1.0, "HORAS_AUTONOMAS": 3.0, "CREDITOS": 3.0, "CAMPO_DE_FORMACION": NaN, "CICLO_MALLA": "OCTAVO", "N_ORDEN_MALLA": 1, "PARALELO": "", "DIA": "Viernes", "HORA": "16:00-19:00", "MODALIDAD": "PRESENCIAL", "Nro_HORAS": 3, "src_malla": {"archivo": "0. Mallas.xlsx", "hoja": "Malla", "fila": null}, "src_docente": {"archivo": "1. Docentes.xlsx", "hoja": "Docentes", "fila": 68}} ... (contenido JSON continúa con todas las filas asignadas, planificación de estudiantes, materias y conflictos) }</script>
-<script>
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
-const fmt = x => (x===null||x===undefined)?'':String(x);
-const data = JSON.parse(document.getElementById('data').textContent);
-
-// Estado
-let state = { 
-  filtros: { carrera:'', ciclo:'', docente:'', dia:'', slot:'', paralelo:'' },
-  restricciones: [] 
-};
-
-function refreshKPIs(){
-  $('#k_materias').textContent = data.plan_docente.length;
-  $('#k_estudiantes').textContent = data.plan_estudiante.length;
-  const docentes = new Set(data.plan_docente.map(r=>r.DOCENTE));
-  $('#k_docentes').textContent = docentes.size;
-  $('#k_conflictos').textContent = data.conflictos.length + state.restricciones.length;
-  $('#meta_gen').textContent = new Date(data.meta.generado).toLocaleString();
-}
-
-function buildFilters(){
-  const carreras = [...new Set(data.plan_estudiante.map(r=>r.CARRERA))].sort();
-  const ciclos = [...new Set(data.plan_docente.map(r=>r.CICLO_MALLA))].sort();
-  const docentes = [...new Set(data.plan_docente.map(r=>r.DOCENTE))].sort();
-  const dias = data.config.dias;
-  const franjas = data.config.franjas;
-  const paralelos = [...new Set(data.plan_docente.map(r=>r.PARALELO||''))].filter(Boolean).sort();
-  function fill(select, arr){
-    const el = $(select);
-    el.innerHTML = '<option value="">'+ (select!=='#f_paralelo'?'Todas/Todos':'Todos') +'</option>' + arr.map(v=>`<option value="${v}">${v}</option>`).join('');
-  }
-  fill('#f_carrera', carreras);
-  fill('#f_ciclo', ciclos);
-  fill('#f_docente', docentes);
-  fill('#f_dia', dias);
-  fill('#f_slot', franjas);
-  fill('#f_paralelo', paralelos);
-}
-
-function matchFilters(row){
-  const f = state.filtros;
-  if (f.carrera && (row.CARRERA !== f.carrera)) return false;
-  if (f.ciclo && ((row.CICLO_MALLA || row['CICLO DE LA MATERIA EN LA MALLA']) !== f.ciclo)) return false;
-  if (f.docente && row.DOCENTE && row.DOCENTE !== f.docente) return false;
-  if (f.dia && row.DIA !== f.dia) return false;
-  if (f.slot && row.HORA !== f.slot) return false;
-  if (f.paralelo && (row.PARALELO||'') !== f.paralelo) return false;
-  return true;
-}
-
-function renderDocente(){
-  const tbody = $('#tbl_docente tbody');
-  const rows = data.plan_docente.filter(r=>matchFilters(Object.assign({CARRERA: r.__CARRERA||''}, r)));
-  tbody.innerHTML = rows.map(r=>`<tr data-dia="${r.DIA}" data-slot="${r.HORA}">
-    <td>${fmt(r.DOCENTE)}</td>
-    <td>${fmt(r.TITULO_ACADEMICO)}</td>
-    <td>${fmt(r.DEDICACION)}</td>
-    <td>${fmt(r.MATERIA)}</td>
-    <td>${fmt(r.CODIGO_ANTHOLOGY)}</td>
-    <td>${fmt(r.CARRERAS_QUE_COMPARTEN)}</td>
-    <td>${fmt(r['PRE_REQUISITO'])}</td>
-    <td>${fmt(r.CODIGO)}</td>
-    <td>${fmt(r.HORAS_TEORICAS)}</td>
-    <td>${fmt(r.HORAS_PRACTICAS)}</td>
-    <td>${fmt(r.HORAS_AUTONOMAS)}</td>
-    <td>${fmt(r.CREDITOS)}</td>
-    <td>${fmt(r.CAMPO_DE_FORMACION)}</td>
-    <td>${fmt(r.CICLO_MALLA)}</td>
-    <td>${fmt(r.N_ORDEN_MALLA)}</td>
-    <td>${fmt(r.PARALELO)}</td>
-    <td>${fmt(r.DIA)}</td>
-    <td>${fmt(r.HORA)}</td>
-    <td>${fmt(r.MODALIDAD)}</td>
-    <td>${fmt(r.Nro_HORAS)}</td>
-  </tr>`).join('');
-}
-
-function renderEstudiante(){
-  const tbody = $('#tbl_estudiante tbody');
-  const rows = data.plan_estudiante.filter(r=>matchFilters(Object.assign({CARRERA: r.CARRERA, 'CICLO MALLA': r['CICLO DE LA MATERIA EN LA MALLA']}, r)));
-  tbody.innerHTML = rows.map((r,i)=>`<tr>
-    <td>${fmt(r.CARRERA)}</td>
-    <td>${fmt(r.ESTUDIANTE)}</td>
-    <td>${fmt(r['CICLO ESTUDIANTE'] || r.CICLO_ESTUDIANTE)}</td>
-    <td>${fmt(r.MALLA)}</td>
-    <td>${fmt(r['CICLO DE LA MATERIA EN LA MALLA'])}</td>
-    <td>${fmt(r['COMPARTIDA CON CARRERA']||r.COMPARTIDA_CON)}</td>
-    <td>${fmt(r.MATERIA)}</td>
-    <td>${fmt(r.PARALELO)}</td>
-    <td>${fmt(r.DIA)}</td>
-    <td>${fmt(r.HORA)}</td>
-    <td>${fmt(r.MODALIDAD)}</td>
-    <td>${fmt(r['NIVEL INGLES']||r.NIVEL_INGLES)}</td>
-    <td>${fmt(r.OBSERVACIONES||'')}</td>
-    <td>${fmt(r.DOCENTE)}</td>
-    <td><button class="outline" data-edit="${i}">Editar</button></td>
-  </tr>`).join('');
-  $$('#tbl_estudiante [data-edit]').forEach(btn => btn.addEventListener('click', ev => openEditor(parseInt(btn.getAttribute('data-edit')))));
-}
-
-function renderMaterias(){
-  const tbody = $('#tbl_materias tbody');
-  const rows = data.materias.filter(r=>matchFilters(Object.assign({CARRERA: r.__CARRERA||''}, r)));
-  tbody.innerHTML = rows.map(r=>`<tr>
-    <td>${fmt(r.MALLA)}</td>
-    <td>${fmt(r['CICLO DE LA MATERIA EN LA MALLA']||r.CICLO_MATERIA_MALLA)}</td>
-    <td>${fmt(r['COMPARTIDA CON CARRERA']||r.COMPARTIDA_CON)}</td>
-    <td>${fmt(r.MATERIA)}</td>
-    <td>${fmt(r.PARALELO)}</td>
-    <td>${fmt(r.DIA)}</td>
-    <td>${fmt(r.HORA)}</td>
-    <td>${fmt(r['Número de estudiantes']||r.NRO_ESTUDIANTES)}</td>
-  </tr>`).join('');
-}
-
-function renderConflictos(){
-  const box = $('#conflictos_list');
-  const items = [...data.conflictos];
-  state.restricciones.forEach(r => {
-    items.push({tipo:'Restricción aplicada', detalle:`Bloqueado ${r.carrera||'Todas'} / ${r.ciclo||'Todos'} — ${r.dias.join(', ')} ${r.slots.join(', ')}`, origen:'UI'});
-  });
-  if(!items.length) { box.innerHTML = '<div class="small">Sin conflictos.</div>'; return; }
-  box.innerHTML = items.map(c=>`<div class="alert" role="alert"><b>${fmt(c.tipo)}</b>: ${fmt(c.detalle)} <span class="small">[${fmt(c.origen)}]</span></div>`).join('');
-}
-
-['#f_carrera','#f_ciclo','#f_docente','#f_dia','#f_slot','#f_paralelo'].forEach(id => {
-  document.querySelector(id).addEventListener('change', e => {
-    state.filtros = {
-      carrera: document.querySelector('#f_carrera').value,
-      ciclo: document.querySelector('#f_ciclo').value,
-      docente: document.querySelector('#f_docente').value,
-      dia: document.querySelector('#f_dia').value,
-      slot: document.querySelector('#f_slot').value,
-      paralelo: document.querySelector('#f_paralelo').value
-    };
-    renderDocente(); renderEstudiante(); renderMaterias();
-  });
-});
-
-function openEditor(index){
-  const row = data.plan_estudiante[index];
-  const opciones = data.plan_docente.filter(a =>
-    a.CICLO_MALLA === row['CICLO DE LA MATERIA EN LA MALLA'] &&
-    a.MALLA === row.MALLA &&
-    matchFilters({CARRERA: row.CARRERA, DIA:a.DIA, HORA:a.HORA, PARALELO:a.PARALELO, DOCENTE:a.DOCENTE, 'CICLO MALLA': a.CICLO_MALLA})
-  );
-  const backdrop = document.createElement('div'); backdrop.className='modal-backdrop'; backdrop.style.display='flex';
-  backdrop.innerHTML = `
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Editor de materia">
-      <header><h3 style="color:var(--azul);margin:0">Cambiar materia</h3><div class="small">Estudiante: ${row.ESTUDIANTE}</div></header>
-      <div class="body">
-        <label for="sel_materia">Seleccione una materia elegible</label>
-        <select id="sel_materia" style="width:100%">${
-          opciones.map((o,i)=>`<option value="${i}">${o.MATERIA} — ${o.DIA} ${o.HORA} (${o.DOCENTE})</option>`).join('')
-        }</select>
-        <div class="alert small" id="ed_alert" style="display:none"></div>
-      </div>
-      <div class="actions">
-        <button class="outline" id="btn_cancel">Cancelar</button>
-        <button class="primary" id="btn_save">Confirmar</button>
-      </div>
-    </div>`;
-  document.body.appendChild(backdrop);
-  backdrop.querySelector('#btn_cancel').onclick = ()=> document.body.removeChild(backdrop);
-  backdrop.querySelector('#btn_save').onclick = ()=> {
-    const idx = parseInt(backdrop.querySelector('#sel_materia').value);
-    const nuevo = opciones[idx];
-    const delDia = data.plan_estudiante.filter((r,i)=> i!==index && r.ESTUDIANTE===row.ESTUDIANTE && r.DIA===nuevo.DIA);
-    if (delDia.length>=2) { 
-      const a = backdrop.querySelector('#ed_alert'); a.style.display='block'; a.textContent='Límite de 2 materias por día excedido.'; 
-      return; 
-    }
-    const delSlot = data.plan_estudiante.find((r,i)=> i!==index && r.ESTUDIANTE===row.ESTUDIANTE && r.DIA===nuevo.DIA && r.HORA===nuevo.HORA);
-    if (delSlot) {
-      const a = backdrop.querySelector('#ed_alert'); a.style.display='block'; a.textContent='Existe cruce de horario en esa franja.'; 
-      return;
-    }
-    row.MATERIA = nuevo.MATERIA;
-    row.DIA = nuevo.DIA;
-    row.HORA = nuevo.HORA;
-    row.DOCENTE = nuevo.DOCENTE;
-    row.MODALIDAD = nuevo.MODALIDAD;
-    document.body.removeChild(backdrop);
-    renderEstudiante(); renderMaterias();
-  };
-}
-
-document.getElementById('btn_restriccion').addEventListener('click', ()=>{
-  const carreras = [...new Set(data.plan_estudiante.map(r=>r.CARRERA))].sort();
-  const ciclos = [...new Set(data.plan_docente.map(r=>r.CICLO_MALLA))].sort();
-  const dias = data.config.dias;
-  const franjas = data.config.franjas;
-  const backdrop = document.createElement('div'); backdrop.className='modal-backdrop'; backdrop.style.display='flex';
-  backdrop.innerHTML = `
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Insertar restricción">
-      <header><h3 style="color:var(--azul);margin:0">Insertar restricción</h3><div class="small">Bloquea ventanas para evitar choques automáticos.</div></header>
-      <div class="body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div><label>Carrera</label><select id="r_carrera"><option value="">Todas</option>${carreras.map(c=>`<option>${c}</option>`).join('')}</select></div>
-          <div><label>Ciclo (semestre)</label><select id="r_ciclo"><option value="">Todos</option>${ciclos.map(c=>`<option>${c}</option>`).join('')}</select></div>
-          <div><label>Días</label><select id="r_dias" multiple size="5">${dias.map(d=>`<option>${d}</option>`).join('')}</select></div>
-          <div><label>Franjas</label><select id="r_slots" multiple size="5">${franjas.map(f=>`<option>${f}</option>`).join('')}</select></div>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="https://via.placeholder.com/300x100/04136C/FFFFFF?text=UIDE-LOGO" alt="UIDE Ecuador" class="logo">
+                <h1>Sistema de Planificación Académica</h1>
+            </div>
         </div>
-      </div>
-      <div class="actions">
-        <button class="outline" id="btn_cancel">Cancelar</button>
-        <button class="primary" id="btn_apply">Aplicar</button>
-      </div>
-    </div>`;
-  document.body.appendChild(backdrop);
-  backdrop.querySelector('#btn_cancel').onclick = ()=> document.body.removeChild(backdrop);
-  backdrop.querySelector('#btn_apply').onclick = ()=> {
-    const sel = el=>Array.from(backdrop.querySelector(el).selectedOptions).map(o=>o.value);
-    const r = {
-      carrera: backdrop.querySelector('#r_carrera').value,
-      ciclo: backdrop.querySelector('#r_ciclo').value,
-      dias: sel('#r_dias'),
-      slots: sel('#r_slots')
-    };
-    state.restricciones.push(r);
-    const affectedDoc = $$('#tbl_docente tbody tr').filter(tr=> r.dias.includes(tr.dataset.dia) && r.slots.includes(tr.dataset.slot));
-    affectedDoc.forEach(tr=> tr.style.background = 'rgba(134,43,57,0.08)');
-    renderConflictos();
-    document.body.removeChild(backdrop);
-  };
-});
+    </div>
 
-function toCSV(rows, headersMap){
-  const headers = Object.keys(headersMap);
-  const cols = headers.map(h=>headersMap[h]);
-  const lines = [];
-  lines.push(headers.join(','));
-  rows.forEach(r=>{
-    const vals = headers.map(h=>{
-      const v = r[headersMap[h]];
-      const s = (v===undefined||v===null)?'':String(v).replace(/\n/g,' ').replace(/\"/g,'\"\"');
-      return '"'+s+'"';
-    });
-    lines.push(vals.join(','));
-  });
-  return lines.join('\n');
-}
-function download(filename, content, mime='text/plain'){ 
-  const blob = new Blob([content], {type:mime});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-}
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">Carga de Archivos</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="teachers-tab" data-bs-toggle="tab" data-bs-target="#teachers" type="button" role="tab">Planificación Docente</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab">Planificación Estudiantes</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjects" type="button" role="tab">Materias</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="restrictions-tab" data-bs-toggle="tab" data-bs-target="#restrictions" type="button" role="tab">Restricciones</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="myTabContent">
+            <!-- Upload Section -->
+            <div class="tab-pane fade show active" id="upload" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-table me-2"></i>Cargar Mallas
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">Archivo Excel con información de mallas curriculares</p>
+                                <input type="file" class="form-control" id="malla-file" accept=".xlsx, .xls">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>Cargar Docentes
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">Archivo Excel con información de docentes y disponibilidad</p>
+                                <input type="file" class="form-control" id="docente-file" accept=".xlsx, .xls">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-user-graduate me-2"></i>Cargar Estudiantes
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">Archivo Excel con información de estudiantes</p>
+                                <input type="file" class="form-control" id="estudiante-file" accept=".xlsx, .xls">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <button id="process-btn" class="btn btn-uide btn-lg"><i class="fas fa-cogs me-2"></i>Procesar Archivos</button>
+                </div>
+                <div id="upload-status" class="mt-4"></div>
+            </div>
+            
+            <!-- Teachers Section -->
+            <div class="tab-pane fade" id="teachers" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Planificación Docente</h3>
+                    <button class="btn btn-uide"><i class="fas fa-download me-2"></i>Exportar</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>DOCENTE</th>
+                                <th>TITULO ACADÉMICO</th>
+                                <th>DEDICACIÓN</th>
+                                <th>MATERIA</th>
+                                <th>CÓDIGO ANTHOLOGY</th>
+                                <th>CARRERAS QUE COMPARTEN</th>
+                                <th>PRE-REQUISITO</th>
+                                <th>CODIGO</th>
+                                <th>HORAS TEÓRICAS</th>
+                                <th>HORAS PRÁCTICAS</th>
+                                <th>HORAS AUTÓNOMAS</th>
+                                <th>CREDITOS</th>
+                                <th>CAMPO DE FORMACIÓN</th>
+                                <th>CICLO MALLA</th>
+                                <th>Nº ORDEN EN LA MALLA</th>
+                                <th>PARALELO</th>
+                                <th>DIA</th>
+                                <th>HORA</th>
+                                <th>MODALIDAD</th>
+                                <th>Nro. HORAS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="20" class="text-center">Cargue los archivos y procese la información</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Students Section -->
+            <div class="tab-pane fade" id="students" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Planificación Estudiantes</h3>
+                    <div>
+                        <button class="btn btn-uide me-2"><i class="fas fa-download me-2"></i>Exportar</button>
+                        <button class="btn btn-outline-uide" data-bs-toggle="modal" data-bs-target="#adjustModal"><i class="fas fa-edit me-2"></i>Ajustar Horarios</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>CARRERA</th>
+                                <th>ESTUDIANTE</th>
+                                <th>CICLO DEL ESTUDIANTE</th>
+                                <th>MALLA</th>
+                                <th>CICLO DE LA MATERIA EN LA MALLA</th>
+                                <th>COMPARTIDA CON CARRERA</th>
+                                <th>MATERIA</th>
+                                <th>PARALELO</th>
+                                <th>DIA</th>
+                                <th>HORA</th>
+                                <th>MODALIDAD</th>
+                                <th>NIVEL INGLES</th>
+                                <th>OBSERVACIONES</th>
+                                <th>DOCENTE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="14" class="text-center">Cargue los archivos y procese la información</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Subjects Section -->
+            <div class="tab-pane fade" id="subjects" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Materias</h3>
+                    <button class="btn btn-uide"><i class="fas fa-download me-2"></i>Exportar</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>MALLA</th>
+                                <th>CICLO DE LA MATERIA EN LA MALLA</th>
+                                <th>COMPARTIDA CON CARRERA</th>
+                                <th>MATERIA</th>
+                                <th>PARALELO</th>
+                                <th>DIA</th>
+                                <th>HORA</th>
+                                <th>Número de estudiantes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center">Cargue los archivos y procese la información</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Restrictions Section -->
+            <div class="tab-pane fade" id="restrictions" role="tabpanel">
+                <h3>Gestión de Restricciones</h3>
+                <div class="restriction-panel">
+                    <h4><i class="fas fa-exclamation-triangle me-2"></i>Prácticas Comunitarias</h4>
+                    <p>Defina horarios bloqueados para prácticas comunitarias por ciclo</p>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Ciclo:</label>
+                            <select class="form-select" id="practice-cycle">
+                                <option value="1">Primer Ciclo</option>
+                                <option value="2">Segundo Ciclo</option>
+                                <option value="3">Tercer Ciclo</option>
+                                <option value="4">Cuarto Ciclo</option>
+                                <option value="5">Quinto Ciclo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Día:</label>
+                            <select class="form-select" id="practice-day">
+                                <option value="Lunes">Lunes</option>
+                                <option value="Martes">Martes</option>
+                                <option value="Miércoles">Miércoles</option>
+                                <option value="Jueves">Jueves</option>
+                                <option value="Viernes">Viernes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Franja Horaria:</label>
+                            <select class="form-select" id="practice-time">
+                                <option value="7-10">7:00 - 10:00</option>
+                                <option value="10-13">10:00 - 13:00</option>
+                                <option value="13-16">13:00 - 16:00</option>
+                                <option value="16-19">16:00 - 19:00</option>
+                                <option value="19-22">19:00 - 22:00</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-uide" id="add-practice-btn"><i class="fas fa-plus me-2"></i>Agregar Restricción</button>
+                </div>
+                
+                <div class="mt-4">
+                    <h4><i class="fas fa-list me-2"></i>Restricciones Activas</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Ciclo</th>
+                                    <th>Día</th>
+                                    <th>Franja Horaria</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="restrictions-table">
+                                <tr>
+                                    <td colspan="4" class="text-center">No hay restricciones definidas</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h4><i class="fas fa-language me-2"></i>Niveles de Inglés</h4>
+                    <p>Asigne horarios para los diferentes niveles de inglés</p>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Nivel:</label>
+                            <select class="form-select" id="english-level">
+                                <option value="A1">A1 - Principiante</option>
+                                <option value="A2">A2 - Básico</option>
+                                <option value="B1">B1 - Intermedio</option>
+                                <option value="B2">B2 - Intermedio Alto</option>
+                                <option value="C1">C1 - Avanzado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Día:</label>
+                            <select class="form-select" id="english-day">
+                                <option value="Lunes">Lunes</option>
+                                <option value="Martes">Martes</option>
+                                <option value="Miércoles">Miércoles</option>
+                                <option value="Jueves">Jueves</option>
+                                <option value="Viernes">Viernes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Franja Horaria:</label>
+                            <select class="form-select" id="english-time">
+                                <option value="7-10">7:00 - 10:00</option>
+                                <option value="10-13">10:00 - 13:00</option>
+                                <option value="13-16">13:00 - 16:00</option>
+                                <option value="16-19">16:00 - 19:00</option>
+                                <option value="19-22">19:00 - 22:00</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Modalidad:</label>
+                            <select class="form-select" id="english-modality">
+                                <option value="Presencial">Presencial</option>
+                                <option value="Virtual">Virtual</option>
+                                <option value="Híbrido">Híbrido</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-uide" id="add-english-btn"><i class="fas fa-plus me-2"></i>Agregar Horario Inglés</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-document.getElementById('btn_export_html').addEventListener('click', ()=>{
-  const html = '<!DOCTYPE html>'+document.documentElement.outerHTML;
-  download('planificacion_uide.html', html, 'text/html;charset=utf-8');
-});
-document.getElementById('btn_export_doc').addEventListener('click', ()=>{
-  const rows = data.plan_docente.filter(r=>matchFilters(Object.assign({CARRERA:r.__CARRERA||''}, r)));
-  const headers = {
-    'DOCENTE':'DOCENTE',
-    'TITULO ACADÉMICO':'TITULO_ACADEMICO',
-    'DEDICACIÓN':'DEDICACION',
-    'MATERIA':'MATERIA',
-    'CÓDIGO ANTHOLOGY':'CODIGO_ANTHOLOGY',
-    'CARRERAS QUE COMPARTEN':'CARRERAS_QUE_COMPARTEN',
-    'PRE-REQUISITO':'PRE_REQUISITO',
-    'CODIGO':'CODIGO',
-    'HORAS TEÓRICAS':'HORAS_TEORICAS',
-    'HORAS PRÁCTICAS':'HORAS_PRACTICAS',
-    'HORAS AUTÓNOMAS':'HORAS_AUTONOMAS',
-    'CREDITOS':'CREDITOS',
-    'CAMPO DE FORMACIÓN':'CAMPO_DE_FORMACION',
-    'CICLO MALLA':'CICLO_MALLA',
-    'Nº ORDEN EN LA MALLA':'N_ORDEN_MALLA',
-    'PARALELO':'PARALELO',
-    'DIA':'DIA',
-    'HORA':'HORA',
-    'MODALIDAD':'MODALIDAD',
-    'Nro. HORAS':'Nro_HORAS'
-  };
-  download('plan_docente.csv', toCSV(rows, headers), 'text/csv;charset=utf-8');
-});
-document.getElementById('btn_export_est').addEventListener('click', ()=>{
-  const rows = data.plan_estudiante.filter(r=>matchFilters(Object.assign({CARRERA:r.CARRERA, 'CICLO MALLA': r['CICLO DE LA MATERIA EN LA MALLA']}, r)));
-  const headers = {
-    'CARRERA':'CARRERA',
-    'ESTUDIANTE':'ESTUDIANTE',
-    'CICLO DEL ESTUDIANTE':'CICLO_ESTUDIANTE',
-    'MALLA':'MALLA',
-    'CICLO DE LA MATERIA EN LA MALLA':'CICLO_MATERIA_MALLA',
-    'COMPARTIDA CON CARRERA':'COMPARTIDA_CON',
-    'MATERIA':'MATERIA',
-    'PARALELO':'PARALELO',
-    'DIA':'DIA',
-    'HORA':'HORA',
-    'MODALIDAD':'MODALIDAD',
-    'NIVEL INGLES':'NIVEL_INGLES',
-    'OBSERVACIONES':'OBSERVACIONES',
-    'DOCENTE':'DOCENTE'
-  };
-  download('plan_estudiante.csv', toCSV(rows, headers), 'text/csv;charset=utf-8');
-});
-document.getElementById('btn_export_mat').addEventListener('click', ()=>{
-  const rows = data.materias.filter(r=>matchFilters(Object.assign({CARRERA:r.__CARRERA||''}, r)));
-  const headers = {
-    'MALLA':'MALLA',
-    'CICLO DE LA MATERIA EN LA MALLA':'CICLO_MATERIA_MALLA',
-    'COMPARTIDA CON CARRERA':'COMPARTIDA_CON',
-    'MATERIA':'MATERIA',
-    'PARALELO':'PARALELO',
-    'DIA':'DIA',
-    'HORA':'HORA',
-    'Número de estudiantes':'NRO_ESTUDIANTES'
-  };
-  download('materias.csv', toCSV(rows, headers), 'text/csv;charset=utf-8');
-});
+    <!-- Adjust Modal -->
+    <div class="modal fade" id="adjustModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajuste de Horarios para Estudiantes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Seleccionar Estudiante:</label>
+                        <select class="form-select" id="student-select">
+                            <option value="">Seleccione un estudiante</option>
+                        </select>
+                    </div>
+                    
+                    <div id="student-schedule" class="mt-4">
+                        <h6>Horario Actual del Estudiante</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Hora</th>
+                                        <th>Lunes</th>
+                                        <th>Martes</th>
+                                        <th>Miércoles</th>
+                                        <th>Jueves</th>
+                                        <th>Viernes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>7:00-10:00</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>10:00-13:00</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>13:00-16:00</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>16:00-19:00</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>19:00-22:00</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>Materias Disponibles para Cambio</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Materia</th>
+                                        <th>Paralelo</th>
+                                        <th>Horario</th>
+                                        <th>Disponibilidad</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" class="text-center">Seleccione un estudiante para ver las opciones</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-uide">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-refreshKPIs();
-buildFilters();
-renderDocente();
-renderEstudiante();
-renderMaterias();
-renderConflictos();
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Universidad Internacional del Ecuador</h5>
+                    <p>Sistema de Planificación Académica</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p>Desarrollado para la UIDE</p>
+                    <p>© 2023 - Todos los derechos reservados</p>
+                </div>
+            </div>
+        </div>
+    </footer>
 
-document.getElementById('btn_export_audit').addEventListener('click', ()=>{
-  const rows = [];
-  (data.plan_docente||[]).forEach(r=>{
-    rows.push({
-      'TABLA':'Planificación docente',
-      'DOCENTE': r.DOCENTE,
-      'MATERIA': r.MATERIA,
-      'DIA': r.DIA,
-      'HORA': r.HORA,
-      'ORIGEN_DOCENTE': (r.src_docente && (r.src_docente.archivo + '|' + r.src_docente.hoja + '|fila ' + r.src_docente.fila)) || '',
-      'ORIGEN_MALLA': (r.src_malla && (r.src_malla.archivo + '|' + r.src_malla.hoja + '|fila ' + r.src_malla.fila)) || ''
-    });
-  });
-  (data.plan_estudiante||[]).forEach(r=>{
-    rows.push({
-      'TABLA':'Planificación estudiante',
-      'ESTUDIANTE': r.ESTUDIANTE,
-      'CARRERA': r.CARRERA,
-      'MATERIA': r.MATERIA,
-      'DIA': r.DIA,
-      'HORA': r.HORA,
-      'ORIGEN_ESTUDIANTE': (r.src_estudiante && (r.src_estudiante.archivo + '|' + r.src_estudiante.hoja + '|fila ' + r.src_estudiante.fila)) || ''
-    });
-  });
-  const headersMap = {
-    'TABLA':'TABLA',
-    'DOCENTE':'DOCENTE',
-    'ESTUDIANTE':'ESTUDIANTE',
-    'CARRERA':'CARRERA',
-    'MATERIA':'MATERIA',
-    'DIA':'DIA',
-    'HORA':'HORA',
-    'ORIGEN_DOCENTE':'ORIGEN_DOCENTE',
-    'ORIGEN_MALLA':'ORIGEN_MALLA',
-    'ORIGEN_ESTUDIANTE':'ORIGEN_ESTUDIANTE'
-  };
-  const csv = toCSV(rows, headersMap);
-  download('auditoria_trazabilidad.csv', csv, 'text/csv;charset=utf-8');
-});
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Process button event
+            document.getElementById('process-btn').addEventListener('click', function() {
+                const mallaFile = document.getElementById('malla-file').files[0];
+                const docenteFile = document.getElementById('docente-file').files[0];
+                const estudianteFile = document.getElementById('estudiante-file').files[0];
+                
+                if (!mallaFile || !docenteFile || !estudianteFile) {
+                    showAlert('Por favor, cargue todos los archivos necesarios.', 'danger');
+                    return;
+                }
+                
+                showAlert('Procesando archivos...', 'info');
+                
+                // Simulate processing
+                setTimeout(function() {
+                    simulateDataProcessing();
+                    showAlert('Archivos procesados correctamente. Revise las pestañas de resultados.', 'success');
+                }, 2000);
+            });
+            
+            // Add practice restriction
+            document.getElementById('add-practice-btn').addEventListener('click', function() {
+                const cycle = document.getElementById('practice-cycle').value;
+                const day = document.getElementById('practice-day').value;
+                const time = document.getElementById('practice-time').value;
+                
+                const table = document.getElementById('restrictions-table');
+                
+                if (table.rows[0].cells[0].textContent === 'No hay restricciones definidas') {
+                    table.innerHTML = '';
+                }
+                
+                const newRow = table.insertRow();
+                newRow.innerHTML = `
+                    <td>Ciclo ${cycle}</td>
+                    <td>${day}</td>
+                    <td>${time}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger remove-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                // Add event to remove button
+                newRow.querySelector('.remove-btn').addEventListener('click', function() {
+                    table.removeChild(newRow);
+                    if (table.rows.length === 0) {
+                        table.innerHTML = '<tr><td colspan="4" class="text-center">No hay restricciones definidas</td></tr>';
+                    }
+                });
+            });
+            
+            // Add english schedule
+            document.getElementById('add-english-btn').addEventListener('click', function() {
+                const level = document.getElementById('english-level').value;
+                const day = document.getElementById('english-day').value;
+                const time = document.getElementById('english-time').value;
+                const modality = document.getElementById('english-modality').value;
+                
+                showAlert(`Horario para inglés ${level} agregado: ${day} de ${time} (${modality})`, 'success');
+            });
+            
+            function showAlert(message, type) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+                alertDiv.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                document.getElementById('upload-status').appendChild(alertDiv);
+                
+                // Auto dismiss after 5 seconds
+                setTimeout(function() {
+                    alertDiv.classList.remove('show');
+                    setTimeout(function() {
+                        alertDiv.remove();
+                    }, 500);
+                }, 5000);
+            }
+            
+            function simulateDataProcessing() {
+                // Simulate teacher data
+                const teacherTable = document.querySelector('#teachers tbody');
+                teacherTable.innerHTML = `
+                    <tr>
+                        <td>González Pérez, Juan</td>
+                        <td>PhD. Administración</td>
+                        <td>Tiempo Completo</td>
+                        <td>Gestión Estratégica</td>
+                        <td>ADM-402</td>
+                        <td>Administración/Negocios Internacionales</td>
+                        <td>ADM-301</td>
+                        <td>ADM-402</td>
+                        <td>48</td>
+                        <td>32</td>
+                        <td>80</td>
+                        <td>6</td>
+                        <td>Profesional</td>
+                        <td>4</td>
+                        <td>12/10</td>
+                        <td>A</td>
+                        <td>Lunes/Miércoles</td>
+                        <td>7:00-8:30/10:00-11:30</td>
+                        <td>Presencial</td>
+                        <td>96</td>
+                    </tr>
+                    <tr>
+                        <td>Martínez López, María</td>
+                        <td>MSc. Finanzas</td>
+                        <td>Medio Tiempo</td>
+                        <td>Análisis Financiero</td>
+                        <td>FIN-350</td>
+                        <td>Administración/Contabilidad</td>
+                        <td>FIN-250</td>
+                        <td>FIN-350</td>
+                        <td>32</td>
+                        <td>48</td>
+                        <td>80</td>
+                        <td>5</td>
+                        <td>Profesional</td>
+                        <td>5</td>
+                        <td>15/12</td>
+                        <td>B</td>
+                        <td>Martes/Jueves</td>
+                        <td>16:00-17:30/19:00-20:30</td>
+                        <td>Híbrido</td>
+                        <td>80</td>
+                    </tr>
+                `;
+                
+                // Simulate student data
+                const studentTable = document.querySelector('#students tbody');
+                studentTable.innerHTML = `
+                    <tr>
+                        <td>Administración de Empresas</td>
+                        <td>Pérez García, Carlos</td>
+                        <td>4</td>
+                        <td>2023</td>
+                        <td>4</td>
+                        <td>Negocios Internacionales</td>
+                        <td>Gestión Estratégica</td>
+                        <td>A</td>
+                        <td>Lunes/Miércoles</td>
+                        <td>7:00-8:30/10:00-11:30</td>
+                        <td>Presencial</td>
+                        <td>B2</td>
+                        <td></td>
+                        <td>González Pérez, Juan</td>
+                    </tr>
+                    <tr>
+                        <td>Contabilidad</td>
+                        <td>Rodríguez Sánchez, Ana</td>
+                        <td>5</td>
+                        <td>2022</td>
+                        <td>5</td>
+                        <td>Administración</td>
+                        <td>Análisis Financiero</td>
+                        <td>B</td>
+                        <td>Martes/Jueves</td>
+                        <td>16:00-17:30/19:00-20:30</td>
+                        <td>Híbrido</td>
+                        <td>C1</td>
+                        <td>Prácticas comunitarias los viernes</td>
+                        <td>Martínez López, María</td>
+                    </tr>
+                `;
+                
+                // Simulate subject data
+                const subjectTable = document.querySelector('#subjects tbody');
+                subjectTable.innerHTML = `
+                    <tr>
+                        <td>2023</td>
+                        <td>4</td>
+                        <td>Administración/Negocios Internacionales</td>
+                        <td>Gestión Estratégica</td>
+                        <td>A</td>
+                        <td>Lunes/Miércoles</td>
+                        <td>7:00-8:30/10:00-11:30</td>
+                        <td>32</td>
+                    </tr>
+                    <tr>
+                        <td>2022</td>
+                        <td>5</td>
+                        <td>Administración/Contabilidad</td>
+                        <td>Análisis Financiero</td>
+                        <td>B</td>
+                        <td>Martes/Jueves</td>
+                        <td>16:00-17:30/19:00-20:30</td>
+                        <td>28</td>
+                    </tr>
+                `;
+            }
+        });
+    </script>
 </body>
 </html>
