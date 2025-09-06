@@ -1,384 +1,101 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Matriz de Planificación (Mínimo, corregido)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;margin:12px}
-    h1{font-size:18px;margin:0 0 8px}
-    .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-    .box{border:1px solid #ccc;padding:8px;border-radius:8px}
-    label{font-weight:600;display:block;margin-bottom:4px}
-    button{padding:8px 12px;border-radius:8px;border:1px solid #999;background:#eee;cursor:pointer}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    table{width:100%;border-collapse:collapse;margin-top:8px}
-    th,td{border:1px solid #ccc;padding:6px 8px}
-    th{background:#f5f5f5;position:sticky;top:0}
-    .num{text-align:center}
-    .status{font-size:12px;color:#444;margin-top:6px}
-  </style>
+    <meta charset="UTF-8">
+    <title>Matriz Académica</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; font-size: 12px; }
+        th, td { border: 1px solid #999; padding: 6px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        input[type="file"] { margin: 10px 0; }
+    </style>
 </head>
 <body>
-<h1>Matriz de Planificación</h1>
-
-<div class="row">
-  <div class="box">
-    <label>Mallas.xlsx</label>
-    <input id="mallasFile" type="file" accept=".xlsx,.xls">
-  </div>
-  <div class="box">
-    <label>Docentes.xlsx</label>
-    <input id="docentesFile" type="file" accept=".xlsx,.xls">
-  </div>
-  <div class="box" style="align-self:flex-end">
-    <button id="btnGen" disabled>Generar matriz</button>
-  </div>
-</div>
-
-<div class="status" id="status">Cargue ambos archivos para habilitar.</div>
-
-<table id="out">
-  <thead>
-    <tr>
-      <th>DOCENTE</th>
-      <th>TITULO ACADÉMICO</th>
-      <th>DEDICACIÓN</th>
-      <th>MATERIA</th>
-      <th>CÓDIGO ANTHOLOGY</th>
-      <th>CARRERAS QUE COMPARTEN</th>
-      <th>MALLA</th>
-      <th>PRE-REQUISITO</th>
-      <th>CODIGO</th>
-      <th class="num">HORAS TEÓRICAS</th>
-      <th class="num">HORAS PRÁCTICAS</th>
-      <th class="num">HORAS AUTÓNOMAS</th>
-      <th class="num">CREDITOS</th>
-      <th>CAMPO DE FORMACIÓN</th>
-      <th class="num">CICLO MALLA</th>
-      <th class="num">Nº ORDEN EN LA MALLA</th>
-      <th class="num">PARALELO</th>
-      <th>DIA</th>
-      <th>HORA</th>
-      <th>MODALIDAD</th>
-      <th class="num">Nro. HORAS</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+    <h2>Cargar archivos Excel: Mallas y Docentes</h2>
+    <input type="file" id="mallaFile" accept=".xlsx" />
+    <input type="file" id="docentesFile" accept=".xlsx" />
+    <button onclick="procesar()">Procesar Archivos</button>
+    <div id="tablaContainer"></div>
 
 <script>
-(() => {
-  const $ = s => document.querySelector(s);
-  const norm = s => (s ?? '').toString().trim();
-  const toInt = v => { const n = parseInt(String(v).replace(/[^0-9\-]/g,''),10); return isNaN(n)?0:n; };
-  const toFloat = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
-  const rmAcc = s => norm(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-
-  let M = [], Hm = [], D = [], Hd = [];
-
-  const synM = {
-    carrera: ["carrera","carreras","programa","carrera/programa"],
-    malla: ["malla","plan","malla (año)","malla año","malla 2019","malla 2023"],
-    materia: ["materia","asignatura","nombre asignatura","unidad curricular"],
-    cod_anth: ["codigo anthology","código anthology","anthology"],
-    prereq: ["pre-requisito","prerrequisito","prerrequisitos","requisito previo"],
-    codigo: ["codigo","código","codigo materia","código materia","codigo asignatura","código asignatura"],
-    ht: ["horas teoricas","h teoricas","h. teoricas","horas t","ht","horas teóricas","h. teóricas"],
-    hp: ["horas practicas","h practicas","h. practicas","horas p","hp","horas prácticas","h. prácticas"],
-    ha: ["horas autonomas","h autonomas","h. autonomas","horas a","ha","horas autónomas","h. autónomas"],
-    cred: ["creditos","créditos","cred","cr"],
-    campo: ["campo de formacion","campo formacion","area de formacion","área de formación","area"],
-    ciclo: ["ciclo malla","ciclo","semestre","nivel"],
-    orden: ["nº orden en la malla","n orden en la malla","orden malla","orden"],
-    est: ["estudiantes","nº estudiantes","num estudiantes","matriculados","inscritos","n estudiantes"]
-  };
-  const synD = {
-    docente: ["docente","profesor","nombre docente","nombres docente"],
-    titulo: ["titulo academico","título academico","titulo","título"],
-    ded: ["dedicacion","dedicación","jornada","tipo de dedicacion","tipo de dedicación"],
-    materia: ["materia","asignatura"],
-    modalidad: ["modalidad","modality","tipo modalidad"]
-  };
-
-  function arrToRows(ws){
-    const a = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-    // buscar primera fila no vacía como cabecera
-    let hIdx = -1;
-    for(let i=0;i<a.length;i++){
-      if(a[i] && a[i].some(c => String(c).trim() !== '')){ hIdx = i; break; }
-    }
-    if(hIdx < 0) return {rows:[], headers:[]};
-    const headers = a[hIdx].map(v => String(v).trim());
-    const rows = [];
-    for(let i=hIdx+1;i<a.length;i++){
-      const r = a[i] || [];
-      if(!r.some(c => String(c).trim() !== '')) continue;
-      const obj = {};
-      for(let j=0;j<headers.length;j++) obj[headers[j]] = r[j] ?? '';
-      rows.push(obj);
-    }
-    return {rows, headers};
-  }
-
-  function readX(file, cb){
-    const fr = new FileReader();
-    fr.onload = e => {
-      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-      // elegir automáticamente la hoja con MÁS filas de datos
-      let best = {rows:[], headers:[]}, bestLen = -1;
-      wb.SheetNames.forEach(name => {
-        const ws = wb.Sheets[name];
-        const {rows, headers} = arrToRows(ws);
-        if(rows.length > bestLen){ best = {rows, headers}; bestLen = rows.length; }
-      });
-      cb(best);
+function leerExcel(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const hoja = workbook.SheetNames[0];
+        const json = XLSX.utils.sheet_to_json(workbook.Sheets[hoja], { defval: "" });
+        callback(json);
     };
-    fr.readAsArrayBuffer(file);
-  }
+    reader.readAsArrayBuffer(file);
+}
 
-  function enable(){
-    $('#btnGen').disabled = !(M.length && D.length);
-  }
-
-  $('#mallasFile').addEventListener('change', ev => {
-    const f = ev.target.files?.[0]; if(!f) return;
-    $('#status').textContent = 'Leyendo Mallas.xlsx…';
-    readX(f, ({rows, headers}) => { M = rows; Hm = headers; $('#status').textContent = 'Mallas OK'; enable(); });
-  });
-
-  $('#docentesFile').addEventListener('change', ev => {
-    const f = ev.target.files?.[0]; if(!f) return;
-    $('#status').textContent = 'Leyendo Docentes.xlsx…';
-    readX(f, ({rows, headers}) => { D = rows; Hd = headers; $('#status').textContent = 'Docentes OK'; enable(); });
-  });
-
-  const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
-  const FRANJAS = ['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
-
-  function findHeader(syns, headers){
-    const map = {};
-    const H = headers.map(h => ({raw:h, key: rmAcc(h)}));
-    Object.keys(syns).forEach(k => {
-      const list = syns[k].map(rmAcc);
-      let hit = '';
-      for(const cand of list){
-        hit = H.find(h => h.key === cand)?.raw || H.find(h => h.key.includes(cand))?.raw || '';
-        if(hit) break;
-      }
-      map[k] = hit || '';
-    });
-    return map;
-  }
-
-  function generar(){
-    const mapM = findHeader(synM, Hm);
-    const mapD = findHeader(synD, Hd);
-
-    const mallas = M.map(r => ({
-      carrera: norm(r[mapM.carrera]),
-      malla: norm(r[mapM.malla]),
-      materia: norm(r[mapM.materia]),
-      cod_anth: norm(r[mapM.cod_anth]),
-      prereq: norm(r[mapM.prereq]),
-      codigo: norm(r[mapM.codigo]),
-      ht: toInt(r[mapM.ht]),
-      hp: toInt(r[mapM.hp]),
-      ha: toInt(r[mapM.ha]),
-      cred: toFloat(r[mapM.cred]),
-      campo: norm(r[mapM.campo]),
-      ciclo: toInt(r[mapM.ciclo]),
-      orden: toInt(r[mapM.orden]),
-      est: toInt(r[mapM.est])
-    })).filter(x => x.materia || x.codigo || x.carrera);
-
-    const docentes = D.map(r => ({
-      docente: norm(r[mapD.docente]),
-      titulo: norm(r[mapD.titulo]),
-      ded: norm(r[mapD.ded]),
-      materia: norm(r[mapD.materia]),
-      modalidad: norm(r[mapD.modalidad])
-    })).filter(x => x.docente);
-
-    // agrupar por materia + cod_anth (si existe)
-    const key = m => `${m.materia}||${m.cod_anth||''}`;
-    const map = new Map();
-    for(const m of mallas){
-      const k = key(m);
-      if(!map.has(k)) map.set(k, []);
-      map.get(k).push(m);
+function procesar() {
+    const archivoMalla = document.getElementById('mallaFile').files[0];
+    const archivoDocente = document.getElementById('docentesFile').files[0];
+    if (!archivoMalla || !archivoDocente) {
+        alert("Cargue ambos archivos");
+        return;
     }
 
-    const grupos = [];
-    for(const rows of map.values()){
-      const carreras = [...new Set(rows.map(x => x.carrera))].filter(Boolean);
-      const mallasSet = [...new Set(rows.map(x => x.malla))].filter(Boolean);
-      const byCarrera = {};
-      rows.forEach(r => {
-        const c = r.carrera || '—';
-        byCarrera[c] = byCarrera[c] || {codigo:[], ht:[], hp:[], ha:[], cred:[], campo:[], ciclo:[], orden:[]};
-        byCarrera[c].codigo.push(r.codigo||'');
-        byCarrera[c].ht.push(r.ht);
-        byCarrera[c].hp.push(r.hp);
-        byCarrera[c].ha.push(r.ha);
-        byCarrera[c].cred.push(r.cred);
-        byCarrera[c].campo.push(r.campo||'');
-        byCarrera[c].ciclo.push(r.ciclo);
-        byCarrera[c].orden.push(r.orden);
-      });
-      const joinPC = sel => Object.keys(byCarrera).map(c => String((byCarrera[c][sel][0] ?? ''))).join('/');
-      const estTotal = rows.reduce((a,b)=>a+(isFinite(b.est)?b.est:0),0);
-      grupos.push({
-        materia: rows[0]?.materia || '',
-        cod_anth: rows[0]?.cod_anth || '',
-        carreras: carreras.join('/'),
-        mallas: mallasSet.join('/'),
-        prereq: rows.find(r => r.prereq)?.prereq || '',
-        codigo: Object.keys(byCarrera).map(c => (byCarrera[c].codigo[0]||'')).join('/'),
-        ht: joinPC('ht'),
-        hp: joinPC('hp'),
-        ha: joinPC('ha'),
-        cred: joinPC('cred'),
-        campo: Object.keys(byCarrera).map(c => (byCarrera[c].campo[0]||'')).join('/'),
-        ciclo: joinPC('ciclo'),
-        orden: joinPC('orden'),
-        est: estTotal
-      });
-    }
+    leerExcel(archivoMalla, function(mallaData) {
+        leerExcel(archivoDocente, function(docentesData) {
+            const horariosDisponibles = [
+                "07:00–10:00", "10:00–13:00", "13:00–16:00", "16:00–19:00", "19:00–22:00"
+            ];
+            const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+            let asignados = {}; // Para evitar choques
 
-    function asignarDocente(nombre){
-      const m = norm(nombre).toLowerCase();
-      if(!m) return null;
-      let hit = docentes.find(d => d.materia && d.materia.toLowerCase() === m);
-      if(hit) return hit;
-      hit = docentes.find(d => d.materia && (m.includes(d.materia.toLowerCase()) || d.materia.toLowerCase().includes(m)));
-      return hit || null;
-    }
+            let tablaHTML = `<table><thead><tr>
+                <th>DOCENTE</th><th>TÍTULO ACADÉMICO</th><th>DEDICACIÓN</th><th>MATERIA</th><th>CÓDIGO ANTHOLOGY</th>
+                <th>CARRERAS QUE COMPARTEN</th><th>MALLA</th><th>PRE-REQUISITO</th><th>CÓDIGO</th>
+                <th>HORAS TEÓRICAS</th><th>HORAS PRÁCTICAS</th><th>HORAS AUTÓNOMAS</th><th>CRÉDITOS</th>
+                <th>CAMPO DE FORMACIÓN</th><th>CICLO MALLA</th><th>Nº ORDEN EN LA MALLA</th>
+                <th>PARALELO</th><th>DÍA</th><th>HORA</th><th>MODALIDAD</th><th>Nro. HORAS</th>
+            </tr></thead><tbody>`;
 
-    const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
-    const FRANJAS = ['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
-    const docLoad = new Map(); // {docente:{porDia:Map, slots:Set}}
-    const occ = new Map(); // clave carrera|ciclo -> Set('dia|franja')
+            mallaData.forEach((fila, index) => {
+                const materia = fila["MATERIA"].trim().toUpperCase();
+                const docentes = docentesData.filter(d => d["MATERIA"].trim().toUpperCase() === materia);
+                const docente = docentes.length > 0 ? docentes[0] : { "DOCENTE": "NO ASIGNADO", "TITULO ACADÉMICO": "", "DEDICACION": "", "DIA DISPONIBLE": "", "HORA DISPONIBLE": "", "Modalidad": "" };
+                const dia = dias[index % dias.length];
+                const hora = horariosDisponibles[index % horariosDisponibles.length];
+                const paralelo = "A";
+                const nroHoras = Number(fila["HORAS TEÓRICAS"] || 0) + Number(fila["HORAS PRÁCTICAS"] || 0) + Number(fila["HORAS AUTÓNOMAS"] || 0);
 
-    function canPlace(row, dia, franja){
-      const slot = `${dia}|${franja}`;
-      const d = row.DOCENTE || '';
-      if(d){
-        if(!docLoad.has(d)) docLoad.set(d, {porDia:new Map(), slots:new Set()});
-        const inf = docLoad.get(d);
-        const n = inf.porDia.get(dia) || 0;
-        if(n >= 2) return false;
-        if(inf.slots.has(slot)) return false;
-      }
-      const carreras = (row['CARRERAS QUE COMPARTEN']||'').split('/').map(s=>norm(s));
-      const ciclos = String(row['CICLO MALLA']||'').split('/').map(s=>parseInt(s,10)||0);
-      for(const c of carreras){
-        for(const cyc of ciclos){
-          const k0 = `${c}|${cyc}`;
-          if(occ.get(k0)?.has(slot)) return false;
-          const kp = `${c}|${cyc-1}`, kn = `${c}|${cyc+1}`;
-          if(occ.get(kp)?.has(slot)) return false;
-          if(occ.get(kn)?.has(slot)) return false;
-        }
-      }
-      return true;
-    }
-    function place(row){
-      for(const d of DIAS){
-        for(const f of FRANJAS){
-          if(canPlace(row,d,f)){
-            row.DIA = d; row.HORA = f; row['Nro. HORAS'] = 3;
-            const slot = `${d}|${f}`;
-            const doc = row.DOCENTE || '';
-            if(doc){
-              const inf = docLoad.get(doc) || {porDia:new Map(), slots:new Set()};
-              inf.porDia.set(d, (inf.porDia.get(d)||0)+1);
-              inf.slots.add(slot);
-              docLoad.set(doc, inf);
-            }
-            const carreras = (row['CARRERAS QUE COMPARTEN']||'').split('/').map(s=>norm(s));
-            const ciclos = String(row['CICLO MALLA']||'').split('/').map(s=>parseInt(s,10)||0);
-            for(const c of carreras){
-              for(const cyc of ciclos){
-                const k0 = `${c}|${cyc}`;
-                if(!occ.has(k0)) occ.set(k0, new Set());
-                occ.get(k0).add(slot);
-              }
-            }
-            return true;
-          }
-        }
-      }
-      row.DIA = '—'; row.HORA = 'SIN HORARIO'; row['Nro. HORAS'] = 0;
-      return false;
-    }
+                tablaHTML += `<tr>
+                    <td>${docente["DOCENTE"]}</td>
+                    <td>${docente["TITULO ACADÉMICO"]}</td>
+                    <td>${docente["DEDICACION"]}</td>
+                    <td>${materia}</td>
+                    <td>${fila["CÓDIGO"]}</td>
+                    <td>${fila["CARRERA"]}</td>
+                    <td>${fila["MALLA"]}</td>
+                    <td>${fila["PRERREQUISITO"]}</td>
+                    <td>${fila["CÓDIGO"]}</td>
+                    <td>${fila["HORAS TEÓRICAS"]}</td>
+                    <td>${fila["HORAS PRÁCTICAS"]}</td>
+                    <td>${fila["HORAS AUTÓNOMAS"]}</td>
+                    <td>${fila["CRÉDITOS"]}</td>
+                    <td>${fila["CAMPO DE FORMACIÓN"]}</td>
+                    <td>${fila["CICLO"]}</td>
+                    <td>${fila["NUMERO DE ORDEN EN LA MALLA"]}</td>
+                    <td>${paralelo}</td>
+                    <td>${dia}</td>
+                    <td>${hora}</td>
+                    <td>${docente["Modalidad"]}</td>
+                    <td>${nroHoras}</td>
+                </tr>`;
+            });
 
-    const rows = [];
-    for(const g of grupos){
-      const total = g.est || 0;
-      const cap = 30;
-      const paralelos = Math.max(1, Math.ceil(total / cap));
-      for(let i=0;i<paralelos;i++){
-        const par = String.fromCharCode(65+i);
-        const doc = asignarDocente(g.materia);
-        rows.push({
-          'DOCENTE': doc?.docente || '',
-          'TITULO ACADÉMICO': doc?.titulo || '',
-          'DEDICACIÓN': doc?.ded || '',
-          'MATERIA': g.materia,
-          'CÓDIGO ANTHOLOGY': g.cod_anth || '',
-          'CARRERAS QUE COMPARTEN': g.carreras,
-          'MALLA': g.mallas,
-          'PRE-REQUISITO': g.prereq,
-          'CODIGO': g.codigo,
-          'HORAS TEÓRICAS': g.ht,
-          'HORAS PRÁCTICAS': g.hp,
-          'HORAS AUTÓNOMAS': g.ha,
-          'CREDITOS': g.cred,
-          'CAMPO DE FORMACIÓN': g.campo,
-          'CICLO MALLA': g.ciclo,
-          'Nº ORDEN EN LA MALLA': g.orden,
-          'PARALELO': par,
-          'DIA': '',
-          'HORA': '',
-          'MODALIDAD': doc?.modalidad || '',
-          'Nro. HORAS': 0
+            tablaHTML += "</tbody></table>";
+            document.getElementById("tablaContainer").innerHTML = tablaHTML;
         });
-      }
-    }
-
-    rows.sort((a,b)=>{
-      const ca = norm(a['CARRERAS QUE COMPARTEN']), cb = norm(b['CARRERAS QUE COMPARTEN']);
-      if(ca !== cb) return ca.localeCompare(cb);
-      const c1 = parseInt(String(a['CICLO MALLA']).split('/')[0]||'0',10);
-      const c2 = parseInt(String(b['CICLO MALLA']).split('/')[0]||'0',10);
-      if(c1 !== c2) return c1 - c2;
-      if(a.MATERIA !== b.MATERIA) return a.MATERIA.localeCompare(b.MATERIA);
-      return String(a.PARALELO).localeCompare(String(b.PARALELO));
     });
-
-    for(const r of rows){ place(r); }
-
-    const tbody = document.querySelector('#out tbody');
-    tbody.innerHTML = '';
-    const numCols = new Set(['HORAS TEÓRICAS','HORAS PRÁCTICAS','HORAS AUTÓNOMAS','CREDITOS','CICLO MALLA','Nº ORDEN EN LA MALLA','PARALELO','Nro. HORAS']);
-    for(const r of rows){
-      const tr = document.createElement('tr');
-      const cols = ['DOCENTE','TITULO ACADÉMICO','DEDICACIÓN','MATERIA','CÓDIGO ANTHOLOGY','CARRERAS QUE COMPARTEN','MALLA','PRE-REQUISITO','CODIGO','HORAS TEÓRICAS','HORAS PRÁCTICAS','HORAS AUTÓNOMAS','CREDITOS','CAMPO DE FORMACIÓN','CICLO MALLA','Nº ORDEN EN LA MALLA','PARALELO','DIA','HORA','MODALIDAD','Nro. HORAS'];
-      for(const c of cols){
-        const td = document.createElement('td');
-        td.textContent = r[c] ?? '';
-        if(numCols.has(c)) td.classList.add('num');
-        tr.appendChild(td);
-      }
-      tbody.appendChild(tr);
-    }
-    $('#status').textContent = `Filas: ${rows.length}`;
-  }
-
-  $('#btnGen').addEventListener('click', generar);
-})();
+}
 </script>
 </body>
 </html>
