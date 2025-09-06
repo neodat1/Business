@@ -221,16 +221,62 @@
         fr.onload = (e)=>{
           try{
             const data = new Uint8Array(e.target.result);
-            const wb = XLSX.read(data, { type: 'array' });
+            const wb = XLSX.read(data, { type: 'array', cellDates: true });
             const all = [];
             const meta = [];
+
+            const isBlankRow = (row)=> Array.isArray(row) && row.every(v=> (v==null || String(v).trim()===''));
+            const scoreHeader = (row)=>{
+              if(!Array.isArray(row)) return 0;
+              let score = 0;
+              const pats = ['carrera','programa','escuela','malla','plan','ciclo','semestre','nivel','materia','asignatura','unidadcurricular','nombre','codigo','cod','anthology','hora','credit','ects','campo','orden','pre'];
+              for(const v of row){
+                const s = String(v||'');
+                const n = s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+                if(n && pats.some(p=> n.includes(p))) score++;
+              }
+              return score;
+            };
+
             for(const sheetName of wb.SheetNames){
               const ws = wb.Sheets[sheetName];
               if(!ws) continue;
-              const json = XLSX.utils.sheet_to_json(ws, { defval: '', raw: true });
-              json.forEach(r=>{ r.__sheet = sheetName; });
-              if(json.length){ all.push(...json); meta.push({ sheet: sheetName, rows: json.length }); }
+              const arr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+              if(!arr || arr.length===0) continue;
+
+              // Buscar fila de encabezados más probable en las primeras 50 filas
+              let bestIdx = -1; let bestScore = -1;
+              const limit = Math.min(arr.length, 50);
+              for(let i=0; i<limit; i++){
+                const row = arr[i];
+                if(!row || isBlankRow(row)) continue;
+                const sc = scoreHeader(row);
+                if(sc>bestScore){ bestScore = sc; bestIdx = i; }
+                if(bestScore>=3) break; // suficiente confianza
+              }
+              if(bestIdx===-1) bestIdx = 0;
+
+              const headers = (arr[bestIdx]||[]).map(h=> String(h||'').trim());
+
+              for(let r=bestIdx+1; r<arr.length; r++){
+                const row = arr[r];
+                if(!row || isBlankRow(row)) continue;
+                const obj = {};
+                for(let c=0; c<headers.length; c++){
+                  obj[headers[c]] = (row[c]!==undefined && row[c]!==null) ? row[c] : '';
+                }
+                obj.__sheet = sheetName;
+                all.push(obj);
+              }
+              meta.push({ sheet: sheetName, rows: Math.max(0, arr.length - (bestIdx+1)) });
             }
+            resolve({ rows: all, meta });
+          }catch(err){ reject(err); }
+        };
+        fr.onerror = reject;
+        fr.readAsArrayBuffer(file);
+      });
+    }
             resolve({ rows: all, meta });
           }catch(err){ reject(err); }
         };
