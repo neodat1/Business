@@ -1,643 +1,525 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Planificación académica – Mallas & Docentes</title>
-  <style>
-    :root {
-      --bg: #0f172a;          /* slate-900 */
-      --card: #111827;        /* gray-900 */
-      --muted: #94a3b8;       /* slate-400 */
-      --text: #e5e7eb;        /* gray-200 */
-      --accent: #2563eb;      /* blue-600 */
-      --ok: #16a34a;          /* green-600 */
-      --warn: #f59e0b;        /* amber-500 */
-      --err: #ef4444;         /* red-500 */
-      --tableStripe: #0b1226; /* very dark */
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--text); }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Planificador Académico – Matriz Integrada</title>
 
-    header { padding: 20px 24px; border-bottom: 1px solid #1f2937; position: sticky; top: 0; background: linear-gradient(0deg, rgba(15,23,42,0.75), rgba(15,23,42,0.95)); backdrop-filter: blur(8px); z-index: 8; }
-    header h1 { margin: 0; font-weight: 700; font-size: 20px; letter-spacing: 0.2px; }
-    header p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+<!-- SheetJS (XLSX) from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
 
-    .container { padding: 18px 24px 28px; display: grid; grid-template-columns: 340px 1fr; gap: 18px; }
-
-    .card { background: var(--card); border: 1px solid #1f2937; border-radius: 14px; padding: 16px; }
-    .card h2 { margin: 0 0 12px; font-size: 16px; }
-    .row { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
-
-    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
-    input[type="file"], select, button { width: 100%; border-radius: 10px; border: 1px solid #223049; background: #0b1220; color: var(--text); padding: 10px 12px; font-size: 14px; }
-    input[type="checkbox"] { transform: translateY(1px); }
-    button.primary { background: linear-gradient(180deg, #1d4ed8, #1e40af); border-color: #1d4ed8; cursor: pointer; }
-    button.primary:disabled { opacity: .6; cursor: not-allowed; }
-    button.ghost { background: #0b1220; }
-    .hint { font-size: 12px; color: var(--muted); line-height: 1.2; }
-
-    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-    .stat { background: #0b1226; border: 1px solid #1f2937; border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); }
-
-    .tableWrap { background: var(--card); border: 1px solid #1f2937; border-radius: 14px; overflow: hidden; }
-    .tableTop { display: flex; gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid #1f2937; }
-    .tableTop .spacer { flex: 1; }
-
-    table { width: 100%; border-collapse: collapse; }
-    thead { position: sticky; top: 69px; z-index: 5; box-shadow: 0 2px 0 #1f2937; }
-    thead th { background: #0c1429; color: #cbd5e1; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 8px; text-align: left; white-space: nowrap; }
-    tbody td { padding: 9px 8px; border-top: 1px solid #1f2937; vertical-align: middle; font-size: 14px; }
-    tbody tr:nth-child(odd) { background: var(--tableStripe); }
-    tbody tr:hover { background: #101a34; }
-
-    .num { text-align: center; font-variant-numeric: tabular-nums; }
-    .center { text-align: center; }
-    .chip { display: inline-block; padding: 2px 8px; border-radius: 100px; background: #0b1220; border: 1px solid #1f2937; font-size: 12px; }
-    .ok { color: #bbf7d0; }
-    .warn { color: #fde68a; }
-    .err { color: #fecaca; }
-
-    .stickyX { overflow: auto; max-height: calc(100vh - 140px); }
-
-    .legend { font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
-    .legend span { display: inline-flex; align-items: center; gap: 6px; }
-    .badge { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-    .b-free { background: var(--ok); }
-    .b-adj { background: var(--warn); }
-    .b-max2 { background: var(--err); }
-
-    .small { font-size: 12px; color: var(--muted); }
-  </style>
+<style>
+  :root{
+    --bg:#0b1220;
+    --card:#121a2b;
+    --card-2:#0f1727;
+    --text:#e6ebff;
+    --muted:#9fb0d3;
+    --accent:#6ea8fe;
+    --ok:#20c997;
+    --warn:#ffc107;
+    --bad:#ff6b6b;
+    --grid:#1f2a44;
+  }
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Inter,Arial,sans-serif;
+    background:linear-gradient(180deg,var(--bg),#0a0f1c);
+    color:var(--text);
+  }
+  header{
+    position:sticky; top:0; z-index:5;
+    background:rgba(11,18,32,.9);
+    backdrop-filter: blur(6px);
+    border-bottom:1px solid var(--grid);
+  }
+  .wrap{max-width:1400px; margin:0 auto; padding:16px;}
+  h1{margin:0; font-weight:700; letter-spacing:.2px;}
+  .muted{color:var(--muted); font-size:.95rem}
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card-2));
+    border:1px solid var(--grid);
+    border-radius:16px;
+    padding:16px;
+    box-shadow:0 8px 30px rgba(0,0,0,.25);
+  }
+  .row{display:flex; gap:16px; flex-wrap:wrap;}
+  .col{flex:1 1 340px; min-width:300px}
+  input[type="file"]{
+    appearance:none; background:#0d1322; border:1px dashed var(--grid);
+    padding:14px; width:100%; color:var(--text); border-radius:12px;
+  }
+  button{
+    appearance:none; border:1px solid var(--accent); background:transparent;
+    color:var(--text); padding:10px 14px; border-radius:12px; cursor:pointer;
+  }
+  button.primary{background:var(--accent); color:#0b1220; border-color:transparent; font-weight:600}
+  button:disabled{opacity:.5; cursor:not-allowed}
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .pill{display:inline-flex; gap:8px; align-items:center; background:#0d1322; border:1px solid var(--grid); padding:10px 12px; border-radius:999px}
+  .grid-wrap{margin-top:18px; border:1px solid var(--grid); border-radius:16px; overflow:auto; background:#0c1323}
+  table{width:100%; border-collapse:separate; border-spacing:0; min-width:1400px}
+  thead th{
+    position:sticky; top:0; z-index:3; background:#0e1426; color:var(--text);
+    text-align:left; padding:10px 8px; border-bottom:1px solid var(--grid);
+    font-size:.9rem;
+  }
+  tbody td{
+    border-bottom:1px solid #112038; padding:8px; vertical-align:top; font-size:.95rem;
+  }
+  tbody tr:hover{background:#0d162b;}
+  .center-num{ text-align:center; font-variant-numeric: tabular-nums; }
+  .badge{padding:2px 8px; border-radius:999px; font-size:.8rem; border:1px solid var(--grid); background:#10203a; color:var(--muted)}
+  .ok{background:#0f2d25; color:#8ef1d5; border-color:#164a3d}
+  .warn{background:#2c230b; color:#ffe08a; border-color:#4d3b11}
+  .bad{background:#311114; color:#ff9ca6; border-color:#4f181d}
+  .note{color:var(--muted); font-size:.9rem}
+  .right{float:right}
+  .small{font-size:.85rem}
+  .sticky-footer{position:sticky; bottom:0; z-index:3; background:rgba(11,18,32,.9); border-top:1px solid var(--grid); backdrop-filter: blur(6px);}
+  .footer-inner{max-width:1400px; margin:0 auto; padding:12px 16px; display:flex; gap:10px; align-items:center; justify-content:space-between}
+  .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, monospace; background:#0d1322; border:1px solid var(--grid); padding:2px 6px; border-radius:6px}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;}
+</style>
 </head>
 <body>
   <header>
-    <h1>Planificación académica</h1>
-    <p>Lea <em>Mallas.xlsx</em> y <em>Docentes.xlsx</em>, integre y asigne franjas horarias sin cruces (L–V, 7–10, 10–13, 13–16, 16–19, 19–22). Máximo 2 asignaturas por día por ciclo; evite choques entre ciclos adyacentes.</p>
+    <div class="wrap">
+      <h1>Matriz integrada: Mallas + Docentes</h1>
+      <div class="muted">Carga <span class="kbd">Mallas.xlsx</span> y <span class="kbd">Docentes.xlsx</span>. El sistema combina, crea paralelos y agenda sin choques por ciclos adyacentes (L–V, 7–22 h, 3 h por franja), máx. 2 asignaturas/día por docente.</div>
+    </div>
   </header>
 
-  <div class="container">
-    <section class="card">
-      <h2>Entrada</h2>
-      <div class="row">
-        <div>
-          <label for="fileMallas">Mallas.xlsx</label>
-          <input id="fileMallas" type="file" accept=\".xlsx,.xls,.csv\" />
-          <div class="hint">Debe contener: Carrera, Malla, Ciclo, Materia, Código Anthology (opcional), Código, Horas (T/P/A), Créditos, Campo de formación, Nº orden, Pre‑requisito.</div>
-        </div>
-        <div>
-          <label for="fileDocentes">Docentes.xlsx</label>
-          <input id="fileDocentes" type="file" accept=\".xlsx,.xls,.csv\" />
-          <div class="hint">Debe contener: Docente, Título académico, Dedicación. (La asignación del docente se selecciona por fila.)</div>
+  <main class="wrap">
+    <div class="row">
+      <div class="col">
+        <div class="card">
+          <h3>1) Cargar archivos</h3>
+          <input id="mallas" type="file" accept=".xlsx,.xls" />
+          <div class="note small">Se espera columnas típicas: <span class="mono">CARRERA, MALLA, CICLO, MATERIA, CODIGO, CODIGO ANTHOLOGY, HORAS TEÓRICAS, HORAS PRÁCTICAS, HORAS AUTÓNOMAS, CRÉDITOS, CAMPO DE FORMACIÓN, Nº ORDEN EN LA MALLA, PRE-REQUISITO</span>. Los nombres insensibles a mayúsculas.</div>
         </div>
       </div>
-
-      <div class="row">
-        <div>
-          <label>Parámetros de asignación</label>
-          <div class="small">
-            • Evitar choques entre ciclos consecutivos (1↔2, 2↔1&3, 3↔2&4, ...).<br/>
-            • Máx. 2 materias por día <b>por ciclo</b>.<br/>
-            • Se escoge <b>una</b> franja por materia; las demás quedan en suspenso.
-          </div>
+      <div class="col">
+        <div class="card">
+          <h3>2) Cargar Docentes</h3>
+          <input id="docentes" type="file" accept=".xlsx,.xls" />
+          <div class="note small">Se aprecia (opcional) una hoja con <span class="mono">DOCENTE, TITULO ACADÉMICO, DEDICACIÓN</span> y otra con asignaciones <span class="mono">MATERIA, DOCENTE</span>. Si no existe, se deja sin asignar.</div>
         </div>
       </div>
+    </div>
 
-      <div class="row">
-        <button id="btnProcesar" class="primary">Procesar</button>
-        <button id="btnLimpiar" class="ghost">Limpiar</button>
+    <div class="card" style="margin-top:16px">
+      <div class="controls">
+        <span class="pill">Franjas: 7–10, 10–13, 13–16, 16–19, 19–22</span>
+        <span class="pill">Máx. 2 asignaturas/día por docente</span>
+        <span class="pill">Sin choques entre ciclos adyacentes</span>
+        <button id="btnProcesar" class="primary" disabled>Procesar y Agendar</button>
+        <button id="btnExport" disabled>Exportar a Excel</button>
+        <span class="right note small">Sugerencia: valide columnas y tildes; el emparejamiento de nombres es flexible.</span>
       </div>
-
-      <div class="stats">
-        <div class="stat" id="stMallas">Mallas: —</div>
-        <div class="stat" id="stDoc">Docentes: —</div>
-        <div class="stat" id="stOut">Salidas: —</div>
-      </div>
-
-      <div style="margin-top:10px;" class="legend">
-        <span><i class="badge b-free"></i> asignación válida</span>
-        <span><i class="badge b-adj"></i> descartado por adyacencia</span>
-        <span><i class="badge b-max2"></i> descartado por límite máximo (2)</span>
-      </div>
-    </section>
-
-    <section class="tableWrap">
-      <div class="tableTop">
-        <strong>Resultados</strong>
-        <span class="spacer"></span>
-        <span id="resume" class="small">—</span>
-      </div>
-      <div class="stickyX">
-        <table id="tbl">
+      <div class="grid-wrap" id="gridWrap" style="display:none">
+        <table id="tabla">
           <thead>
-            <tr id="thead"></tr>
+            <tr>
+              <th>DOCENTE</th>
+              <th>TITULO ACADÉMICO</th>
+              <th>DEDICACIÓN</th>
+              <th>MATERIA</th>
+              <th>CÓDIGO ANTHOLOGY</th>
+              <th>CARRERAS QUE COMPARTEN</th>
+              <th>MALLA</th>
+              <th>PRE-REQUISITO</th>
+              <th>CODIGO</th>
+              <th>HORAS TEÓRICAS</th>
+              <th>HORAS PRÁCTICAS</th>
+              <th>HORAS AUTÓNOMAS</th>
+              <th>CREDITOS</th>
+              <th>CAMPO DE FORMACIÓN</th>
+              <th>CICLO MALLA</th>
+              <th>Nº ORDEN EN LA MALLA</th>
+              <th>PARALELO</th>
+              <th>DIA</th>
+              <th>HORA</th>
+              <th>MODALIDAD</th>
+              <th>Nro. HORAS</th>
+            </tr>
           </thead>
-          <tbody id="tbody"></tbody>
+          <tbody></tbody>
         </table>
       </div>
-    </section>
+    </div>
+  </main>
+
+  <div class="sticky-footer">
+    <div class="footer-inner">
+      <div class="small muted">Consejo: si una misma asignatura aparece en varias carreras, los códigos/horas/CF/orden se listan por carrera separados con <b>/</b>.</div>
+      <div class="small"><span class="kbd">Ctrl</span> + <span class="kbd">S</span> para guardar esta página.</div>
+    </div>
   </div>
 
-  <!-- SheetJS -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js" integrity="sha256-lCPMSx8kzeSeY9hUNjQz5YWR12dAnAnbGqM6qLuZegE=" crossorigin="anonymous"></script>
-  <script>
-    // ===== Utiles =====
-    const SLOTS = [
-      { dia: 'Lunes', rango: '07:00–10:00', h: 3 },
-      { dia: 'Lunes', rango: '10:00–13:00', h: 3 },
-      { dia: 'Lunes', rango: '13:00–16:00', h: 3 },
-      { dia: 'Lunes', rango: '16:00–19:00', h: 3 },
-      { dia: 'Lunes', rango: '19:00–22:00', h: 3 },
-      { dia: 'Martes', rango: '07:00–10:00', h: 3 },
-      { dia: 'Martes', rango: '10:00–13:00', h: 3 },
-      { dia: 'Martes', rango: '13:00–16:00', h: 3 },
-      { dia: 'Martes', rango: '16:00–19:00', h: 3 },
-      { dia: 'Martes', rango: '19:00–22:00', h: 3 },
-      { dia: 'Miércoles', rango: '07:00–10:00', h: 3 },
-      { dia: 'Miércoles', rango: '10:00–13:00', h: 3 },
-      { dia: 'Miércoles', rango: '13:00–16:00', h: 3 },
-      { dia: 'Miércoles', rango: '16:00–19:00', h: 3 },
-      { dia: 'Miércoles', rango: '19:00–22:00', h: 3 },
-      { dia: 'Jueves', rango: '07:00–10:00', h: 3 },
-      { dia: 'Jueves', rango: '10:00–13:00', h: 3 },
-      { dia: 'Jueves', rango: '13:00–16:00', h: 3 },
-      { dia: 'Jueves', rango: '16:00–19:00', h: 3 },
-      { dia: 'Jueves', rango: '19:00–22:00', h: 3 },
-      { dia: 'Viernes', rango: '07:00–10:00', h: 3 },
-      { dia: 'Viernes', rango: '10:00–13:00', h: 3 },
-      { dia: 'Viernes', rango: '13:00–16:00', h: 3 },
-      { dia: 'Viernes', rango: '16:00–19:00', h: 3 },
-      { dia: 'Viernes', rango: '19:00–22:00', h: 3 },
-    ];
+<script>
+(function(){
+  const $ = sel => document.querySelector(sel);
+  const by = (obj, ...ks) => ks.reduce((acc,k)=> (acc && acc[k]!=null)?acc[k]:undefined, obj);
 
-    const HEADERS = [
-      'DOCENTE', 'TITULO ACADÉMICO', 'DEDICACIÓN', 'MATERIA', 'CÓDIGO ANTHOLOGY',
-      'CARRERAS QUE COMPARTEN', 'MALLA', 'PRE-REQUISITO', 'CODIGO',
-      'HORAS TEÓRICAS', 'HORAS PRÁCTICAS', 'HORAS AUTÓNOMAS', 'CREDITOS',
-      'CAMPO DE FORMACIÓN', 'CICLO MALLA', 'Nº ORDEN EN LA MALLA',
-      'PARALELO', 'DIA', 'HORA', 'MODALIDAD', 'Nro. HORAS'
-    ];
+  const estado = {
+    mallasRows: [],
+    docentesRows: [],
+    asignacionesRows: [],
+    docentesBase: [],
+    resultado: []
+  };
 
-    const NUMERIC_HEADERS = new Set([
-      'HORAS TEÓRICAS','HORAS PRÁCTICAS','HORAS AUTÓNOMAS','CREDITOS','CICLO MALLA','Nº ORDEN EN LA MALLA','Nro. HORAS'
-    ]);
+  // Normaliza encabezados (quita tildes, espacios, a mayúsculas)
+  function norm(s){
+    if(!s && s!==0) return "";
+    return String(s)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/\s+/g,' ').trim().toUpperCase();
+  }
 
-    function norm(s){
-      if(s==null) return '';
-      return String(s)
-        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-        .replace(/[^A-Za-z0-9]+/g,'')
-        .toLowerCase();
-    }
+  // Lee primera hoja a JSON
+  async function leerExcel(file){
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, {type:"array"});
+    const sheetName = wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    return XLSX.utils.sheet_to_json(ws, {defval:""});
+  }
 
-    function detectColumn(row, candidates){
-      const keys = Object.keys(row||{});
-      let bestKey = null;
-      for(const k of keys){
-        const nk = norm(k);
-        for(const c of candidates){ if(nk.includes(c)) { bestKey = k; break; } }
-        if(bestKey) break;
-      }
-      return bestKey; // puede ser null
-    }
+  // Map flexible de encabezados -> campo canónico
+  const MAP_MALLAS = {
+    "CARRERA":"CARRERA",
+    "PROGRAMA":"CARRERA",
+    "MALLA":"MALLA",
+    "PLAN":"MALLA",
+    "CICLO":"CICLO MALLA",
+    "CICLO MALLA":"CICLO MALLA",
+    "SEMESTRE":"CICLO MALLA",
+    "MATERIA":"MATERIA",
+    "ASIGNATURA":"MATERIA",
+    "CODIGO":"CODIGO",
+    "CÓDIGO":"CODIGO",
+    "CODIGO ANTHOLOGY":"CÓDIGO ANTHOLOGY",
+    "CÓDIGO ANTHOLOGY":"CÓDIGO ANTHOLOGY",
+    "HORAS TEORICAS":"HORAS TEÓRICAS",
+    "HORAS TEÓRICAS":"HORAS TEÓRICAS",
+    "HORAS PRACTICAS":"HORAS PRÁCTICAS",
+    "HORAS PRÁCTICAS":"HORAS PRÁCTICAS",
+    "HORAS AUTONOMAS":"HORAS AUTÓNOMAS",
+    "HORAS AUTÓNOMAS":"HORAS AUTÓNOMAS",
+    "CREDITOS":"CREDITOS",
+    "CRÉDITOS":"CREDITOS",
+    "CAMPO DE FORMACION":"CAMPO DE FORMACIÓN",
+    "CAMPO DE FORMACIÓN":"CAMPO DE FORMACIÓN",
+    "Nº ORDEN EN LA MALLA":"Nº ORDEN EN LA MALLA",
+    "NRO ORDEN EN LA MALLA":"Nº ORDEN EN LA MALLA",
+    "PRE-REQUISITO":"PRE-REQUISITO",
+    "PRERREQUISITO":"PRE-REQUISITO",
+    "PRERREQUISITOS":"PRE-REQUISITO"
+  };
 
-    function uniq(arr){ return [...new Set(arr.filter(x=>x!=null && x!==''))]; }
+  const MAP_DOC = {
+    "DOCENTE":"DOCENTE",
+    "NOMBRE DOCENTE":"DOCENTE",
+    "TITULO ACADEMICO":"TITULO ACADÉMICO",
+    "TÍTULO ACADÉMICO":"TITULO ACADÉMICO",
+    "DEDICACION":"DEDICACIÓN",
+    "DEDICACIÓN":"DEDICACIÓN",
+    "MATERIA":"MATERIA", // en hoja de asignaciones
+    "ASIGNATURA":"MATERIA"
+  };
 
-    function groupBy(arr, keyFn){
-      const m = new Map();
-      for(const x of arr){
-        const k = keyFn(x);
-        if(!m.has(k)) m.set(k, []);
-        m.get(k).push(x);
-      }
-      return m;
-    }
-
-    // ===== Lectura de Excel (TODAS LAS HOJAS) =====
-    async function readExcelAllSheets(file){
-      return new Promise((resolve, reject)=>{
-        const fr = new FileReader();
-        fr.onload = (e)=>{
-          try{
-            const data = new Uint8Array(e.target.result);
-            const wb = XLSX.read(data, { type: 'array', cellDates: true });
-            const all = [];
-            const meta = [];
-
-            const isBlankRow = (row)=> Array.isArray(row) && row.every(v=> (v==null || String(v).trim()===''));
-            const scoreHeader = (row)=>{
-              if(!Array.isArray(row)) return 0;
-              let score = 0;
-              const pats = ['carrera','programa','escuela','malla','plan','ciclo','semestre','nivel','materia','asignatura','unidadcurricular','nombre','codigo','cod','anthology','hora','credit','ects','campo','orden','pre'];
-              for(const v of row){
-                const s = String(v||'');
-                const n = s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-                if(n && pats.some(p=> n.includes(p))) score++;
-              }
-              return score;
-            };
-
-            for(const sheetName of wb.SheetNames){
-              const ws = wb.Sheets[sheetName];
-              if(!ws) continue;
-              const arr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-              if(!arr || arr.length===0) continue;
-
-              // Buscar fila de encabezados más probable en las primeras 50 filas
-              let bestIdx = -1; let bestScore = -1;
-              const limit = Math.min(arr.length, 50);
-              for(let i=0; i<limit; i++){
-                const row = arr[i];
-                if(!row || isBlankRow(row)) continue;
-                const sc = scoreHeader(row);
-                if(sc>bestScore){ bestScore = sc; bestIdx = i; }
-                if(bestScore>=3) break; // suficiente confianza
-              }
-              if(bestIdx===-1) bestIdx = 0;
-
-              const headers = (arr[bestIdx]||[]).map(h=> String(h||'').trim());
-
-              for(let r=bestIdx+1; r<arr.length; r++){
-                const row = arr[r];
-                if(!row || isBlankRow(row)) continue;
-                const obj = {};
-                for(let c=0; c<headers.length; c++){
-                  obj[headers[c]] = (row[c]!==undefined && row[c]!==null) ? row[c] : '';
-                }
-                obj.__sheet = sheetName;
-                all.push(obj);
-              }
-              meta.push({ sheet: sheetName, rows: Math.max(0, arr.length - (bestIdx+1)) });
-            }
-            resolve({ rows: all, meta });
-          }catch(err){ reject(err); }
-        };
-        fr.onerror = reject;
-        fr.readAsArrayBuffer(file);
-      });
-    }
-            resolve({ rows: all, meta });
-          }catch(err){ reject(err); }
-        };
-        fr.onerror = reject;
-        fr.readAsArrayBuffer(file);
-      });
-    }
-
-    // ===== Lector CSV sencillo (una "hoja") =====
-    function parseCSV(text){
-      const rows = [];
-      let headers = null;
-      const lines = text.split(/
-?
-/).filter(l=>l.trim().length>0);
-      for(let i=0;i<lines.length;i++){
-        // Split CSV básico (soporta comillas dobles)
-        const cols = [];
-        let cur = '';
-        let inQ = false;
-        const line = lines[i];
-        for(let j=0;j<line.length;j++){
-          const ch = line[j];
-          if(ch==='"'){
-            if(inQ && line[j+1]==='"'){ cur+='"'; j++; }
-            else inQ = !inQ;
-          } else if(ch===',' && !inQ){ cols.push(cur); cur=''; }
-          else cur+=ch;
+  function remapRow(row, MAP){
+    const out = {};
+    for(const [k,v] of Object.entries(row)){
+      const nk = norm(k);
+      let mapped = MAP[nk] || MAP[k] || null;
+      if(!mapped){
+        // intenta coincidencia relajada
+        for(const key of Object.keys(MAP)){
+          if(nk === norm(key)){ mapped = MAP[key]; break; }
         }
-        cols.push(cur);
-        if(!headers){ headers = cols; continue; }
-        const obj = {};
-        for(let k=0;k<headers.length;k++) obj[headers[k]] = cols[k]??'';
-        rows.push(obj);
       }
-      return { rows, meta: [{ sheet: 'CSV', rows: rows.length }] };
+      if(mapped){ out[mapped] = v; }
     }
+    return out;
+  }
 
-    // ===== Lector universal (XLSX o CSV) =====
-    async function readAnyAllSheets(file){
-      const name = (file.name||'').toLowerCase();
-      if(name.endsWith('.csv')){
-        const txt = await file.text();
-        return parseCSV(txt);
-      }
-      if(typeof XLSX === 'undefined'){
-        throw new Error('No se pudo cargar SheetJS (XLSX). Use CSV como alternativa.');
-      }
-      return readExcelAllSheets(file);
-    }
-
-    // ===== Mapeos flexibles =====
-    function mapMallas(rows){
-      if(!rows || !rows.length) return [];
-      // Detectar columnas por patrones robustos
-      const sample = rows[0];
-      const colCarrera = detectColumn(sample, ['carrera','programa','escuela']);
-      const colMalla = detectColumn(sample, ['malla','plan']);
-      const colCiclo = detectColumn(sample, ['ciclo','semestre','nivel']);
-      const colMateria = detectColumn(sample, ['materia','asignatura','unidadcurricular','nombre']);
-      const colCodAnth = detectColumn(sample, ['codigoanthology','anthology','codigounico','codigoglobal']);
-      const colCodigo = detectColumn(sample, ['codigo','codigomateria','cod']);
-      const colHT = detectColumn(sample, ['horasteoricas','teoricas','ht']);
-      const colHP = detectColumn(sample, ['horaspracticas','practicas','hp']);
-      const colHA = detectColumn(sample, ['horasautonomas','autonomas','ha']);
-      const colCred = detectColumn(sample, ['creditos','ects','cr']);
-      const colCampo = detectColumn(sample, ['campodeformacion','campodeformacion','areadeformacion','componente']);
-      const colOrden = detectColumn(sample, ['orden','norden','nroorden','noorden']);
-      const colPre = detectColumn(sample, ['prerequisito','prerrequisito','requisito']);
-
-      const mapped = rows.map(r=>({
-        Carrera: String(r[colCarrera]||'').trim(),
-        Malla: String(r[colMalla]||'').trim(),
-        Ciclo: String(r[colCiclo]||'').toString().trim(),
-        Materia: String(r[colMateria]||'').trim(),
-        CodigoAnth: String(r[colCodAnth]||'').trim(),
-        Codigo: String(r[colCodigo]||'').trim(),
-        HT: Number(String(r[colHT]||'').toString().replace(/,/g,'.')) || 0,
-        HP: Number(String(r[colHP]||'').toString().replace(/,/g,'.')) || 0,
-        HA: Number(String(r[colHA]||'').toString().replace(/,/g,'.')) || 0,
-        Creditos: Number(String(r[colCred]||'').toString().replace(/,/g,'.')) || 0,
-        Campo: String(r[colCampo]||'').trim(),
-        Orden: Number(String(r[colOrden]||'').toString().replace(/,/g,'.')) || 0,
-        Pre: String(r[colPre]||'').trim(),
-      })).filter(x=>x.Materia);
-
-      return mapped;
-    }
-
-    function mapDocentes(rows){
-      if(!rows || !rows.length) return [];
-      const sample = rows[0];
-      const colDoc = detectColumn(sample, ['docente','profesor','nombre','nombresapellidos','nombres']);
-      const colTit = detectColumn(sample, ['tituloacademico','titulo','gradoacademico']);
-      const colDed = detectColumn(sample, ['dedicacion','jornada','tiempo']);
-
-      return rows.map(r=>({
-        Docente: String(r[colDoc]||'').trim(),
-        Titulo: String(r[colTit]||'').trim(),
-        Dedicacion: String(r[colDed]||'').trim(),
-      })).filter(x=>x.Docente);
-    }
-
-    // ===== Integración por Código Anthology / Materia =====
-    function integrarPorMateria(items){
-      // Clave: preferir CodigoAnth si existe; si no, Materia normalizada
-      const keyFn = (x)=> x.CodigoAnth ? 'A:'+norm(x.CodigoAnth) : 'M:'+norm(x.Materia);
-      const g = groupBy(items, keyFn);
-
-      const out = [];
-      for(const [, arr] of g.entries()){
-        // Ordenar carreras alfabéticamente para consistencia al concatenar con '/'
-        const carreras = uniq(arr.map(x=>x.Carrera)).sort((a,b)=>a.localeCompare(b));
-        // Mapear por carrera para campos dependientes
-        const porCarrera = carreras.map(car=> arr.find(x=>x.Carrera===car));
-
-        out.push({
-          Materia: arr[0].Materia,
-          CodigoAnth: uniq(arr.map(x=>x.CodigoAnth)).filter(Boolean).join('/'),
-          CarrerasComparten: carreras.join('/'),
-          Malla: uniq(arr.map(x=>x.Malla)).join('/'),
-          Pre: uniq(arr.map(x=>x.Pre)).join('/'),
-          Codigo: porCarrera.map(x=>x?.Codigo||'').join('/'),
-          HT: porCarrera.map(x=> (x? x.HT:0)).join('/'),
-          HP: porCarrera.map(x=> (x? x.HP:0)).join('/'),
-          HA: porCarrera.map(x=> (x? x.HA:0)).join('/'),
-          Creditos: porCarrera.map(x=> (x? x.Creditos:0)).join('/'),
-          Campo: porCarrera.map(x=> (x? x.Campo:'')).join('/'),
-          Ciclo: porCarrera.map(x=> (x? x.Ciclo:'')).join('/'),
-          Orden: porCarrera.map(x=> (x? x.Orden:'')).join('/'),
-          // Metadatos para planificación por ciclos (usaremos el primer ciclo por carrera cuando sea posible)
-          _ciclosCarrera: porCarrera.map(x=> ({ Carrera: x?.Carrera||'', Malla: x?.Malla||'', Ciclo: x?.Ciclo||'' })),
+  function combinarMallas(rows){
+    // Agrupa por MATERIA a nivel global para armar "compartidas" y concatenar campos por carrera.
+    const map = new Map();
+    for(const r of rows){
+      const clave = norm(r["MATERIA"]);
+      if(!clave) continue;
+      if(!map.has(clave)){
+        map.set(clave, {
+          MATERIA: r["MATERIA"],
+          carreras: new Set(),
+          mallas: new Set(),
+          porCarrera: {},
+          prereq: new Set()
         });
       }
-      // Orden sugerido: Carrera, Malla, Ciclo (usando primer registro disponible), Materia
-      out.sort((a,b)=>{
-        const aC = (a._ciclosCarrera[0]?.Carrera||'')+ (a._ciclosCarrera[0]?.Malla||'');
-        const bC = (b._ciclosCarrera[0]?.Carrera||'')+ (b._ciclosCarrera[0]?.Malla||'');
-        if(aC!==bC) return aC.localeCompare(bC);
-        const ac = parseInt((a._ciclosCarrera[0]?.Ciclo||'').toString().match(/\d+/)?.[0]||'999',10);
-        const bc = parseInt((b._ciclosCarrera[0]?.Ciclo||'').toString().match(/\d+/)?.[0]||'999',10);
-        if(ac!==bc) return ac-bc;
-        return a.Materia.localeCompare(b.Materia);
+      const it = map.get(clave);
+      const carrera = String(r["CARRERA"]||"").trim();
+      const malla = String(r["MALLA"]||"").trim();
+      if(carrera) it.carreras.add(carrera);
+      if(malla) it.mallas.add(malla);
+      const k = carrera || "_";
+      if(!it.porCarrera[k]) it.porCarrera[k] = [];
+      it.porCarrera[k].push({
+        CODIGO: r["CODIGO"]||"",
+        "CÓDIGO ANTHOLOGY": r["CÓDIGO ANTHOLOGY"]||"",
+        "HORAS TEÓRICAS": r["HORAS TEÓRICAS"]||0,
+        "HORAS PRÁCTICAS": r["HORAS PRÁCTICAS"]||0,
+        "HORAS AUTÓNOMAS": r["HORAS AUTÓNOMAS"]||0,
+        "CREDITOS": r["CREDITOS"]||0,
+        "CAMPO DE FORMACIÓN": r["CAMPO DE FORMACIÓN"]||"",
+        "CICLO MALLA": r["CICLO MALLA"]||"",
+        "Nº ORDEN EN LA MALLA": r["Nº ORDEN EN LA MALLA"]||"",
+        "PRE-REQUISITO": r["PRE-REQUISITO"]||""
       });
-
-      return out;
+      const pr = String(r["PRE-REQUISITO"]||"").trim();
+      if(pr) it.prereq.add(pr);
     }
 
-    // ===== Asignación de franjas (greedy con restricciones) =====
-    function asignarFranjas(rowsIntegrados){
-      // Ocupación por (Carrera+Malla -> Ciclo -> día -> conteo), y por (Carrera+Malla -> Ciclo -> dia+rango -> bool)
-      const occCount = new Map();
-      const occSlot = new Map();
+    const lista = [];
+    for(const it of map.values()){
+      // Ensambla campos separados por / según carrera
+      const carreras = Array.from(it.carreras);
+      const mallas = Array.from(it.mallas);
 
-      function keyCM(cm){ return `${cm.Carrera}::${cm.Malla}`; }
-
-      function ensure(cm){
-        const k = keyCM(cm);
-        if(!occCount.has(k)) occCount.set(k, new Map());
-        if(!occSlot.has(k)) occSlot.set(k, new Map());
-      }
-
-      function incCount(cm, ciclo, dia){
-        ensure(cm);
-        const m = occCount.get(keyCM(cm));
-        if(!m.has(ciclo)) m.set(ciclo, new Map());
-        const mc = m.get(ciclo);
-        mc.set(dia, (mc.get(dia)||0)+1);
-      }
-
-      function setSlot(cm, ciclo, dia, rango){
-        ensure(cm);
-        const m = occSlot.get(keyCM(cm));
-        const k = `${ciclo}@@${dia}@@${rango}`;
-        m.set(k, true);
-      }
-
-      function hasSlot(cm, ciclo, dia, rango){
-        const m = occSlot.get(keyCM(cm));
-        if(!m) return false;
-        return !!m.get(`${ciclo}@@${dia}@@${rango}`);
-      }
-
-      function countDay(cm, ciclo, dia){
-        const m = occCount.get(keyCM(cm));
-        if(!m) return 0;
-        const mc = m.get(ciclo); if(!mc) return 0; return mc.get(dia)||0;
-      }
-
-      const resultados = rowsIntegrados.map(item=>{
-        // Tomar primer par Carrera/Malla/Ciclo disponible para reglas (si hay varios, usamos el primero como referencia principal)
-        const cm0 = item._ciclosCarrera.find(x=>x.Carrera && x.Malla) || {Carrera:'', Malla:'', Ciclo:''};
-        const cicloNum = parseInt(String(cm0.Ciclo).match(/\d+/)?.[0]||'0',10);
-
-        let asignado = null; let motivo = '';
-
-        // Intentar slots en orden determinista
-        for(const s of SLOTS){
-          // Regla 1: no exceder 2 materias por día (por ciclo)
-          if(countDay(cm0, cicloNum, s.dia) >= 2) { motivo = 'max2'; continue; }
-
-          // Regla 2: evitar choque con el propio ciclo (misma franja ya tomada)
-          if(hasSlot(cm0, cicloNum, s.dia, s.rango)) { motivo = 'self'; continue; }
-
-          // Regla 3: evitar adyacencia (ciclo-1 y ciclo+1 no deben coincidir en la misma franja)
-          const adjCycles = [cicloNum-1, cicloNum+1].filter(x=>x>0);
-          let adjConflict = false;
-          for(const cAdj of adjCycles){ if(hasSlot(cm0, cAdj, s.dia, s.rango)) { adjConflict = true; break; } }
-          if(adjConflict) { motivo = 'adj'; continue; }
-
-          // Si pasa, asignar y registrar
-          asignado = { DIA: s.dia, HORA: s.rango, HORAS: s.h };
-          incCount(cm0, cicloNum, s.dia);
-          setSlot(cm0, cicloNum, s.dia, s.rango);
-          break;
+      // Unir por carrera
+      function joinPorCarrera(field){
+        const acc = [];
+        for(const carrera of carreras){
+          const items = by(it,"porCarrera",carrera) || [];
+          const vals = items.map(x => x[field]).filter(x => x!=="" && x!=null);
+          if(vals.length) acc.push(vals[0]); else acc.push("");
         }
-
-        return { item, asignado, motivo };
-      });
-
-      return resultados;
-    }
-
-    // ===== Render =====
-    function renderTable(rowsAsignados, docentes){
-      const thead = document.getElementById('thead');
-      const tbody = document.getElementById('tbody');
-      thead.innerHTML = '';
-      tbody.innerHTML = '';
-
-      // Cabeceras
-      for(const h of HEADERS){
-        const th = document.createElement('th');
-        th.textContent = h;
-        thead.appendChild(th);
+        return acc.filter(v=>v!==undefined).join(" / ");
       }
 
-      // Opciones docentes (select)
-      const docenteOpts = [{Docente:'', Titulo:'', Dedicacion:''}, ...docentes];
+      const fila = {
+        "DOCENTE":"",
+        "TITULO ACADÉMICO":"",
+        "DEDICACIÓN":"",
+        "MATERIA": it.MATERIA,
+        "CÓDIGO ANTHOLOGY": joinPorCarrera("CÓDIGO ANTHOLOGY"),
+        "CARRERAS QUE COMPARTEN": carreras.join(" / "),
+        "MALLA": mallas.join(" / "),
+        "PRE-REQUISITO": Array.from(it.prereq).join(" / "),
+        "CODIGO": joinPorCarrera("CODIGO"),
+        "HORAS TEÓRICAS": joinPorCarrera("HORAS TEÓRICAS"),
+        "HORAS PRÁCTICAS": joinPorCarrera("HORAS PRÁCTICAS"),
+        "HORAS AUTÓNOMAS": joinPorCarrera("HORAS AUTÓNOMAS"),
+        "CREDITOS": joinPorCarrera("CREDITOS"),
+        "CAMPO DE FORMACIÓN": joinPorCarrera("CAMPO DE FORMACIÓN"),
+        "CICLO MALLA": joinPorCarrera("CICLO MALLA"),
+        "Nº ORDEN EN LA MALLA": joinPorCarrera("Nº ORDEN EN LA MALLA"),
+        "PARALELO":"P1",
+        "DIA":"",
+        "HORA":"",
+        "MODALIDAD":"",
+        "Nro. HORAS":""
+      };
+      lista.push(fila);
+    }
+    return lista;
+  }
 
-      let ok=0, warn=0, lim=0;
+  function indexDocentes(baseRows){
+    // Construye índices por nombre y asignaciones materia->docente si existen
+    const docentes = [];
+    const asignaciones = [];
+    for(const r of baseRows){
+      const hasDoc = r["DOCENTE"];
+      const hasTitulo = r["TITULO ACADÉMICO"] || r["TITULO ACADEMICO"];
+      const hasDed = r["DEDICACIÓN"] || r["DEDICACION"];
+      const hasMateria = r["MATERIA"];
+      const row = remapRow(r, MAP_DOC);
+      if(row["DOCENTE"] && (row["TITULO ACADÉMICO"] || row["DEDICACIÓN"])) docentes.push(row);
+      else if(hasMateria && hasDoc) asignaciones.push(row);
+    }
+    return {docentes, asignaciones};
+  }
 
-      for(const {item, asignado, motivo} of rowsAsignados){
-        const tr = document.createElement('tr');
+  // Agenda sin choques entre ciclos adyacentes y máx. 2/día por docente
+  const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+  const FRANJAS = ["7:00–10:00","10:00–13:00","13:00–16:00","16:00–19:00","19:00–22:00"];
 
-        // Columnas base
-        const col = {
-          DOCENTE: '',
-          'TITULO ACADÉMICO': '',
-          'DEDICACIÓN': '',
-          'MATERIA': item.Materia,
-          'CÓDIGO ANTHOLOGY': item.CodigoAnth,
-          'CARRERAS QUE COMPARTEN': item.CarrerasComparten,
-          'MALLA': item.Malla,
-          'PRE-REQUISITO': item.Pre,
-          'CODIGO': item.Codigo,
-          'HORAS TEÓRICAS': String(item.HT),
-          'HORAS PRÁCTICAS': String(item.HP),
-          'HORAS AUTÓNOMAS': String(item.HA),
-          'CREDITOS': String(item.Creditos),
-          'CAMPO DE FORMACIÓN': item.Campo,
-          'CICLO MALLA': String(item.Ciclo),
-          'Nº ORDEN EN LA MALLA': String(item.Orden),
-          'PARALELO': 'A',
-          'DIA': asignado? asignado.DIA: '',
-          'HORA': asignado? asignado.HORA: '',
-          'MODALIDAD': '',
-          'Nro. HORAS': String(asignado? asignado.HORAS: 0)
-        };
+  function cicloVec(cicloStr){
+    // Convierte "2", "II", "Segundo" a número aproximado si es posible
+    const s = norm(cicloStr);
+    if(!s) return NaN;
+    const roman = {I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10};
+    if(roman[s]) return roman[s];
+    const mapWord = {"PRIMERO":1,"SEGUNDO":2,"TERCERO":3,"CUARTO":4,"QUINTO":5,"SEXTO":6,"SÉPTIMO":7,"SEPTIMO":7,"OCTAVO":8,"NOVENO":9,"DECIMO":10,"DÉCIMO":10};
+    if(mapWord[s]!=null) return mapWord[s];
+    const num = parseInt(s,10);
+    return isFinite(num)?num:NaN;
+  }
 
-        // DOCENTE como <select>
-        const tdSel = document.createElement('td');
-        const sel = document.createElement('select');
-        docenteOpts.forEach(d=>{
-          const opt = document.createElement('option');
-          opt.value = d.Docente;
-          opt.textContent = d.Docente;
-          sel.appendChild(opt);
-        });
-        sel.addEventListener('change', (e)=>{
-          const doc = docentes.find(d=>d.Docente===sel.value);
-          // Buscar celdas hermanas (título y dedicación)
-          const tdTitulo = sel.closest('tr').querySelector('[data-col="TITULO ACADÉMICO"]');
-          const tdDed = sel.closest('tr').querySelector('[data-col="DEDICACIÓN"]');
-          tdTitulo.textContent = doc? doc.Titulo: '';
-          tdDed.textContent = doc? doc.Dedicacion: '';
-        });
-        tdSel.appendChild(sel);
-        tr.appendChild(tdSel);
+  function tryAsignarSlots(filas, asignMap, docentesIdx){
+    // Estructuras de control: agenda[carrera][dia][franja] -> { ciclos:Set }
+    const agendaCarrera = new Map();
+    const cargaDocente = new Map(); // clave docente + día -> count
+    function canPlace(carrera, cicloNum, dia, franja, docente){
+      if(!agendaCarrera.has(carrera)) agendaCarrera.set(carrera, {});
+      const A = agendaCarrera.get(carrera);
+      if(!A[dia]) A[dia] = {};
+      if(!A[dia][franja]) A[dia][franja] = new Set();
+      const ciclosUsados = A[dia][franja];
+      // Sin choques con adyacentes
+      if(ciclosUsados.has(cicloNum) || ciclosUsados.has(cicloNum-1) || ciclosUsados.has(cicloNum+1)) return false;
+      // Máx. 2 por día por docente
+      if(docente){
+        const key = docente + "|" + dia;
+        const cnt = cargaDocente.get(key) || 0;
+        if(cnt >= 2) return false;
+      }
+      return true;
+    }
+    function place(carrera, cicloNum, dia, franja, docente){
+      const A = agendaCarrera.get(carrera);
+      A[dia][franja].add(cicloNum);
+      if(docente){
+        const key = docente + "|" + dia;
+        cargaDocente.set(key, (cargaDocente.get(key) || 0) + 1);
+      }
+    }
 
-        // TITULO ACADÉMICO, DEDICACIÓN
-        const tdTit = document.createElement('td'); tdTit.setAttribute('data-col','TITULO ACADÉMICO'); tr.appendChild(tdTit);
-        const tdDed = document.createElement('td'); tdDed.setAttribute('data-col','DEDICACIÓN'); tr.appendChild(tdDed);
+    for(const fila of filas){
+      // Docente asignado por materia (si existe mapeo)
+      const materia = String(fila["MATERIA"]||"").trim();
+      const docAsign = asignMap.get(norm(materia)) || null;
+      if(docAsign){
+        fila["DOCENTE"] = docAsign.DOCENTE;
+        fila["TITULO ACADÉMICO"] = docAsign["TITULO ACADÉMICO"] || "";
+        fila["DEDICACIÓN"] = docAsign["DEDICACIÓN"] || "";
+      }else{
+        // Si no hay mapeo, se deja vacío para validación manual
+      }
 
-        // Resto
-        for(const h of HEADERS.slice(3)){
-          const td = document.createElement('td');
-          td.textContent = col[h] ?? '';
-          td.setAttribute('data-col', h);
-          if(NUMERIC_HEADERS.has(h)) td.classList.add('num');
-          tr.appendChild(td);
+      // Datos para evitar choques
+      const carreras = String(fila["CARRERAS QUE COMPARTEN"]||"").split("/").map(s=>s.trim()).filter(Boolean);
+      const ciclosTxt = String(fila["CICLO MALLA"]||"");
+      // si viene "2 / 3" por carreras, tome el primero numérico como proxy
+      const cicloNum = cicloVec(ciclosTxt.split("/")[0] || "");
+
+      // Asignar 1 slot (día, franja). Las demás en suspenso ("")
+      let asignado = false;
+      for(const dia of DIAS){
+        for(const franja of FRANJAS){
+          // Evaluar para la primera carrera listada (proxy de restricción)
+          const carrera = carreras[0] || "_GEN";
+          if(canPlace(carrera, cicloNum, dia, franja, fila["DOCENTE"])){
+            fila["DIA"] = dia;
+            fila["HORA"] = franja;
+            // Nro. HORAS -> suma de teóricas + prácticas + autónomas (primer valor si vienen "/")
+            const te = Number(String(fila["HORAS TEÓRICAS"]||"").split("/")[0].replace(",",".")) || 0;
+            const pr = Number(String(fila["HORAS PRÁCTICAS"]||"").split("/")[0].replace(",",".")) || 0;
+            const au = Number(String(fila["HORAS AUTÓNOMAS"]||"").split("/")[0].replace(",",".")) || 0;
+            const total = te + pr + au;
+            fila["Nro. HORAS"] = String(total);
+            place(carrera, cicloNum, dia, franja, fila["DOCENTE"]);
+            asignado = true;
+            break;
+          }
         }
-
-        // Color de estado (no intrusivo). Añadimos un pequeño indicador en la celda DIA.
-        const tdDia = tr.querySelector('[data-col="DIA"]');
-        const chip = document.createElement('span');
-        chip.className = 'chip ' + (asignado? 'ok': (motivo==='adj'?'warn':'err'));
-        chip.textContent = asignado? 'OK' : (motivo==='adj'?'Adyacente':'Límite');
-        if(tdDia){ tdDia.appendChild(document.createTextNode(' ')); tdDia.appendChild(chip); }
-
-        if(asignado) ok++; else if(motivo==='adj') warn++; else lim++;
-        tbody.appendChild(tr);
+        if(asignado) break;
       }
-
-      document.getElementById('resume').textContent = `Asignadas: ${ok} · En suspenso (adyacencia): ${warn} · En suspenso (límite): ${lim}`;
+      if(!asignado){
+        // Dejar en suspenso si no hay slot disponible según restricciones
+        fila["DIA"] = "";
+        fila["HORA"] = "";
+        const te = Number(String(fila["HORAS TEÓRICAS"]||"").split("/")[0].replace(",",".")) || 0;
+        const pr = Number(String(fila["HORAS PRÁCTICAS"]||"").split("/")[0].replace(",",".")) || 0;
+        const au = Number(String(fila["HORAS AUTÓNOMAS"]||"").split("/")[0].replace(",",".")) || 0;
+        fila["Nro. HORAS"] = String(te + pr + au);
+      }
+      // Modalidad queda para que se complete luego
+      fila["MODALIDAD"] = fila["MODALIDAD"] || "";
     }
 
-    // ===== Evento principal =====
-    const $m = document.getElementById('fileMallas');
-    const $d = document.getElementById('fileDocentes');
-    const $btn = document.getElementById('btnProcesar');
-    const $clr = document.getElementById('btnLimpiar');
+    return filas;
+  }
 
-    async function procesar(){
-      const mFile = $m.files[0];
-      const dFile = $d.files[0];
-      if(!mFile || !dFile){
-        alert('Cargue Mallas.xlsx y Docentes.xlsx.');
-        return;
+  function renderTabla(rows){
+    const tbody = $("#tabla tbody");
+    tbody.innerHTML = "";
+    const numCols = new Set(["HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","CREDITOS","Nº ORDEN EN LA MALLA","Nro. HORAS"]);
+    for(const r of rows){
+      const tr = document.createElement("tr");
+      const cols = ["DOCENTE","TITULO ACADÉMICO","DEDICACIÓN","MATERIA","CÓDIGO ANTHOLOGY","CARRERAS QUE COMPARTEN","MALLA","PRE-REQUISITO","CODIGO","HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","CREDITOS","CAMPO DE FORMACIÓN","CICLO MALLA","Nº ORDEN EN LA MALLA","PARALELO","DIA","HORA","MODALIDAD","Nro. HORAS"];
+      for(const c of cols){
+        const td = document.createElement("td");
+        const v = (r[c]!=null)? String(r[c]) : "";
+        td.textContent = v;
+        if(numCols.has(c)) td.classList.add("center-num");
+        tr.appendChild(td);
       }
-      $btn.disabled = true; $btn.textContent = 'Procesando…';
-      try{
-        const [{rows: mallasRaw, meta: metaM}, {rows: docentesRaw, meta: metaD}] = await Promise.all([ readAnyAllSheets(mFile), readAnyAllSheets(dFile) ]);
-        const mallas = mapMallas(mallasRaw);
-        const docentes = mapDocentes(docentesRaw);
-        document.getElementById('stMallas').textContent = `Mallas: ${mallas.length} filas · ${metaM.length} hojas`;
-        document.getElementById('stDoc').textContent = `Docentes: ${docentes.length} filas · ${metaD.length} hojas`;
+      tbody.appendChild(tr);
+    }
+    $("#gridWrap").style.display = "block";
+  }
 
-        const integrados = integrarPorMateria(mallas);
-        const asignados = asignarFranjas(integrados);
-        renderTable(asignados, docentes);
-        document.getElementById('stOut').textContent = `Salidas: ${asignados.length}`;
-      } catch(err){
-        console.error(err);
-        alert('No se pudo procesar. Si está ejecutando el archivo sin internet o el CDN está bloqueado, cargue las planillas en formato CSV (desde Excel: Guardar como → CSV) y vuelva a intentar. El lector ahora acepta .xlsx/.xls (todas las hojas) o .csv.');
-      } finally {
-        $btn.disabled = false; $btn.textContent = 'Procesar';
+  function habilitarProcesar(){
+    $("#btnProcesar").disabled = !(estado.mallasRows.length && estado.docentesRows.length);
+  }
+
+  $("#mallas").addEventListener("change", async (e)=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const rows = await leerExcel(f);
+    // remap de encabezados
+    const mapped = rows.map(r=> remapRow(r, MAP_MALLAS));
+    estado.mallasRows = mapped;
+    habilitarProcesar();
+  });
+
+  $("#docentes").addEventListener("change", async (e)=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const rows = await leerExcel(f);
+    const {docentes, asignaciones} = indexDocentes(rows);
+    estado.docentesRows = docentes;
+    estado.asignacionesRows = asignaciones;
+    estado.docentesBase = rows.map(r=>remapRow(r, MAP_DOC));
+    habilitarProcesar();
+  });
+
+  $("#btnProcesar").addEventListener("click", ()=>{
+    // Combinar mallas
+    const base = combinarMallas(estado.mallasRows);
+    // Construir map de asignaciones por materia -> docente (toma el primero)
+    const asignMap = new Map();
+    for(const a of estado.asignacionesRows){
+      const k = norm(a["MATERIA"]);
+      if(!asignMap.has(k)){
+        // Enriquecer con datos del catálogo de docentes si se encuentra
+        let tit = "", ded = "";
+        // Buscar fila de docente
+        const found = estado.docentesRows.find(d => norm(d["DOCENTE"]) === norm(a["DOCENTE"]));
+        if(found){ tit = found["TITULO ACADÉMICO"]||""; ded = found["DEDICACIÓN"]||""; }
+        asignMap.set(k, {DOCENTE:a["DOCENTE"], "TITULO ACADÉMICO":tit, "DEDICACIÓN":ded});
       }
     }
+    const filas = tryAsignarSlots(base, asignMap, estado.docentesRows);
+    estado.resultado = filas;
+    renderTabla(filas);
+    $("#btnExport").disabled = false;
+  });
 
-    $btn.addEventListener('click', procesar);
-    $clr.addEventListener('click', ()=>{
-      document.getElementById('thead').innerHTML='';
-      document.getElementById('tbody').innerHTML='';
-      document.getElementById('stMallas').textContent='Mallas: —';
-      document.getElementById('stDoc').textContent='Docentes: —';
-      document.getElementById('stOut').textContent='Salidas: —';
-      document.getElementById('resume').textContent='—';
-      $m.value='';
-      $d.value='';
-    });
-  </script>
+  $("#btnExport").addEventListener("click", ()=>{
+    const ws = XLSX.utils.json_to_sheet(estado.resultado);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Matriz");
+    XLSX.writeFile(wb, "Matriz_Integrada.xlsx");
+  });
+})();
+</script>
 </body>
 </html>
