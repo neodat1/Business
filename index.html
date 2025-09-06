@@ -214,18 +214,24 @@
       return m;
     }
 
-    // ===== Lectura de Excel =====
-    async function readExcel(file){
+    // ===== Lectura de Excel (TODAS LAS HOJAS) =====
+    async function readExcelAllSheets(file){
       return new Promise((resolve, reject)=>{
         const fr = new FileReader();
         fr.onload = (e)=>{
           try{
             const data = new Uint8Array(e.target.result);
             const wb = XLSX.read(data, { type: 'array' });
-            const sheetName = wb.SheetNames[0];
-            const ws = wb.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
-            resolve(json);
+            const all = [];
+            const meta = [];
+            for(const sheetName of wb.SheetNames){
+              const ws = wb.Sheets[sheetName];
+              if(!ws) continue;
+              const json = XLSX.utils.sheet_to_json(ws, { defval: '', raw: true });
+              json.forEach(r=>{ r.__sheet = sheetName; });
+              if(json.length){ all.push(...json); meta.push({ sheet: sheetName, rows: json.length }); }
+            }
+            resolve({ rows: all, meta });
           }catch(err){ reject(err); }
         };
         fr.onerror = reject;
@@ -514,11 +520,11 @@
       }
       $btn.disabled = true; $btn.textContent = 'Procesando…';
       try{
-        const [mallasRaw, docentesRaw] = await Promise.all([ readExcel(mFile), readExcel(dFile) ]);
+        const [{rows: mallasRaw, meta: metaM}, {rows: docentesRaw, meta: metaD}] = await Promise.all([ readExcelAllSheets(mFile), readExcelAllSheets(dFile) ]);
         const mallas = mapMallas(mallasRaw);
         const docentes = mapDocentes(docentesRaw);
-        document.getElementById('stMallas').textContent = `Mallas: ${mallas.length}`;
-        document.getElementById('stDoc').textContent = `Docentes: ${docentes.length}`;
+        document.getElementById('stMallas').textContent = `Mallas: ${mallas.length} filas · ${metaM.length} hojas`;
+        document.getElementById('stDoc').textContent = `Docentes: ${docentes.length} filas · ${metaD.length} hojas`;
 
         const integrados = integrarPorMateria(mallas);
         const asignados = asignarFranjas(integrados);
