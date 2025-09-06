@@ -1,491 +1,548 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Planificador Académico — Matriz Consolidada (v4)</title>
+  <title>Planificación académica – Mallas & Docentes</title>
   <style>
-    :root{ --bg:#f8fafc; --fg:#0f172a; --muted:#475569; --accent:#0ea5e9; --border:#e2e8f0; --chip:#eef2ff; }
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,"Helvetica Neue",Arial;}
-    header{padding:18px 20px;border-bottom:1px solid var(--border);background:white;position:sticky;top:0;z-index:10}
-    h1{font-size:1.15rem;margin:0}
-    .sub{color:var(--muted);font-size:.9rem}
-    main{padding:18px;max-width:1400px;margin:0 auto}
-    .card{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 3px 14px rgba(2,6,23,.04);padding:16px;margin-bottom:18px}
-    .row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
-    .col{display:flex;flex-direction:column;gap:8px}
-    .col label{font-weight:600;font-size:.92rem}
-    input[type="file"]{border:1px dashed var(--border);padding:10px;border-radius:10px;background:#f9fafb}
-    button{background:var(--accent);color:#fff;border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
-    button:disabled{opacity:.55;cursor:default}
-    .chips{display:flex;gap:6px;flex-wrap:wrap}
-    .chip{background:var(--chip);border:1px solid var(--border);padding:4px 8px;border-radius:999px;font-size:.82rem}
-    table{width:100%;border-collapse:collapse;background:white;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
-    thead th{position:sticky;top:62px;background:#fafafa;border-bottom:1px solid var(--border);padding:8px 6px;font-size:.86rem}
-    tbody td{border-bottom:1px solid var(--border);padding:8px 6px;vertical-align:top}
-    tbody tr:nth-child(even){background:#fcfcff}
-    .center{text-align:center}
-    .mono{font-variant-numeric:tabular-nums}
-    .small{font-size:.85rem;color:#334155}
-    .note{font-size:.9rem;color:#334155;margin-top:10px}
-    .right{margin-left:auto}
-    .warning{color:#b45309;background:#fffbeb;border:1px solid #fde68a;padding:8px 10px;border-radius:10px}
-    .ok{color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;padding:8px 10px;border-radius:10px}
+    :root {
+      --bg: #0f172a;          /* slate-900 */
+      --card: #111827;        /* gray-900 */
+      --muted: #94a3b8;       /* slate-400 */
+      --text: #e5e7eb;        /* gray-200 */
+      --accent: #2563eb;      /* blue-600 */
+      --ok: #16a34a;          /* green-600 */
+      --warn: #f59e0b;        /* amber-500 */
+      --err: #ef4444;         /* red-500 */
+      --tableStripe: #0b1226; /* very dark */
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--text); }
+
+    header { padding: 20px 24px; border-bottom: 1px solid #1f2937; position: sticky; top: 0; background: linear-gradient(0deg, rgba(15,23,42,0.75), rgba(15,23,42,0.95)); backdrop-filter: blur(8px); z-index: 8; }
+    header h1 { margin: 0; font-weight: 700; font-size: 20px; letter-spacing: 0.2px; }
+    header p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+
+    .container { padding: 18px 24px 28px; display: grid; grid-template-columns: 340px 1fr; gap: 18px; }
+
+    .card { background: var(--card); border: 1px solid #1f2937; border-radius: 14px; padding: 16px; }
+    .card h2 { margin: 0 0 12px; font-size: 16px; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
+
+    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+    input[type="file"], select, button { width: 100%; border-radius: 10px; border: 1px solid #223049; background: #0b1220; color: var(--text); padding: 10px 12px; font-size: 14px; }
+    input[type="checkbox"] { transform: translateY(1px); }
+    button.primary { background: linear-gradient(180deg, #1d4ed8, #1e40af); border-color: #1d4ed8; cursor: pointer; }
+    button.primary:disabled { opacity: .6; cursor: not-allowed; }
+    button.ghost { background: #0b1220; }
+    .hint { font-size: 12px; color: var(--muted); line-height: 1.2; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+    .stat { background: #0b1226; border: 1px solid #1f2937; border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); }
+
+    .tableWrap { background: var(--card); border: 1px solid #1f2937; border-radius: 14px; overflow: hidden; }
+    .tableTop { display: flex; gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid #1f2937; }
+    .tableTop .spacer { flex: 1; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { position: sticky; top: 69px; z-index: 5; box-shadow: 0 2px 0 #1f2937; }
+    thead th { background: #0c1429; color: #cbd5e1; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 8px; text-align: left; white-space: nowrap; }
+    tbody td { padding: 9px 8px; border-top: 1px solid #1f2937; vertical-align: middle; font-size: 14px; }
+    tbody tr:nth-child(odd) { background: var(--tableStripe); }
+    tbody tr:hover { background: #101a34; }
+
+    .num { text-align: center; font-variant-numeric: tabular-nums; }
+    .center { text-align: center; }
+    .chip { display: inline-block; padding: 2px 8px; border-radius: 100px; background: #0b1220; border: 1px solid #1f2937; font-size: 12px; }
+    .ok { color: #bbf7d0; }
+    .warn { color: #fde68a; }
+    .err { color: #fecaca; }
+
+    .stickyX { overflow: auto; max-height: calc(100vh - 140px); }
+
+    .legend { font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .badge { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .b-free { background: var(--ok); }
+    .b-adj { background: var(--warn); }
+    .b-max2 { background: var(--err); }
+
+    .small { font-size: 12px; color: var(--muted); }
   </style>
 </head>
 <body>
   <header>
-    <h1>Planificador Académico — Matriz consolidada (v4)</h1>
-    <div class="sub">Cargue <strong>Mallas.xlsx</strong> y <strong>Docentes.xlsx</strong>. Soporta encabezados con tildes/variantes y respeta disponibilidad del docente.</div>
+    <h1>Planificación académica</h1>
+    <p>Lea <em>Mallas.xlsx</em> y <em>Docentes.xlsx</em>, integre y asigne franjas horarias sin cruces (L–V, 7–10, 10–13, 13–16, 16–19, 19–22). Máximo 2 asignaturas por día por ciclo; evite choques entre ciclos adyacentes.</p>
   </header>
 
-  <main>
+  <div class="container">
     <section class="card">
+      <h2>Entrada</h2>
       <div class="row">
-        <div class="col">
-          <label>Archivo de Mallas (.xlsx)</label>
-          <input id="mallasFile" type="file" accept=".xlsx,.xls" />
+        <div>
+          <label for="fileMallas">Mallas.xlsx</label>
+          <input id="fileMallas" type="file" accept=".xlsx,.xls" />
+          <div class="hint">Debe contener: Carrera, Malla, Ciclo, Materia, Código Anthology (opcional), Código, Horas (T/P/A), Créditos, Campo de formación, Nº orden, Pre‑requisito.</div>
         </div>
-        <div class="col">
-          <label>Archivo de Docentes (.xlsx)</label>
-          <input id="docentesFile" type="file" accept=".xlsx,.xls" />
+        <div>
+          <label for="fileDocentes">Docentes.xlsx</label>
+          <input id="fileDocentes" type="file" accept=".xlsx,.xls" />
+          <div class="hint">Debe contener: Docente, Título académico, Dedicación. (La asignación del docente se selecciona por fila.)</div>
         </div>
       </div>
-      <div class="row" style="margin-top:12px">
-        <div class="col">
-          <label>Capacidad por paralelo</label>
-          <input id="capParalelo" type="number" min="1" value="30" style="width:110px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px" />
-          <div class="small">Si total de estudiantes &gt; capacidad, se crean paralelos A,B,C…</div>
+
+      <div class="row">
+        <div>
+          <label>Parámetros de asignación</label>
+          <div class="small">
+            • Evitar choques entre ciclos consecutivos (1↔2, 2↔1&3, 3↔2&4, ...).<br/>
+            • Máx. 2 materias por día <b>por ciclo</b>.<br/>
+            • Se escoge <b>una</b> franja por materia; las demás quedan en suspenso.
+          </div>
         </div>
-        <div class="col">
-          <label>Ciclo principal (prioridad de no choque)</label>
-          <input id="cicloPrincipal" type="number" min="1" value="2" style="width:110px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px" />
-        </div>
-        <div class="col">
-          <label>&nbsp;</label>
-          <button id="generarBtn" disabled>Generar matriz</button>
-          <span id="status" class="small" style="margin-left:8px">Cargue ambos archivos.</span>
-        </div>
+      </div>
+
+      <div class="row">
+        <button id="btnProcesar" class="primary">Procesar</button>
+        <button id="btnLimpiar" class="ghost">Limpiar</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat" id="stMallas">Mallas: —</div>
+        <div class="stat" id="stDoc">Docentes: —</div>
+        <div class="stat" id="stOut">Salidas: —</div>
+      </div>
+
+      <div style="margin-top:10px;" class="legend">
+        <span><i class="badge b-free"></i> asignación válida</span>
+        <span><i class="badge b-adj"></i> descartado por adyacencia</span>
+        <span><i class="badge b-max2"></i> descartado por límite máximo (2)</span>
       </div>
     </section>
 
-    <section class="card">
-      <div class="chips">
-        <div class="chip">Lunes–Viernes</div>
-        <div class="chip">07–10, 10–13, 13–16, 16–19, 19–22</div>
-        <div class="chip">Máx. 2 asignaturas/día por ciclo</div>
-        <div class="chip">Evitar choques entre ciclos contiguos</div>
-        <div class="chip">Paralelos A, B, C… (round-robin por docente)</div>
-        <div class="chip">Respeta disponibilidad de docente</div>
+    <section class="tableWrap">
+      <div class="tableTop">
+        <strong>Resultados</strong>
+        <span class="spacer"></span>
+        <span id="resume" class="small">—</span>
       </div>
-      <div id="warnings" class="note"></div>
-    </section>
-
-    <section class="card">
-      <div class="row">
-        <div class="small"><strong>Resultados</strong> — Orden: CICLO → MATERIA → PARALELO</div>
-        <div class="right small"><span id="countRows">0</span> filas</div>
-      </div>
-      <div style="overflow:auto;margin-top:10px">
-        <table id="tabla" class="mono">
+      <div class="stickyX">
+        <table id="tbl">
           <thead>
-            <tr>
-              <th>DOCENTE</th>
-              <th>TITULO ACADÉMICO</th>
-              <th>DEDICACIÓN</th>
-              <th>MATERIA</th>
-              <th>CÓDIGO ANTHOLOGY</th>
-              <th>CARRERAS QUE COMPARTEN</th>
-              <th>MALLA</th>
-              <th>PRE-REQUISITO</th>
-              <th>CODIGO</th>
-              <th class="center">HORAS TEÓRICAS</th>
-              <th class="center">HORAS PRÁCTICAS</th>
-              <th class="center">HORAS AUTÓNOMAS</th>
-              <th class="center">CREDITOS</th>
-              <th>CAMPO DE FORMACIÓN</th>
-              <th class="center">CICLO MALLA</th>
-              <th class="center">Nº ORDEN EN LA MALLA</th>
-              <th class="center">PARALELO</th>
-              <th>DIA</th>
-              <th>HORA</th>
-              <th>MODALIDAD</th>
-              <th class="center">Nro. HORAS</th>
-            </tr>
+            <tr id="thead"></tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
     </section>
-  </main>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js" integrity="sha256-lCPMSx8kzeSeY9hUNjQz5YWR12dAnAnbGqM6qLuZegE=" crossorigin="anonymous"></script>
   <script>
-  (function(){
-    const DAYS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+    // ===== Utiles =====
     const SLOTS = [
-      {label:"07:00–10:00", start:7, end:10},
-      {label:"10:00–13:00", start:10, end:13},
-      {label:"13:00–16:00", start:13, end:16},
-      {label:"16:00–19:00", start:16, end:19},
-      {label:"19:00–22:00", start:19, end:22},
+      { dia: 'Lunes', rango: '07:00–10:00', h: 3 },
+      { dia: 'Lunes', rango: '10:00–13:00', h: 3 },
+      { dia: 'Lunes', rango: '13:00–16:00', h: 3 },
+      { dia: 'Lunes', rango: '16:00–19:00', h: 3 },
+      { dia: 'Lunes', rango: '19:00–22:00', h: 3 },
+      { dia: 'Martes', rango: '07:00–10:00', h: 3 },
+      { dia: 'Martes', rango: '10:00–13:00', h: 3 },
+      { dia: 'Martes', rango: '13:00–16:00', h: 3 },
+      { dia: 'Martes', rango: '16:00–19:00', h: 3 },
+      { dia: 'Martes', rango: '19:00–22:00', h: 3 },
+      { dia: 'Miércoles', rango: '07:00–10:00', h: 3 },
+      { dia: 'Miércoles', rango: '10:00–13:00', h: 3 },
+      { dia: 'Miércoles', rango: '13:00–16:00', h: 3 },
+      { dia: 'Miércoles', rango: '16:00–19:00', h: 3 },
+      { dia: 'Miércoles', rango: '19:00–22:00', h: 3 },
+      { dia: 'Jueves', rango: '07:00–10:00', h: 3 },
+      { dia: 'Jueves', rango: '10:00–13:00', h: 3 },
+      { dia: 'Jueves', rango: '13:00–16:00', h: 3 },
+      { dia: 'Jueves', rango: '16:00–19:00', h: 3 },
+      { dia: 'Jueves', rango: '19:00–22:00', h: 3 },
+      { dia: 'Viernes', rango: '07:00–10:00', h: 3 },
+      { dia: 'Viernes', rango: '10:00–13:00', h: 3 },
+      { dia: 'Viernes', rango: '13:00–16:00', h: 3 },
+      { dia: 'Viernes', rango: '16:00–19:00', h: 3 },
+      { dia: 'Viernes', rango: '19:00–22:00', h: 3 },
     ];
-    const PARALLELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-    const mFile = document.getElementById('mallasFile');
-    const dFile = document.getElementById('docentesFile');
-    const btn  = document.getElementById('generarBtn');
-    const status = document.getElementById('status');
-    const warningsEl = document.getElementById('warnings');
-    const tbody = document.getElementById('tbody');
-    const countRowsEl = document.getElementById('countRows');
-    const cicloPrincipalEl = document.getElementById('cicloPrincipal');
-    const capParaleloEl = document.getElementById('capParalelo');
+    const HEADERS = [
+      'DOCENTE', 'TITULO ACADÉMICO', 'DEDICACIÓN', 'MATERIA', 'CÓDIGO ANTHOLOGY',
+      'CARRERAS QUE COMPARTEN', 'MALLA', 'PRE-REQUISITO', 'CODIGO',
+      'HORAS TEÓRICAS', 'HORAS PRÁCTICAS', 'HORAS AUTÓNOMAS', 'CREDITOS',
+      'CAMPO DE FORMACIÓN', 'CICLO MALLA', 'Nº ORDEN EN LA MALLA',
+      'PARALELO', 'DIA', 'HORA', 'MODALIDAD', 'Nro. HORAS'
+    ];
 
-    function ready(){ btn.disabled = !(mFile.files.length && dFile.files.length); status.textContent = btn.disabled? 'Cargue ambos archivos.' : 'Listo.'; }
-    mFile.addEventListener('change', ready); dFile.addEventListener('change', ready);
+    const NUMERIC_HEADERS = new Set([
+      'HORAS TEÓRICAS','HORAS PRÁCTICAS','HORAS AUTÓNOMAS','CREDITOS','CICLO MALLA','Nº ORDEN EN LA MALLA','Nro. HORAS'
+    ]);
 
-    // Utilidades de texto/números
-    const strip = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,''); // quitar tildes
-    const normalize = s => strip(s).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-    const norm = s => String(s ?? '').trim();
-    const toNum = v => { if(v==null||v==='') return 0; const n = Number(String(v).replace(',', '.')); return Number.isFinite(n)? n : 0; };
+    function norm(s){
+      if(s==null) return '';
+      return String(s)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/[^A-Za-z0-9]+/g,'')
+        .toLowerCase();
+    }
 
-    // Mapeo flexible de encabezados
-    const ALIAS = {
-      carrera:["carrera","programa"],
-      malla:["malla","plan","plan de estudios"],
-      ciclo_malla:["ciclo malla","ciclo","semestre","nivel"],
-      norden:["n orden en la malla","nro orden en la malla","no orden en la malla","n° orden en la malla","num orden en la malla","numero orden malla"],
-      materia:["materia","asignatura","nombre","nombre asignatura"],
-      prereq:["pre-requisito","prerequisito","pre requisito","prerrequisito","prerrequsito"],
-      codigo:["codigo","código","code"],
-      codigo_anth:["codigo anthology","código anthology","anthology","cod anthology","codigo anth"],
-      horas_t:["horas teoricas","horas t","ht"],
-      horas_p:["horas practicas","horas p","hp"],
-      horas_a:["horas autonomas","horas a","ha"],
-      creditos:["creditos","créditos","cr"],
-      campo:["campo de formacion","campo formacion","area formacion","area de formacion","campo de formaci\u00f3n"],
-      modalidad:["modalidad","modalidad de estudio","mode"],
-      estudiantes:["estudiantes","n estudiantes","nro estudiantes","nro. estudiantes","matriculados","inscritos"],
-
-      d_docente:["docente","profesor","teacher","nombre docente"],
-      d_titulo:["titulo academico","título academico","título académico","grado academico","titulo academico"],
-      d_dedic:["dedicacion","dedicación","jornada","contrato"],
-      d_materia:["materia","asignatura"],
-      d_dia:["dia disponible","dia","dias disponibles","disponibilidad dia"],
-      d_hora:["hora disponible","horario disponible","hora","disponibilidad hora"],
-      d_modalidad:["modalidad","modalidad preferida"]
-    };
-
-    function valueByAliases(row, aliases){
-      const keys = Object.keys(row);
+    function detectColumn(row, candidates){
+      const keys = Object.keys(row||{});
+      let bestKey = null;
       for(const k of keys){
-        const nk = normalize(k);
-        for(const a of aliases){ if(nk === normalize(a)) return row[k]; }
+        const nk = norm(k);
+        for(const c of candidates){ if(nk.includes(c)) { bestKey = k; break; } }
+        if(bestKey) break;
       }
-      // búsqueda por inclusión
-      for(const k of keys){
-        const nk = normalize(k);
-        for(const a of aliases){ if(nk.includes(normalize(a))) return row[k]; }
-      }
-      return '';
+      return bestKey; // puede ser null
     }
 
-    function getMallaRow(row){
-      return {
-        CARRERA: norm(valueByAliases(row, ALIAS.carrera)),
-        MALLA: norm(valueByAliases(row, ALIAS.malla)),
-        CICLO: norm(valueByAliases(row, ALIAS.ciclo_malla)),
-        NORDEN: norm(valueByAliases(row, ALIAS.norden)),
-        MATERIA: norm(valueByAliases(row, ALIAS.materia)),
-        PREREQ: norm(valueByAliases(row, ALIAS.prereq)),
-        CODIGO: norm(valueByAliases(row, ALIAS.codigo)),
-        ANTH: norm(valueByAliases(row, ALIAS.codigo_anth)),
-        HT: toNum(valueByAliases(row, ALIAS.horas_t)),
-        HP: toNum(valueByAliases(row, ALIAS.horas_p)),
-        HA: toNum(valueByAliases(row, ALIAS.horas_a)),
-        CREDITOS: norm(valueByAliases(row, ALIAS.creditos)),
-        CAMPO: norm(valueByAliases(row, ALIAS.campo)),
-        MODALIDAD: norm(valueByAliases(row, ALIAS.modalidad)),
-        EST: toNum(valueByAliases(row, ALIAS.estudiantes)),
-      };
-    }
+    function uniq(arr){ return [...new Set(arr.filter(x=>x!=null && x!==''))]; }
 
-    function parseAvail(diaStr, horaStr){
-      // Devuelve Set("dayIndex|slotIndex")
-      const set = new Set();
-      if(!diaStr && !horaStr) return set; // vacío => sin restricción
-      const dayMap = new Map([
-        ["lunes",0],["lun",0],
-        ["martes",1],["mar",1],
-        ["miercoles",2],["miércoles",2],["mie",2],["mié",2],
-        ["jueves",3],["jue",3],
-        ["viernes",4],["vie",4]
-      ]);
-      function parseDays(s){
-        if(!s) return [0,1,2,3,4];
-        const parts = String(s).split(/[;\\/\,\| ]+/).map(x=>x.trim()).filter(Boolean);
-        const out = new Set();
-        for(const p of parts){
-          const key = normalize(p);
-          if(key==="todos"||key==="cualquiera"){ [0,1,2,3,4].forEach(d=>out.add(d)); continue; }
-          if(dayMap.has(key)) out.add(dayMap.get(key));
-        }
-        return out.size? Array.from(out): [0,1,2,3,4];
+    function groupBy(arr, keyFn){
+      const m = new Map();
+      for(const x of arr){
+        const k = keyFn(x);
+        if(!m.has(k)) m.set(k, []);
+        m.get(k).push(x);
       }
-      function slotIndexFromRange(tok){
-        // Acepta "07:00–10:00", "7-10", "10 – 13", o etiqueta exacta
-        const t = String(tok).trim();
-        const labIdx = SLOTS.findIndex(sl=> sl.label === t);
-        if(labIdx>=0) return [labIdx];
-        const m = t.match(/(\d{1,2})(?::\d{2})?\s*[–-]\s*(\d{1,2})(?::\d{2})?/);
-        if(m){
-          const a = parseInt(m[1],10), b = parseInt(m[2],10);
-          const idx = SLOTS.findIndex(sl=> sl.start===a && sl.end===b);
-          if(idx>=0) return [idx];
-        }
-        // palabras clave
-        const low = normalize(t);
-        if(low.includes("manana")||low.includes("mañana")) return [0,1];
-        if(low.includes("tarde")) return [2,3];
-        if(low.includes("noche")) return [4];
-        return [0,1,2,3,4]; // cualquier slot
-      }
-      const days = parseDays(diaStr);
-      const slotTokens = String(horaStr||"").split(/[;\\/\,\|]+/).filter(Boolean);
-      const slots = slotTokens.length? Array.from(new Set(slotTokens.flatMap(slotIndexFromRange))) : [0,1,2,3,4];
-      for(const d of days){ for(const s of slots){ set.add(d+"|"+s); } }
-      return set;
+      return m;
     }
 
-    function getDocenteRow(row){
-      const DOC = norm(valueByAliases(row, ALIAS.d_docente));
-      const TIT = norm(valueByAliases(row, ALIAS.d_titulo));
-      const DED = norm(valueByAliases(row, ALIAS.d_dedic));
-      const MAT = norm(valueByAliases(row, ALIAS.d_materia));
-      const DIA = norm(valueByAliases(row, ALIAS.d_dia));
-      const HOR = norm(valueByAliases(row, ALIAS.d_hora));
-      const MOD = norm(valueByAliases(row, ALIAS.d_modalidad));
-      return { DOCENTE:DOC, TITULO:TIT, DED:DED, MATERIA:MAT, DIA, HORA:HOR, MODALIDAD:MOD };
+    // ===== Lectura de Excel =====
+    async function readExcel(file){
+      return new Promise((resolve, reject)=>{
+        const fr = new FileReader();
+        fr.onload = (e)=>{
+          try{
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheetName = wb.SheetNames[0];
+            const ws = wb.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+            resolve(json);
+          }catch(err){ reject(err); }
+        };
+        fr.onerror = reject;
+        fr.readAsArrayBuffer(file);
+      });
     }
 
-    // Lectura xlsx (todas las hojas)
-    const readXlsx = file => new Promise((resolve, reject)=>{
-      const fr = new FileReader();
-      fr.onload = e => {
-        try{
-          const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-          let rows=[]; wb.SheetNames.forEach(n=>{ const ws=wb.Sheets[n]; rows=rows.concat(XLSX.utils.sheet_to_json(ws,{defval:''})); });
-          resolve(rows);
-        }catch(err){ reject(err); }
-      };
-      fr.onerror = reject;
-      fr.readAsArrayBuffer(file);
-    });
+    // ===== Mapeos flexibles =====
+    function mapMallas(rows){
+      if(!rows || !rows.length) return [];
+      // Detectar columnas por patrones robustos
+      const sample = rows[0];
+      const colCarrera = detectColumn(sample, ['carrera','programa','escuela']);
+      const colMalla = detectColumn(sample, ['malla','plan']);
+      const colCiclo = detectColumn(sample, ['ciclo','semestre','nivel']);
+      const colMateria = detectColumn(sample, ['materia','asignatura','unidadcurricular','nombre']);
+      const colCodAnth = detectColumn(sample, ['codigoanthology','anthology','codigounico','codigoglobal']);
+      const colCodigo = detectColumn(sample, ['codigo','codigomateria','cod']);
+      const colHT = detectColumn(sample, ['horasteoricas','teoricas','ht']);
+      const colHP = detectColumn(sample, ['horaspracticas','practicas','hp']);
+      const colHA = detectColumn(sample, ['horasautonomas','autonomas','ha']);
+      const colCred = detectColumn(sample, ['creditos','ects','cr']);
+      const colCampo = detectColumn(sample, ['campodeformacion','campodeformacion','areadeformacion','componente']);
+      const colOrden = detectColumn(sample, ['orden','norden','nroorden','noorden']);
+      const colPre = detectColumn(sample, ['prerequisito','prerrequisito','requisito']);
 
-    function indexDocentes(docRows){
-      const mapByMateria = new Map(); // materia -> [docentes]
-      const generics = [];
-      const availByDoc = new Map();   // DOCENTE -> Set(day|slot)
-      for(const r of docRows){
-        const d = getDocenteRow(r);
-        const entry = {DOCENTE:d.DOCENTE, TITULO:d.TITULO, DED:d.DED, MODALIDAD:d.MODALIDAD};
-        // disponibilidad
-        if(d.DOCENTE){
-          const set = parseAvail(d.DIA, d.HORA);
-          if(set.size){
-            if(!availByDoc.has(d.DOCENTE)) availByDoc.set(d.DOCENTE, new Set());
-            const acc = availByDoc.get(d.DOCENTE);
-            set.forEach(v=> acc.add(v));
-          }
-        }
-        if(d.MATERIA){
-          const key = d.MATERIA.toLowerCase();
-          if(!mapByMateria.has(key)) mapByMateria.set(key, []);
-          mapByMateria.get(key).push(entry);
-        } else if (d.DOCENTE){
-          generics.push(entry);
-        }
-      }
-      return {byMateria:mapByMateria, generic:generics, availByDoc};
+      const mapped = rows.map(r=>({
+        Carrera: String(r[colCarrera]||'').trim(),
+        Malla: String(r[colMalla]||'').trim(),
+        Ciclo: String(r[colCiclo]||'').toString().trim(),
+        Materia: String(r[colMateria]||'').trim(),
+        CodigoAnth: String(r[colCodAnth]||'').trim(),
+        Codigo: String(r[colCodigo]||'').trim(),
+        HT: Number(String(r[colHT]||'').toString().replace(/,/g,'.')) || 0,
+        HP: Number(String(r[colHP]||'').toString().replace(/,/g,'.')) || 0,
+        HA: Number(String(r[colHA]||'').toString().replace(/,/g,'.')) || 0,
+        Creditos: Number(String(r[colCred]||'').toString().replace(/,/g,'.')) || 0,
+        Campo: String(r[colCampo]||'').trim(),
+        Orden: Number(String(r[colOrden]||'').toString().replace(/,/g,'.')) || 0,
+        Pre: String(r[colPre]||'').trim(),
+      })).filter(x=>x.Materia);
+
+      return mapped;
     }
 
-    function groupMallas(mRows){
-      const groups = new Map(); // key -> info
-      const getKey = (r)=> r.ANTH ? 'ANTH|'+r.ANTH : 'MAT|'+r.MATERIA.toLowerCase();
-      for(const raw of mRows){
-        const r = getMallaRow(raw);
-        if(!r.MATERIA) continue; // ignora filas inválidas
-        const key = getKey(r);
-        if(!groups.has(key)) groups.set(key, {
-          materia:r.MATERIA,
-          anth:r.ANTH,
-          carreras:[], mallas:[], prereqs:[], codigos:[], ht:[], hp:[], ha:[], creditos:[], campo:[], ciclos:[], norden:[], modalidades:[],
-          totalEst:0
+    function mapDocentes(rows){
+      if(!rows || !rows.length) return [];
+      const sample = rows[0];
+      const colDoc = detectColumn(sample, ['docente','profesor','nombre','nombresapellidos','nombres']);
+      const colTit = detectColumn(sample, ['tituloacademico','titulo','gradoacademico']);
+      const colDed = detectColumn(sample, ['dedicacion','jornada','tiempo']);
+
+      return rows.map(r=>({
+        Docente: String(r[colDoc]||'').trim(),
+        Titulo: String(r[colTit]||'').trim(),
+        Dedicacion: String(r[colDed]||'').trim(),
+      })).filter(x=>x.Docente);
+    }
+
+    // ===== Integración por Código Anthology / Materia =====
+    function integrarPorMateria(items){
+      // Clave: preferir CodigoAnth si existe; si no, Materia normalizada
+      const keyFn = (x)=> x.CodigoAnth ? 'A:'+norm(x.CodigoAnth) : 'M:'+norm(x.Materia);
+      const g = groupBy(items, keyFn);
+
+      const out = [];
+      for(const [, arr] of g.entries()){
+        // Ordenar carreras alfabéticamente para consistencia al concatenar con '/'
+        const carreras = uniq(arr.map(x=>x.Carrera)).sort((a,b)=>a.localeCompare(b));
+        // Mapear por carrera para campos dependientes
+        const porCarrera = carreras.map(car=> arr.find(x=>x.Carrera===car));
+
+        out.push({
+          Materia: arr[0].Materia,
+          CodigoAnth: uniq(arr.map(x=>x.CodigoAnth)).filter(Boolean).join('/'),
+          CarrerasComparten: carreras.join('/'),
+          Malla: uniq(arr.map(x=>x.Malla)).join('/'),
+          Pre: uniq(arr.map(x=>x.Pre)).join('/'),
+          Codigo: porCarrera.map(x=>x?.Codigo||'').join('/'),
+          HT: porCarrera.map(x=> (x? x.HT:0)).join('/'),
+          HP: porCarrera.map(x=> (x? x.HP:0)).join('/'),
+          HA: porCarrera.map(x=> (x? x.HA:0)).join('/'),
+          Creditos: porCarrera.map(x=> (x? x.Creditos:0)).join('/'),
+          Campo: porCarrera.map(x=> (x? x.Campo:'')).join('/'),
+          Ciclo: porCarrera.map(x=> (x? x.Ciclo:'')).join('/'),
+          Orden: porCarrera.map(x=> (x? x.Orden:'')).join('/'),
+          // Metadatos para planificación por ciclos (usaremos el primer ciclo por carrera cuando sea posible)
+          _ciclosCarrera: porCarrera.map(x=> ({ Carrera: x?.Carrera||'', Malla: x?.Malla||'', Ciclo: x?.Ciclo||'' })),
         });
-        const g = groups.get(key);
-        g.carreras.push(r.CARRERA); g.mallas.push(r.MALLA); g.prereqs.push(r.PREREQ); g.codigos.push(r.CODIGO);
-        g.ht.push(r.HT); g.hp.push(r.HP); g.ha.push(r.HA); g.creditos.push(r.CREDITOS); g.campo.push(r.CAMPO);
-        g.ciclos.push(r.CICLO); g.norden.push(r.NORDEN); g.modalidades.push(r.MODALIDAD);
-        g.totalEst += (r.EST>0? r.EST : 0);
       }
-      return groups;
+      // Orden sugerido: Carrera, Malla, Ciclo (usando primer registro disponible), Materia
+      out.sort((a,b)=>{
+        const aC = (a._ciclosCarrera[0]?.Carrera||'')+ (a._ciclosCarrera[0]?.Malla||'');
+        const bC = (b._ciclosCarrera[0]?.Carrera||'')+ (b._ciclosCarrera[0]?.Malla||'');
+        if(aC!==bC) return aC.localeCompare(bC);
+        const ac = parseInt((a._ciclosCarrera[0]?.Ciclo||'').toString().match(/\d+/)?.[0]||'999',10);
+        const bc = parseInt((b._ciclosCarrera[0]?.Ciclo||'').toString().match(/\d+/)?.[0]||'999',10);
+        if(ac!==bc) return ac-bc;
+        return a.Materia.localeCompare(b.Materia);
+      });
+
+      return out;
     }
 
-    function schedule(items, cicloPrincipal, availByDoc){
-      const usedByCycle = new Map(); // ciclo -> Set(day|slot)
-      const perDayCountByCycle = new Map();
-      const usedByDocente = new Map(); // docente -> Set(day|slot)
-      const slotKey = (d,s)=> d+'|'+s;
+    // ===== Asignación de franjas (greedy con restricciones) =====
+    function asignarFranjas(rowsIntegrados){
+      // Ocupación por (Carrera+Malla -> Ciclo -> día -> conteo), y por (Carrera+Malla -> Ciclo -> dia+rango -> bool)
+      const occCount = new Map();
+      const occSlot = new Map();
 
-      function isAvailable(ciclo, docente, d, s){
-        const key = slotKey(d,s);
-        // disponibilidad del docente (si existe)
-        if(docente && availByDoc && availByDoc.get(docente) && !availByDoc.get(docente).has(key)) return false;
-        // choques por ciclo y contiguos
-        if(usedByCycle.get(ciclo)?.has(key)) return false;
-        if(usedByCycle.get(ciclo-1)?.has(key)) return false;
-        if(usedByCycle.get(ciclo+1)?.has(key)) return false;
-        // máx 2 asignaturas por día en el ciclo
-        const dm = perDayCountByCycle.get(ciclo) || new Map();
-        if((dm.get(d)||0) >= 2) return false;
-        // docente no duplicado
-        if(docente && usedByDocente.get(docente)?.has(key)) return false;
-        return true;
+      function keyCM(cm){ return `${cm.Carrera}::${cm.Malla}`; }
+
+      function ensure(cm){
+        const k = keyCM(cm);
+        if(!occCount.has(k)) occCount.set(k, new Map());
+        if(!occSlot.has(k)) occSlot.set(k, new Map());
       }
 
-      function place(ciclo, docente, hours){
-        const blocks = Math.ceil(hours/3);
-        const places=[];
-        outer: for(let b=0;b<blocks;b++){
-          for(let d=0; d<DAYS.length; d++){
-            for(let s=0; s<SLOTS.length; s++){
-              if(isAvailable(ciclo, docente, d, s)){
-                const key = slotKey(d,s);
-                if(!usedByCycle.has(ciclo)) usedByCycle.set(ciclo, new Set());
-                usedByCycle.get(ciclo).add(key);
-                const dm = perDayCountByCycle.get(ciclo) || new Map(); dm.set(d, (dm.get(d)||0)+1); perDayCountByCycle.set(ciclo, dm);
-                if(docente){ if(!usedByDocente.has(docente)) usedByDocente.set(docente, new Set()); usedByDocente.get(docente).add(key); }
-                places.push({d,s});
-                continue outer;
-              }
-            }
-          }
-          return null; // sin hueco
+      function incCount(cm, ciclo, dia){
+        ensure(cm);
+        const m = occCount.get(keyCM(cm));
+        if(!m.has(ciclo)) m.set(ciclo, new Map());
+        const mc = m.get(ciclo);
+        mc.set(dia, (mc.get(dia)||0)+1);
+      }
+
+      function setSlot(cm, ciclo, dia, rango){
+        ensure(cm);
+        const m = occSlot.get(keyCM(cm));
+        const k = `${ciclo}@@${dia}@@${rango}`;
+        m.set(k, true);
+      }
+
+      function hasSlot(cm, ciclo, dia, rango){
+        const m = occSlot.get(keyCM(cm));
+        if(!m) return false;
+        return !!m.get(`${ciclo}@@${dia}@@${rango}`);
+      }
+
+      function countDay(cm, ciclo, dia){
+        const m = occCount.get(keyCM(cm));
+        if(!m) return 0;
+        const mc = m.get(ciclo); if(!mc) return 0; return mc.get(dia)||0;
+      }
+
+      const resultados = rowsIntegrados.map(item=>{
+        // Tomar primer par Carrera/Malla/Ciclo disponible para reglas (si hay varios, usamos el primero como referencia principal)
+        const cm0 = item._ciclosCarrera.find(x=>x.Carrera && x.Malla) || {Carrera:'', Malla:'', Ciclo:''};
+        const cicloNum = parseInt(String(cm0.Ciclo).match(/\d+/)?.[0]||'0',10);
+
+        let asignado = null; let motivo = '';
+
+        // Intentar slots en orden determinista
+        for(const s of SLOTS){
+          // Regla 1: no exceder 2 materias por día (por ciclo)
+          if(countDay(cm0, cicloNum, s.dia) >= 2) { motivo = 'max2'; continue; }
+
+          // Regla 2: evitar choque con el propio ciclo (misma franja ya tomada)
+          if(hasSlot(cm0, cicloNum, s.dia, s.rango)) { motivo = 'self'; continue; }
+
+          // Regla 3: evitar adyacencia (ciclo-1 y ciclo+1 no deben coincidir en la misma franja)
+          const adjCycles = [cicloNum-1, cicloNum+1].filter(x=>x>0);
+          let adjConflict = false;
+          for(const cAdj of adjCycles){ if(hasSlot(cm0, cAdj, s.dia, s.rango)) { adjConflict = true; break; } }
+          if(adjConflict) { motivo = 'adj'; continue; }
+
+          // Si pasa, asignar y registrar
+          asignado = { DIA: s.dia, HORA: s.rango, HORAS: s.h };
+          incCount(cm0, cicloNum, s.dia);
+          setSlot(cm0, cicloNum, s.dia, s.rango);
+          break;
         }
-        return places;
-      }
 
-      const cycles = Array.from(new Set(items.map(i=>i.ciclo).filter(x=>x!==''))).map(x=>Number(x)).filter(n=>!isNaN(n)).sort((a,b)=>a-b);
-      const cp = Number(cicloPrincipal);
-      let order=[]; if(cycles.includes(cp)){ order=[cp]; let off=1; while(order.length<cycles.length){ const b=cp-off, a=cp+off; if(cycles.includes(b)) order.push(b); if(cycles.includes(a)) order.push(a); off++; } } else { order=cycles.slice(); }
+        return { item, asignado, motivo };
+      });
 
-      const byCycle = new Map(); items.forEach(it=>{ const c=Number(it.ciclo)||0; if(!byCycle.has(c)) byCycle.set(c,[]); byCycle.get(c).push(it); });
-      const out=[]; const warns=[];
-
-      for(const c of order){
-        const list = (byCycle.get(c)||[]).sort((a,b)=> norm(a.materia).localeCompare(norm(b.materia)) || norm(a.paralelo).localeCompare(norm(b.paralelo)) );
-        for(const it of list){
-          const hours = it.hoursSchedule; // HT+HP
-          if(hours<=0){ out.push({...it, dia:'', hora:'', nroHoras:0}); continue; }
-          const placed = place(Number(it.ciclo)||0, it.docente, hours);
-          if(!placed){
-            const who = it.docente? `Docente ${it.docente}` : 'Docente (sin asignar)';
-            warns.push(`Sin hueco para ${it.materia} (C${it.ciclo}, Paralelo ${it.paralelo}). ${who} sin disponibilidad suficiente o conflicto de ciclo.`);
-            out.push({...it, dia:'', hora:'', nroHoras:hours});
-          } else {
-            for(const p of placed){ out.push({...it, dia:DAYS[p.d], hora:SLOTS[p.s].label, nroHoras:3}); }
-            const exceso = placed.length*3 - hours; if(exceso>0){ out[out.length-1].nroHoras = Math.max(1, 3-exceso); }
-          }
-        }
-      }
-      return {rowsOut:out, warnings:warns};
+      return resultados;
     }
 
-    function render(rows){
+    // ===== Render =====
+    function renderTable(rowsAsignados, docentes){
+      const thead = document.getElementById('thead');
       const tbody = document.getElementById('tbody');
+      thead.innerHTML = '';
       tbody.innerHTML = '';
-      const c = v=>`<td>${v==null? '': String(v)}</td>`;
-      const cn = v=>`<td class="center">${v==null? '': String(v)}</td>`;
-      let html='';
-      for(const r of rows){
-        html += '<tr>' + c(r.docente)+c(r.titulo)+c(r.dedicacion)+c(r.materia)+c(r.codigoAnth)+c(r.carreras)+c(r.mallas)+c(r.prereq)+c(r.codigo)+cn(r.horasT)+cn(r.horasP)+cn(r.horasA)+cn(r.creditos)+c(r.campo)+cn(r.ciclo)+cn(r.norden)+cn(r.paralelo)+c(r.dia)+c(r.hora)+c(r.modalidad)+cn(r.nroHoras) + '</tr>';
+
+      // Cabeceras
+      for(const h of HEADERS){
+        const th = document.createElement('th');
+        th.textContent = h;
+        thead.appendChild(th);
       }
-      tbody.innerHTML = html;
-      document.getElementById('countRows').textContent = rows.length;
-    }
 
-    btn.addEventListener('click', async ()=>{
-      warningsEl.innerHTML=''; tbody.innerHTML=''; countRowsEl.textContent='0'; btn.disabled=true; status.textContent='Procesando…';
-      const cap = Math.max(1, Number(capParaleloEl.value||30)); const cicloP = Number(cicloPrincipalEl.value||2);
-      try{
-        const [mRaw, dRaw] = await Promise.all([readXlsx(mFile.files[0]), readXlsx(dFile.files[0])]);
-        const docentesIdx = indexDocentes(dRaw);
-        const groups = groupMallas(mRaw);
+      // Opciones docentes (select)
+      const docenteOpts = [{Docente:'', Titulo:'', Dedicacion:''}, ...docentes];
 
-        // Construir items (una fila por paralelo, combinando carreras con '/')
-        const items = [];
-        for(const [k,g] of groups){
-          const totalEst = g.totalEst>0? g.totalEst : cap; // si no hay dato, asuma 1 paralelo
-          const nPar = Math.max(1, Math.ceil(totalEst / cap));
-          // ciclo dominante (modo numérico)
-          const cicloNums = g.ciclos.map(x=> parseInt(String(x).match(/\d+/)?.[0]||'0',10)).filter(n=>!isNaN(n));
-          const cycleCount = new Map(); cicloNums.forEach(n=> cycleCount.set(n,(cycleCount.get(n)||0)+1));
-          const cicloDom = cicloNums.length? Array.from(cycleCount.entries()).sort((a,b)=>b[1]-a[1])[0][0] : 0;
-          // horas para programar: use max de (HT+HP) entre carreras
-          const hoursMax = Math.max(0, ...g.ht.map((x,i)=> toNum(x)+toNum(g.hp[i])));
-          // slash-joined
-          const join = arr => arr.map(v=> (v==null||v==='')? '' : String(v)).join(' / ');
+      let ok=0, warn=0, lim=0;
 
-          // docentes para esta materia (round-robin)
-          const keyMateria = g.materia.toLowerCase();
-          const docs = docentesIdx.byMateria.get(keyMateria) || docentesIdx.generic;
-          for(let p=0;p<nPar;p++){
-            const doc = docs.length? docs[p % docs.length] : {DOCENTE:'', TITULO:'', DED:'', MODALIDAD:''};
-            items.push({
-              docente: doc.DOCENTE,
-              titulo: doc.TITULO,
-              dedicacion: doc.DED,
-              materia: g.materia,
-              codigoAnth: g.anth,
-              carreras: join(g.carreras),
-              mallas: join(g.mallas),
-              prereq: join(g.prereqs),
-              codigo: join(g.codigos),
-              horasT: join(g.ht),
-              horasP: join(g.hp),
-              horasA: join(g.ha),
-              creditos: join(g.creditos),
-              campo: join(g.campo),
-              ciclo: String(cicloDom||''),
-              norden: join(g.norden),
-              paralelo: PARALLELS[p] || ('P'+(p+1)),
-              dia: '', hora: '', modalidad: join(g.modalidades) || doc.MODALIDAD || '',
-              hoursSchedule: hoursMax // numérico
-            });
-          }
+      for(const {item, asignado, motivo} of rowsAsignados){
+        const tr = document.createElement('tr');
+
+        // Columnas base
+        const col = {
+          DOCENTE: '',
+          'TITULO ACADÉMICO': '',
+          'DEDICACIÓN': '',
+          'MATERIA': item.Materia,
+          'CÓDIGO ANTHOLOGY': item.CodigoAnth,
+          'CARRERAS QUE COMPARTEN': item.CarrerasComparten,
+          'MALLA': item.Malla,
+          'PRE-REQUISITO': item.Pre,
+          'CODIGO': item.Codigo,
+          'HORAS TEÓRICAS': String(item.HT),
+          'HORAS PRÁCTICAS': String(item.HP),
+          'HORAS AUTÓNOMAS': String(item.HA),
+          'CREDITOS': String(item.Creditos),
+          'CAMPO DE FORMACIÓN': item.Campo,
+          'CICLO MALLA': String(item.Ciclo),
+          'Nº ORDEN EN LA MALLA': String(item.Orden),
+          'PARALELO': 'A',
+          'DIA': asignado? asignado.DIA: '',
+          'HORA': asignado? asignado.HORA: '',
+          'MODALIDAD': '',
+          'Nro. HORAS': String(asignado? asignado.HORAS: 0)
+        };
+
+        // DOCENTE como <select>
+        const tdSel = document.createElement('td');
+        const sel = document.createElement('select');
+        docenteOpts.forEach(d=>{
+          const opt = document.createElement('option');
+          opt.value = d.Docente;
+          opt.textContent = d.Docente;
+          sel.appendChild(opt);
+        });
+        sel.addEventListener('change', (e)=>{
+          const doc = docentes.find(d=>d.Docente===sel.value);
+          // Buscar celdas hermanas (título y dedicación)
+          const tdTitulo = sel.closest('tr').querySelector('[data-col="TITULO ACADÉMICO"]');
+          const tdDed = sel.closest('tr').querySelector('[data-col="DEDICACIÓN"]');
+          tdTitulo.textContent = doc? doc.Titulo: '';
+          tdDed.textContent = doc? doc.Dedicacion: '';
+        });
+        tdSel.appendChild(sel);
+        tr.appendChild(tdSel);
+
+        // TITULO ACADÉMICO, DEDICACIÓN
+        const tdTit = document.createElement('td'); tdTit.setAttribute('data-col','TITULO ACADÉMICO'); tr.appendChild(tdTit);
+        const tdDed = document.createElement('td'); tdDed.setAttribute('data-col','DEDICACIÓN'); tr.appendChild(tdDed);
+
+        // Resto
+        for(const h of HEADERS.slice(3)){
+          const td = document.createElement('td');
+          td.textContent = col[h] ?? '';
+          td.setAttribute('data-col', h);
+          if(NUMERIC_HEADERS.has(h)) td.classList.add('num');
+          tr.appendChild(td);
         }
 
-        // ordenar y programar
-        items.sort((a,b)=> (Number(a.ciclo)||0)-(Number(b.ciclo)||0) || norm(a.materia).localeCompare(norm(b.materia)) || norm(a.paralelo).localeCompare(norm(b.paralelo)) );
-        const {rowsOut, warnings} = schedule(items, cicloP, docentesIdx.availByDoc);
-        warningsEl.innerHTML = warnings.length? `<div class="warning">${warnings.map(w=>`<div>• ${w}</div>`).join('')}</div>` : '<div class="ok">Programación generada sin conflictos entre ciclos contiguos y respetando disponibilidades.</div>';
-        render(rowsOut);
-        status.textContent='Completado.';
-      }catch(err){
-        console.error(err); status.textContent='Error procesando archivos.'; warningsEl.innerHTML = '<div class="warning">Revise que los encabezados existan (materia, ciclo, horas, docentes con disponibilidad). Esta versión acepta variaciones y tildes.</div>';
-      } finally{ btn.disabled=false; }
-    });
+        // Color de estado (no intrusivo). Añadimos un pequeño indicador en la celda DIA.
+        const tdDia = tr.querySelector('[data-col="DIA"]');
+        const chip = document.createElement('span');
+        chip.className = 'chip ' + (asignado? 'ok': (motivo==='adj'?'warn':'err'));
+        chip.textContent = asignado? 'OK' : (motivo==='adj'?'Adyacente':'Límite');
+        if(tdDia){ tdDia.appendChild(document.createTextNode(' ')); tdDia.appendChild(chip); }
 
-    // Lectura
-    const readXlsx = file => new Promise((resolve, reject)=>{
-      const fr = new FileReader();
-      fr.onload = e => { try{ const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'}); let rows=[]; wb.SheetNames.forEach(n=>{ const ws=wb.Sheets[n]; rows=rows.concat(XLSX.utils.sheet_to_json(ws,{defval:''})); }); resolve(rows); }catch(err){ reject(err); } };
-      fr.onerror = reject; fr.readAsArrayBuffer(file);
-    });
+        if(asignado) ok++; else if(motivo==='adj') warn++; else lim++;
+        tbody.appendChild(tr);
+      }
 
-  })();
+      document.getElementById('resume').textContent = `Asignadas: ${ok} · En suspenso (adyacencia): ${warn} · En suspenso (límite): ${lim}`;
+    }
+
+    // ===== Evento principal =====
+    const $m = document.getElementById('fileMallas');
+    const $d = document.getElementById('fileDocentes');
+    const $btn = document.getElementById('btnProcesar');
+    const $clr = document.getElementById('btnLimpiar');
+
+    async function procesar(){
+      const mFile = $m.files[0];
+      const dFile = $d.files[0];
+      if(!mFile || !dFile){
+        alert('Cargue Mallas.xlsx y Docentes.xlsx.');
+        return;
+      }
+      $btn.disabled = true; $btn.textContent = 'Procesando…';
+      try{
+        const [mallasRaw, docentesRaw] = await Promise.all([ readExcel(mFile), readExcel(dFile) ]);
+        const mallas = mapMallas(mallasRaw);
+        const docentes = mapDocentes(docentesRaw);
+        document.getElementById('stMallas').textContent = `Mallas: ${mallas.length}`;
+        document.getElementById('stDoc').textContent = `Docentes: ${docentes.length}`;
+
+        const integrados = integrarPorMateria(mallas);
+        const asignados = asignarFranjas(integrados);
+        renderTable(asignados, docentes);
+        document.getElementById('stOut').textContent = `Salidas: ${asignados.length}`;
+      } catch(err){
+        console.error(err);
+        alert('Error al procesar los archivos. Verifique el formato de las hojas (primera hoja visible).');
+      } finally {
+        $btn.disabled = false; $btn.textContent = 'Procesar';
+      }
+    }
+
+    $btn.addEventListener('click', procesar);
+    $clr.addEventListener('click', ()=>{
+      document.getElementById('thead').innerHTML='';
+      document.getElementById('tbody').innerHTML='';
+      document.getElementById('stMallas').textContent='Mallas: —';
+      document.getElementById('stDoc').textContent='Docentes: —';
+      document.getElementById('stOut').textContent='Salidas: —';
+      document.getElementById('resume').textContent='—';
+      $m.value='';
+      $d.value='';
+    });
   </script>
 </body>
 </html>
