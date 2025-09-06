@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Matriz de Planificación (Mínimo)</title>
+  <title>Matriz de Planificación (Mínimo, corregido)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
   <style>
@@ -102,29 +102,38 @@
     modalidad: ["modalidad","modality","tipo modalidad"]
   };
 
-  function findHeader(syns, headers){
-    const map = {};
-    const H = headers.map(h => ({raw:h, key: rmAcc(h)}));
-    Object.keys(syns).forEach(k => {
-      const list = syns[k].map(rmAcc);
-      let hit = '';
-      for(const cand of list){
-        hit = H.find(h => h.key === cand)?.raw || H.find(h => h.key.includes(cand))?.raw || '';
-        if(hit) break;
-      }
-      map[k] = hit || '';
-    });
-    return map;
+  function arrToRows(ws){
+    const a = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    // buscar primera fila no vacía como cabecera
+    let hIdx = -1;
+    for(let i=0;i<a.length;i++){
+      if(a[i] && a[i].some(c => String(c).trim() !== '')){ hIdx = i; break; }
+    }
+    if(hIdx < 0) return {rows:[], headers:[]};
+    const headers = a[hIdx].map(v => String(v).trim());
+    const rows = [];
+    for(let i=hIdx+1;i<a.length;i++){
+      const r = a[i] || [];
+      if(!r.some(c => String(c).trim() !== '')) continue;
+      const obj = {};
+      for(let j=0;j<headers.length;j++) obj[headers[j]] = r[j] ?? '';
+      rows.push(obj);
+    }
+    return {rows, headers};
   }
 
   function readX(file, cb){
     const fr = new FileReader();
     fr.onload = e => {
       const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const arr = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
-      const hdr = (XLSX.utils.sheet_to_json(ws, {header:1})[0] || []).map(String);
-      cb({rows:arr, headers:hdr});
+      // elegir automáticamente la hoja con MÁS filas de datos
+      let best = {rows:[], headers:[]}, bestLen = -1;
+      wb.SheetNames.forEach(name => {
+        const ws = wb.Sheets[name];
+        const {rows, headers} = arrToRows(ws);
+        if(rows.length > bestLen){ best = {rows, headers}; bestLen = rows.length; }
+      });
+      cb(best);
     };
     fr.readAsArrayBuffer(file);
   }
@@ -147,6 +156,21 @@
 
   const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
   const FRANJAS = ['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
+
+  function findHeader(syns, headers){
+    const map = {};
+    const H = headers.map(h => ({raw:h, key: rmAcc(h)}));
+    Object.keys(syns).forEach(k => {
+      const list = syns[k].map(rmAcc);
+      let hit = '';
+      for(const cand of list){
+        hit = H.find(h => h.key === cand)?.raw || H.find(h => h.key.includes(cand))?.raw || '';
+        if(hit) break;
+      }
+      map[k] = hit || '';
+    });
+    return map;
+  }
 
   function generar(){
     const mapM = findHeader(synM, Hm);
@@ -187,7 +211,7 @@
     }
 
     const grupos = [];
-    for(const [k, rows] of map.entries()){
+    for(const rows of map.values()){
       const carreras = [...new Set(rows.map(x => x.carrera))].filter(Boolean);
       const mallasSet = [...new Set(rows.map(x => x.malla))].filter(Boolean);
       const byCarrera = {};
@@ -203,11 +227,7 @@
         byCarrera[c].ciclo.push(r.ciclo);
         byCarrera[c].orden.push(r.orden);
       });
-      const joinPC = (sel) => Object.keys(byCarrera).map(c => {
-        const v = byCarrera[c][sel];
-        // toma el primer valor encontrado por carrera; concatena por carrera con "/"
-        return String(v[0] ?? '');
-      }).join('/');
+      const joinPC = sel => Object.keys(byCarrera).map(c => String((byCarrera[c][sel][0] ?? ''))).join('/');
       const estTotal = rows.reduce((a,b)=>a+(isFinite(b.est)?b.est:0),0);
       grupos.push({
         materia: rows[0]?.materia || '',
@@ -236,8 +256,8 @@
       return hit || null;
     }
 
-    const DICT_DIAS = DIAS;
-    const DICT_FRANJAS = FRANJAS;
+    const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+    const FRANJAS = ['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
     const docLoad = new Map(); // {docente:{porDia:Map, slots:Set}}
     const occ = new Map(); // clave carrera|ciclo -> Set('dia|franja')
 
@@ -265,8 +285,8 @@
       return true;
     }
     function place(row){
-      for(const d of DICT_DIAS){
-        for(const f of DICT_FRANJAS){
+      for(const d of DIAS){
+        for(const f of FRANJAS){
           if(canPlace(row,d,f)){
             row.DIA = d; row.HORA = f; row['Nro. HORAS'] = 3;
             const slot = `${d}|${f}`;
