@@ -83,12 +83,12 @@
       <div class="row">
         <div>
           <label for="fileMallas">Mallas.xlsx</label>
-          <input id="fileMallas" type="file" accept=".xlsx,.xls" />
+          <input id="fileMallas" type="file" accept=\".xlsx,.xls,.csv\" />
           <div class="hint">Debe contener: Carrera, Malla, Ciclo, Materia, Código Anthology (opcional), Código, Horas (T/P/A), Créditos, Campo de formación, Nº orden, Pre‑requisito.</div>
         </div>
         <div>
           <label for="fileDocentes">Docentes.xlsx</label>
-          <input id="fileDocentes" type="file" accept=".xlsx,.xls" />
+          <input id="fileDocentes" type="file" accept=\".xlsx,.xls,.csv\" />
           <div class="hint">Debe contener: Docente, Título académico, Dedicación. (La asignación del docente se selecciona por fila.)</div>
         </div>
       </div>
@@ -237,6 +237,49 @@
         fr.onerror = reject;
         fr.readAsArrayBuffer(file);
       });
+    }
+
+    // ===== Lector CSV sencillo (una "hoja") =====
+    function parseCSV(text){
+      const rows = [];
+      let headers = null;
+      const lines = text.split(/
+?
+/).filter(l=>l.trim().length>0);
+      for(let i=0;i<lines.length;i++){
+        // Split CSV básico (soporta comillas dobles)
+        const cols = [];
+        let cur = '';
+        let inQ = false;
+        const line = lines[i];
+        for(let j=0;j<line.length;j++){
+          const ch = line[j];
+          if(ch==='"'){
+            if(inQ && line[j+1]==='"'){ cur+='"'; j++; }
+            else inQ = !inQ;
+          } else if(ch===',' && !inQ){ cols.push(cur); cur=''; }
+          else cur+=ch;
+        }
+        cols.push(cur);
+        if(!headers){ headers = cols; continue; }
+        const obj = {};
+        for(let k=0;k<headers.length;k++) obj[headers[k]] = cols[k]??'';
+        rows.push(obj);
+      }
+      return { rows, meta: [{ sheet: 'CSV', rows: rows.length }] };
+    }
+
+    // ===== Lector universal (XLSX o CSV) =====
+    async function readAnyAllSheets(file){
+      const name = (file.name||'').toLowerCase();
+      if(name.endsWith('.csv')){
+        const txt = await file.text();
+        return parseCSV(txt);
+      }
+      if(typeof XLSX === 'undefined'){
+        throw new Error('No se pudo cargar SheetJS (XLSX). Use CSV como alternativa.');
+      }
+      return readExcelAllSheets(file);
     }
 
     // ===== Mapeos flexibles =====
@@ -520,7 +563,7 @@
       }
       $btn.disabled = true; $btn.textContent = 'Procesando…';
       try{
-        const [{rows: mallasRaw, meta: metaM}, {rows: docentesRaw, meta: metaD}] = await Promise.all([ readExcelAllSheets(mFile), readExcelAllSheets(dFile) ]);
+        const [{rows: mallasRaw, meta: metaM}, {rows: docentesRaw, meta: metaD}] = await Promise.all([ readAnyAllSheets(mFile), readAnyAllSheets(dFile) ]);
         const mallas = mapMallas(mallasRaw);
         const docentes = mapDocentes(docentesRaw);
         document.getElementById('stMallas').textContent = `Mallas: ${mallas.length} filas · ${metaM.length} hojas`;
@@ -532,7 +575,7 @@
         document.getElementById('stOut').textContent = `Salidas: ${asignados.length}`;
       } catch(err){
         console.error(err);
-        alert('Error al procesar los archivos. Verifique el formato de las hojas (primera hoja visible).');
+        alert('No se pudo procesar. Si está ejecutando el archivo sin internet o el CDN está bloqueado, cargue las planillas en formato CSV (desde Excel: Guardar como → CSV) y vuelva a intentar. El lector ahora acepta .xlsx/.xls (todas las hojas) o .csv.');
       } finally {
         $btn.disabled = false; $btn.textContent = 'Procesar';
       }
