@@ -1,101 +1,559 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Matriz Académica</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; font-size: 12px; }
-        th, td { border: 1px solid #999; padding: 6px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        input[type="file"] { margin: 10px 0; }
-    </style>
+  <meta charset="utf-8" />
+  <title>Planificador académico — Carga desde Excel (Mallas.xlsx + Docentes.xlsx)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- SheetJS para leer .xlsx en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#0f172a;          /* fondo */
+      --card:#111827;        /* tarjetas */
+      --muted:#94a3b8;       /* texto secundario */
+      --ink:#e5e7eb;         /* texto principal */
+      --accent:#16a34a;      /* acentos */
+      --danger:#ef4444;      /* alertas */
+      --grid:#1f2937;        /* líneas tabla */
+    }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,"Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji";}
+
+    header{padding:20px 16px;border-bottom:1px solid var(--grid);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    header h1{font-size:18px;margin:0;font-weight:700}
+    header .hint{color:var(--muted);font-size:12px}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .card{background:var(--card);border:1px solid var(--grid);border-radius:14px;padding:16px}
+
+    .inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .inputs label{display:flex;flex-direction:column;gap:8px;font-size:13px}
+    input[type="file"]{background:#0b1220;border:1px dashed var(--grid);padding:12px;border-radius:10px;color:var(--muted)}
+    button{all:unset;background:var(--accent);color:white;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    button.secondary{background:#374151}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;background:#1f2937;color:var(--muted);border:1px solid var(--grid)}
+    .danger{color:var(--danger)}
+
+    table{width:100%;border-collapse:collapse;margin-top:14px;table-layout:fixed}
+    thead th{position:sticky;top:0;background:#0b1220;z-index:2}
+    th,td{border-bottom:1px solid var(--grid);padding:8px 10px;font-size:12px;vertical-align:top}
+    tbody tr:hover{background:#0b1220}
+    .num{text-align:center}
+    .center{text-align:center}
+    .small{font-size:11px;color:var(--muted)}
+    .ok{color:#22c55e}
+    .warn{color:#f59e0b}
+    .pill{display:inline-block;background:#0b1220;border:1px solid var(--grid);border-radius:999px;padding:2px 6px;margin:2px 0}
+    .toolbar{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    .scroll{overflow:auto;max-height:70vh;border:1px solid var(--grid);border-radius:12px}
+    .note{font-size:12px;color:var(--muted)}
+    .suspenso{color:#93c5fd}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+  </style>
 </head>
 <body>
-    <h2>Cargar archivos Excel: Mallas y Docentes</h2>
-    <input type="file" id="mallaFile" accept=".xlsx" />
-    <input type="file" id="docentesFile" accept=".xlsx" />
-    <button onclick="procesar()">Procesar Archivos</button>
-    <div id="tablaContainer"></div>
+<header>
+  <h1>Planificador académico</h1>
+  <span class="hint">Cargue <strong>Mallas.xlsx</strong> y <strong>Docentes.xlsx</strong>. Se genera la matriz solicitada y se asigna un (1) bloque horario disponible por materia (los demás quedan en <span class="suspenso">suspenso</span>).</span>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div class="inputs">
+      <label>
+        <span><strong>1) Mallas.xlsx</strong> (currículas por carrera)</span>
+        <input id="mallasFile" type="file" accept=".xlsx,.xls" />
+      </label>
+      <label>
+        <span><strong>2) Docentes.xlsx</strong> (datos de docentes y, si existe, mapeo Docente–Materia)</span>
+        <input id="docentesFile" type="file" accept=".xlsx,.xls" />
+      </label>
+    </div>
+
+    <div class="row">
+      <button id="btnProcesar">Procesar y generar matriz</button>
+      <button class="secondary" id="btnDescargar">Descargar .xlsx</button>
+      <span class="badge">Franjas: 07–10, 10–13, 13–16, 16–19, 19–22 (L–V)</span>
+      <span class="badge">Máx. 2 asignaturas/día por docente</span>
+      <span class="badge">Evita choques entre ciclos adyacentes</span>
+    </div>
+
+    <div id="estado" class="note" style="margin-top:10px"></div>
+
+    <div class="scroll">
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th>DOCENTE</th>
+            <th>TITULO ACADÉMICO</th>
+            <th>DEDICACIÓN</th>
+            <th>MATERIA</th>
+            <th>CÓDIGO ANTHOLOGY</th>
+            <th>CARRERAS QUE COMPARTEN</th>
+            <th>MALLA</th>
+            <th>PRE-REQUISITO</th>
+            <th>CODIGO</th>
+            <th class="num">HORAS TEÓRICAS</th>
+            <th class="num">HORAS PRÁCTICAS</th>
+            <th class="num">HORAS AUTÓNOMAS</th>
+            <th class="num">CRÉDITOS</th>
+            <th>CAMPO DE FORMACIÓN</th>
+            <th class="num">CICLO MALLA</th>
+            <th class="num">Nº ORDEN EN LA MALLA</th>
+            <th class="center">PARALELO</th>
+            <th class="center">DIA</th>
+            <th class="center">HORA</th>
+            <th class="center">MODALIDAD</th>
+            <th class="num">Nro. HORAS</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="note" style="margin-top:10px">
+      <div><span class="ok">●</span> Campos numéricos centrados automáticamente. <span class="warn">●</span> Si falta un encabezado en sus archivos, el valor se deja vacío.</div>
+      <div class="small">Columnas reconocidas (sin tildes y sin distinción de mayúsculas): <span class="mono">MATERIA, CARRERA, MALLA, PRE-REQUISITO, CODIGO, CODIGO ANTHOLOGY, HORAS TEORICAS, HORAS PRACTICAS, HORAS AUTONOMAS, CREDITOS, CAMPO DE FORMACION, CICLO, CICLO MALLA, NRO ORDEN, Nº ORDEN EN LA MALLA, DOCENTE, TITULO ACADEMICO, DEDICACION, MODALIDAD, ESTUDIANTES</span>.</div>
+    </div>
+  </div>
+</div>
 
 <script>
-function leerExcel(file, callback) {
+/* Utilidades --------------------------------------------------------------- */
+const DAYS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const BANDS = [
+  {label:"07:00–10:00", start:7, end:10},
+  {label:"10:00–13:00", start:10, end:13},
+  {label:"13:00–16:00", start:13, end:16},
+  {label:"16:00–19:00", start:16, end:19},
+  {label:"19:00–22:00", start:19, end:22},
+];
+const HOURS_PER_BAND = 3; // una franja asignada por materia; el resto queda en suspenso
+
+const norm = s => (s??"").toString().trim()
+  .normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/\s+/g," ").toUpperCase();
+
+function sheetToJSON(workbook){
+  const out = [];
+  workbook.SheetNames.forEach(name=>{
+    const ws = workbook.Sheets[name];
+    if(!ws) return;
+    const arr = XLSX.utils.sheet_to_json(ws, {defval:""});
+    out.push(...arr);
+  });
+  return out;
+}
+
+function readFile(file){
+  return new Promise((resolve,reject)=>{
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = e=>{
+      try{
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const hoja = workbook.SheetNames[0];
-        const json = XLSX.utils.sheet_to_json(workbook.Sheets[hoja], { defval: "" });
-        callback(json);
+        const wb = XLSX.read(data, {type:"array"});
+        resolve(sheetToJSON(wb));
+      }catch(err){ reject(err); }
     };
+    reader.onerror = reject;
     reader.readAsArrayBuffer(file);
+  });
 }
 
-function procesar() {
-    const archivoMalla = document.getElementById('mallaFile').files[0];
-    const archivoDocente = document.getElementById('docentesFile').files[0];
-    if (!archivoMalla || !archivoDocente) {
-        alert("Cargue ambos archivos");
-        return;
+/* Mapeo laxo de columnas --------------------------------------------------- */
+const ALIAS = {
+  MATERIA: ["MATERIA","ASIGNATURA"],
+  CARRERA: ["CARRERA","PROGRAMA"],
+  MALLA: ["MALLA","PLAN"],
+  PRERREQ: ["PRE-REQUISITO","PRERREQUISITO","PREREQUISITO","PRE REQUISITO"],
+  CODIGO: ["CODIGO","CÓDIGO"],
+  COD_ANTH: ["CODIGO ANTHOLOGY","CÓDIGO ANTHOLOGY","ANTHOLOGY","ID ANTHOLOGY"],
+  H_T: ["HORAS TEORICAS","HORAS TEÓRICAS","HT","H T"],
+  H_P: ["HORAS PRACTICAS","HORAS PRÁCTICAS","HP","H P"],
+  H_A: ["HORAS AUTONOMAS","HORAS AUTÓNOMAS","HA","H A"],
+  CREDITOS: ["CREDITOS","CRÉDITOS","CR"],
+  CAMPO: ["CAMPO DE FORMACION","CAMPO DE FORMACIÓN","CAMPO"],
+  CICLO: ["CICLO MALLA","CICLO","NIVEL","SEMESTRE"],
+  ORDEN: ["Nº ORDEN EN LA MALLA","NRO ORDEN EN LA MALLA","ORDEN","N ORDEN","NRO ORDEN"],
+  DOCENTE: ["DOCENTE","PROFESOR","NOMBRE DOCENTE"],
+  TITULO: ["TITULO ACADEMICO","TÍTULO ACADÉMICO","TITULO","GRADO"],
+  DEDIC: ["DEDICACION","DEDICACIÓN","JORNADA"],
+  MODALIDAD: ["MODALIDAD","MOD"],
+  ESTUDIANTES: ["ESTUDIANTES","N ESTUDIANTES","NRO ESTUDIANTES","MATRICULADOS"],
+  DISPONIBILIDAD: ["DISPONIBILIDAD","DIAS DISPONIBLES","HORARIOS DISPONIBLES"] // opcional
+};
+
+function pick(row, keys){
+  for(const k of keys){
+    const found = Object.keys(row).find(h => norm(h) === norm(k));
+    if(found) return row[found];
+  }
+  return "";
+}
+function get(row, aliasKey){
+  return pick(row, ALIAS[aliasKey] || [aliasKey]);
+}
+
+/* Agregación por materia y carrera ---------------------------------------- */
+function buildCatalog(mallasRows){
+  // Estructura: materia -> { materia, porCarrera: Map, cicloSet, ordenSet, campos... }
+  const cat = new Map();
+  for(const r of mallasRows){
+    const materia = norm(get(r,"MATERIA"));
+    if(!materia) continue;
+
+    const carrera     = norm(get(r,"CARRERA"));
+    const malla       = norm(get(r,"MALLA"));
+    const prereq      = norm(get(r,"PRERREQ"));
+    const codigo      = norm(get(r,"CODIGO"));
+    const anth        = norm(get(r,"COD_ANTH"));
+    const hT          = String(get(r,"H_T")||"");
+    const hP          = String(get(r,"H_P")||"");
+    const hA          = String(get(r,"H_A")||"");
+    const creditos    = String(get(r,"CREDITOS")||"");
+    const campo       = norm(get(r,"CAMPO"));
+    const cicloRaw    = get(r,"CICLO");
+    const ordenRaw    = get(r,"ORDEN");
+    const modalidad   = norm(get(r,"MODALIDAD"));
+
+    const ciclo = Number(String(cicloRaw).toString().replace(/[^0-9]/g,"")) || "";
+    const orden = Number(String(ordenRaw).toString().replace(/[^0-9]/g,"")) || "";
+
+    if(!cat.has(materia)){
+      cat.set(materia, {
+        materia,
+        porCarrera: new Map(), // carrera -> { .. }
+        ciclos: new Set(),
+        ordenes: new Set(),
+        codAnth: new Set(),
+        modalidades: new Set(),
+        prereq: new Set()
+      });
     }
+    const entry = cat.get(materia);
 
-    leerExcel(archivoMalla, function(mallaData) {
-        leerExcel(archivoDocente, function(docentesData) {
-            const horariosDisponibles = [
-                "07:00–10:00", "10:00–13:00", "13:00–16:00", "16:00–19:00", "19:00–22:00"
-            ];
-            const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-            let asignados = {}; // Para evitar choques
+    const keyCarr = carrera || "(SIN CARRERA)";
+    if(!entry.porCarrera.has(keyCarr)){
+      entry.porCarrera.set(keyCarr, {
+        carrera: keyCarr,
+        malla: new Set(),
+        codigo: new Set(),
+        hT: new Set(),
+        hP: new Set(),
+        hA: new Set(),
+        creditos: new Set(),
+        campo: new Set()
+      });
+    }
+    const c = entry.porCarrera.get(keyCarr);
+    if(malla) c.malla.add(malla);
+    if(codigo) c.codigo.add(codigo);
+    if(hT!=="") c.hT.add(hT);
+    if(hP!=="") c.hP.add(hP);
+    if(hA!=="") c.hA.add(hA);
+    if(creditos!=="") c.creditos.add(creditos);
+    if(campo) c.campo.add(campo);
 
-            let tablaHTML = `<table><thead><tr>
-                <th>DOCENTE</th><th>TÍTULO ACADÉMICO</th><th>DEDICACIÓN</th><th>MATERIA</th><th>CÓDIGO ANTHOLOGY</th>
-                <th>CARRERAS QUE COMPARTEN</th><th>MALLA</th><th>PRE-REQUISITO</th><th>CÓDIGO</th>
-                <th>HORAS TEÓRICAS</th><th>HORAS PRÁCTICAS</th><th>HORAS AUTÓNOMAS</th><th>CRÉDITOS</th>
-                <th>CAMPO DE FORMACIÓN</th><th>CICLO MALLA</th><th>Nº ORDEN EN LA MALLA</th>
-                <th>PARALELO</th><th>DÍA</th><th>HORA</th><th>MODALIDAD</th><th>Nro. HORAS</th>
-            </tr></thead><tbody>`;
+    if(anth) entry.codAnth.add(anth);
+    if(modalidad) entry.modalidades.add(modalidad);
+    if(prereq) entry.prereq.add(prereq);
+    if(ciclo!=="") entry.cilios = entry.ciclos.add(ciclo); // typo a propósito? corregimos abajo
+    if(orden!=="") entry.ordenes.add(orden);
+  }
 
-            mallaData.forEach((fila, index) => {
-                const materia = fila["MATERIA"].trim().toUpperCase();
-                const docentes = docentesData.filter(d => d["MATERIA"].trim().toUpperCase() === materia);
-                const docente = docentes.length > 0 ? docentes[0] : { "DOCENTE": "NO ASIGNADO", "TITULO ACADÉMICO": "", "DEDICACION": "", "DIA DISPONIBLE": "", "HORA DISPONIBLE": "", "Modalidad": "" };
-                const dia = dias[index % dias.length];
-                const hora = horariosDisponibles[index % horariosDisponibles.length];
-                const paralelo = "A";
-                const nroHoras = Number(fila["HORAS TEÓRICAS"] || 0) + Number(fila["HORAS PRÁCTICAS"] || 0) + Number(fila["HORAS AUTÓNOMAS"] || 0);
-
-                tablaHTML += `<tr>
-                    <td>${docente["DOCENTE"]}</td>
-                    <td>${docente["TITULO ACADÉMICO"]}</td>
-                    <td>${docente["DEDICACION"]}</td>
-                    <td>${materia}</td>
-                    <td>${fila["CÓDIGO"]}</td>
-                    <td>${fila["CARRERA"]}</td>
-                    <td>${fila["MALLA"]}</td>
-                    <td>${fila["PRERREQUISITO"]}</td>
-                    <td>${fila["CÓDIGO"]}</td>
-                    <td>${fila["HORAS TEÓRICAS"]}</td>
-                    <td>${fila["HORAS PRÁCTICAS"]}</td>
-                    <td>${fila["HORAS AUTÓNOMAS"]}</td>
-                    <td>${fila["CRÉDITOS"]}</td>
-                    <td>${fila["CAMPO DE FORMACIÓN"]}</td>
-                    <td>${fila["CICLO"]}</td>
-                    <td>${fila["NUMERO DE ORDEN EN LA MALLA"]}</td>
-                    <td>${paralelo}</td>
-                    <td>${dia}</td>
-                    <td>${hora}</td>
-                    <td>${docente["Modalidad"]}</td>
-                    <td>${nroHoras}</td>
-                </tr>`;
-            });
-
-            tablaHTML += "</tbody></table>";
-            document.getElementById("tablaContainer").innerHTML = tablaHTML;
-        });
-    });
+  // corrección: no necesitábamos entry.cilios
+  return cat;
 }
+
+/* Índice docente y posibles asignaciones ---------------------------------- */
+function buildDocenteIndex(docRows){
+  // Estructura por docente con metadatos y materias (si viene una columna MATERIA)
+  const docentes = new Map();
+  for(const r of docRows){
+    const nombre = norm(get(r,"DOCENTE"));
+    if(!nombre) continue;
+    if(!docentes.has(nombre)){
+      docentes.set(nombre, {
+        docente: nombre,
+        titulo: get(r,"TITULO"),
+        dedic: get(r,"DEDIC"),
+        disponibilidad: norm(get(r,"DISPONIBILIDAD")),
+        materias: new Set()
+      });
+    }
+    const m = norm(get(r,"MATERIA"));
+    if(m) docentes.get(nombre).materias.add(m);
+  }
+
+  // Mapeo materia -> docente(s) posible(s)
+  const materiaToDocentes = new Map();
+  docentes.forEach(d=>{
+    d.materias.forEach(m=>{
+      if(!materiaToDocentes.has(m)) materiaToDocentes.set(m, new Set());
+      materiaToDocentes.get(m).add(d.docente);
+    });
+  });
+
+  return {docentes, materiaToDocentes};
+}
+
+/* Asignación de un único bloque horario por materia ------------------------ */
+function greedySchedule(rows){
+  // rows: [{materia, ciclo, docente, ...}]
+  // Reglas:
+  // - Máximo 2 asignaturas/día por docente
+  // - Evitar choque con ciclos adyacentes: para ciclo n, no solapar con n-1 y n+1
+  // - Seleccionar el primer slot libre; el resto queda en suspenso
+
+  // Índices de control
+  const docenteDayCount = new Map(); // key: docente|día -> count
+  const cycleSlots = new Map(); // key: ciclo -> Set("día|franja")
+
+  function canPlace(ciclo, docente, day, bandIdx){
+    const keyDC = `${docente}|${day}`;
+    const taken = docenteDayCount.get(keyDC)||0;
+    if(taken >= 2) return false;
+
+    const slotKey = `${day}|${bandIdx}`;
+    // ciclo adyacentes
+    const adj = [ciclo-1, ciclo+1];
+    for(const c of adj){
+      const s = cycleSlots.get(c);
+      if(s && s.has(slotKey)) return false;
+    }
+    return true;
+  }
+
+  function place(ciclo, docente){
+    for(const day of DAYS){
+      const keyDC = `${docente}|${day}`;
+      const taken = docenteDayCount.get(keyDC)||0;
+      if(taken >= 2) continue;
+
+      for(let b=0;b<BANDS.length;b++){
+        const slotKey = `${day}|${b}`;
+        // ¿ya ocupado por el mismo ciclo exacto? Permitimos múltiples materias del mismo ciclo si no exceden 2/día/docente
+        const allowed = canPlace(ciclo, docente, day, b);
+        if(!allowed) continue;
+
+        // asignar
+        docenteDayCount.set(keyDC, taken+1);
+        if(!cycleSlots.has(ciclo)) cycleSlots.set(ciclo, new Set());
+        cycleSlots.get(ciclo).add(slotKey);
+        return {dia: day, hora: BANDS[b].label};
+      }
+    }
+    // Sin espacio: queda en suspenso
+    return {dia: "SUSPENSO", hora: "SUSPENSO"};
+  }
+
+  const out = [];
+  for(const r of rows){
+    const {ciclo=0, docente="(SIN DOCENTE)"} = r;
+    const slot = place(Number(ciclo)||0, docente);
+    out.push({...r, ...slot, nroHoras: slot.dia==="SUSPENSO" ? 0 : HOURS_PER_BAND});
+  }
+  return out;
+}
+
+/* Render tabla y descarga -------------------------------------------------- */
+function render(rows){
+  const tbody = document.querySelector("#tabla tbody");
+  tbody.innerHTML = "";
+  const numCols = new Set(["HORAS TEÓRICAS","HORAS PRÁCTICAS","HORAS AUTÓNOMAS","CRÉDITOS","CICLO MALLA","Nº ORDEN EN LA MALLA","Nro. HORAS"]);
+  rows.forEach(r=>{
+    const tr = document.createElement("tr");
+    const cols = [
+      r.DOCENTE,
+      r["TITULO ACADÉMICO"],
+      r.DEDICACIÓN,
+      r.MATERIA,
+      r["CÓDIGO ANTHOLOGY"],
+      r["CARRERAS QUE COMPARTEN"],
+      r.MALLA,
+      r["PRE-REQUISITO"],
+      r.CODIGO,
+      r["HORAS TEÓRICAS"],
+      r["HORAS PRÁCTICAS"],
+      r["HORAS AUTÓNOMAS"],
+      r.CRÉDITOS,
+      r["CAMPO DE FORMACIÓN"],
+      r["CICLO MALLA"],
+      r["Nº ORDEN EN LA MALLA"],
+      r.PARALELO,
+      r.DIA,
+      r.HORA,
+      r.MODALIDAD,
+      r["Nro. HORAS"]
+    ];
+    cols.forEach((val, idx)=>{
+      const td = document.createElement("td");
+      const header = document.querySelectorAll("#tabla thead th")[idx].textContent.trim();
+      td.textContent = val==null ? "" : val;
+      if(numCols.has(header)) td.classList.add("num");
+      if(["PARALELO","DIA","HORA","MODALIDAD"].includes(header)) td.classList.add("center");
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function downloadXLSX(rows){
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Matriz");
+  XLSX.writeFile(wb, "matriz_planificacion.xlsx");
+}
+
+/* Pipeline principal ------------------------------------------------------- */
+async function procesar(){
+  const estado = document.getElementById("estado");
+  estado.textContent = "Leyendo archivos…";
+  const fMallas = document.getElementById("mallasFile").files[0];
+  const fDoc = document.getElementById("docentesFile").files[0];
+
+  if(!fMallas || !fDoc){
+    estado.innerHTML = `<span class="danger">Cargue ambos archivos: Mallas.xlsx y Docentes.xlsx.</span>`;
+    return;
+  }
+
+  try{
+    const [mallasRowsRaw, docRowsRaw] = await Promise.all([readFile(fMallas), readFile(fDoc)]);
+
+    // Normalizo claves (mantengo valores originales)
+    const mallasRows = mallasRowsRaw;
+    const docRows    = docRowsRaw;
+
+    const catalog = buildCatalog(mallasRows);
+    const {docentes, materiaToDocentes} = buildDocenteIndex(docRows);
+
+    // Construyo registros base (un registro por MATERIA; si la misma materia aparece en múltiples carreras,
+    // se agregan con "/" en los campos que dependen de la carrera).
+    const base = [];
+    catalog.forEach(entry=>{
+      // Agregar por carrera (para concatenar con "/")
+      const carreras = [];
+      const mallas = [];
+      const codigos = [];
+      const hT = [];
+      const hP = [];
+      const hA = [];
+      const creds = [];
+      const campos = [];
+
+      entry.porCarrera.forEach(c=>{
+        carreras.push(c.carrera);
+        mallas.push([...c.malla].filter(Boolean).join("/") || "");
+        codigos.push([...c.codigo].filter(Boolean).join("/") || "");
+        hT.push([...c.hT].filter(Boolean).join("/") || "");
+        hP.push([...c.hP].filter(Boolean).join("/") || "");
+        hA.push([...c.hA].filter(Boolean).join("/") || "");
+        creds.push([...c.creditos].filter(Boolean).join("/") || "");
+        campos.push([...c.campo].filter(Boolean).join("/") || "");
+      });
+
+      // Ciclo y orden: elegimos el menor como principal para la regla de no choque entre adyacentes
+      const cicloArr = [...(entry.ciclos || new Set())];
+      const ordenArr = [...(entry.ordenes || new Set())];
+      const cicloPrincipal = cicloArr.length ? Math.min(...cicloArr) : "";
+      const ordenPrincipal = ordenArr.length ? Math.min(...ordenArr) : "";
+
+      // Docente sugerido por mapeo materia->docentes
+      let docente = "";
+      let titulo = "";
+      let dedic = "";
+      if(materiaToDocentes.has(entry.materia)){
+        // toma el primero disponible
+        docente = [...materiaToDocentes.get(entry.materia)][0] || "";
+        if(docente && docentes.has(docente)){
+          const d = docentes.get(docente);
+          titulo = d.titulo || "";
+          dedic  = d.dedic || "";
+        }
+      }
+
+      // Modalidad (si múltiples, tomamos 1a)
+      const modalidad = [...(entry.modalidades || new Set())][0] || "PRESENCIAL";
+
+      // Estudiantes (si viene por materia en docentes o malla, opcional)
+      // Usado sólo para decidir paralelos > 30 (por ahora generamos P1 y el resto en suspenso)
+      const estudiantes = 0;
+
+      base.push({
+        DOCENTE: docente || "",
+        "TITULO ACADÉMICO": titulo || "",
+        DEDICACIÓN: dedic || "",
+        MATERIA: entry.materia,
+        "CÓDIGO ANTHOLOGY": [...(entry.codAnth||new Set())].filter(Boolean).join("/"),
+        "CARRERAS QUE COMPARTEN": carreras.filter(Boolean).join("/"),
+        MALLA: mallas.filter(Boolean).join("/"),
+        "PRE-REQUISITO": [...(entry.prereq||new Set())].filter(Boolean).join("/"),
+        CODIGO: codigos.filter(Boolean).join("/"),
+        "HORAS TEÓRICAS": hT.filter(Boolean).join("/"),
+        "HORAS PRÁCTICAS": hP.filter(Boolean).join("/"),
+        "HORAS AUTÓNOMAS": hA.filter(Boolean).join("/"),
+        CRÉDITOS: creds.filter(Boolean).join("/"),
+        "CAMPO DE FORMACIÓN": campos.filter(Boolean).join("/"),
+        "CICLO MALLA": cicloPrincipal,
+        "Nº ORDEN EN LA MALLA": ordenPrincipal,
+        PARALELO: "P1",
+        DIA: "", HORA: "", MODALIDAD: modalidad,
+        "Nro. HORAS": 0
+      });
+    });
+
+    // Ordenamos por ciclo y luego por orden para priorizar en la asignación
+    base.sort((a,b)=>{
+      const ac = Number(a["CICLO MALLA"]||0), bc = Number(b["CICLO MALLA"]||0);
+      if(ac!==bc) return ac-bc;
+      const ao = Number(a["Nº ORDEN EN LA MALLA"]||0), bo = Number(b["Nº ORDEN EN LA MALLA"]||0);
+      return ao-bo;
+    });
+
+    // Prepara filas para el scheduler
+    const schedInput = base.map(r=>({
+      materia: r.MATERIA,
+      ciclo: r["CICLO MALLA"] || 0,
+      docente: r.DOCENTE || "(SIN DOCENTE)"
+    }));
+
+    const scheduled = greedySchedule(schedInput);
+
+    // Combino slots de vuelta a la matriz
+    const finalRows = base.map((r, idx)=>{
+      const slot = scheduled[idx];
+      const fila = {...r};
+      fila.DIA = slot.dia;
+      fila.HORA = slot.hora;
+      fila["Nro. HORAS"] = slot.nroHoras;
+      // Si el número de estudiantes > 30 se considerarían nuevos paralelos en otra iteración
+      return fila;
+    });
+
+    render(finalRows);
+
+    const total = finalRows.length;
+    const enSuspenso = finalRows.filter(r=>r.DIA==="SUSPENSO").length;
+    estado.innerHTML = `Matriz generada: <strong>${total}</strong> filas. ` +
+      (enSuspenso>0 ? `<span class="suspenso">${enSuspenso} en suspenso</span>` : `<span class="ok">Sin suspensos</span>`);
+
+    // Guardamos temporalmente para descarga
+    window.__rows = finalRows;
+
+  }catch(err){
+    console.error(err);
+    estado.innerHTML = `<span class="danger">Error al procesar: ${err.message||err}</span>`;
+  }
+}
+
+/* Eventos ------------------------------------------------------------------ */
+document.getElementById("btnProcesar").addEventListener("click", procesar);
+document.getElementById("btnDescargar").addEventListener("click", ()=>{
+  if(!window.__rows || !window.__rows.length){
+    document.getElementById("estado").innerHTML = `<span class="danger">Primero genere la matriz.</span>`;
+    return;
+  }
+  downloadXLSX(window.__rows);
+});
+
 </script>
 </body>
 </html>
