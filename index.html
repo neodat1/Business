@@ -205,12 +205,8 @@
       });
       const joinPC = (sel) => Object.keys(byCarrera).map(c => {
         const v = byCarrera[c][sel];
-        if(['ht','hp','ha','cred','ciclo','orden'].includes(sel)){
-          const max = Math.max(...v.map(n => isFinite(n)?n:0));
-          return String(max);
-        }else{
-          return (v[0]||'');
-        }
+        // toma el primer valor encontrado por carrera; concatena por carrera con "/"
+        return String(v[0] ?? '');
       }).join('/');
       const estTotal = rows.reduce((a,b)=>a+(isFinite(b.est)?b.est:0),0);
       grupos.push({
@@ -256,7 +252,7 @@
         if(inf.slots.has(slot)) return false;
       }
       const carreras = (row['CARRERAS QUE COMPARTEN']||'').split('/').map(s=>norm(s));
-      const ciclos = String(row['CICLO MALLA']||'').split('/').map(s=>toInt(s));
+      const ciclos = String(row['CICLO MALLA']||'').split('/').map(s=>parseInt(s,10)||0);
       for(const c of carreras){
         for(const cyc of ciclos){
           const k0 = `${c}|${cyc}`;
@@ -282,7 +278,7 @@
               docLoad.set(doc, inf);
             }
             const carreras = (row['CARRERAS QUE COMPARTEN']||'').split('/').map(s=>norm(s));
-            const ciclos = String(row['CICLO MALLA']||'').split('/').map(s=>toInt(s));
+            const ciclos = String(row['CICLO MALLA']||'').split('/').map(s=>parseInt(s,10)||0);
             for(const c of carreras){
               for(const cyc of ciclos){
                 const k0 = `${c}|${cyc}`;
