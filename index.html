@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (observaciones con menú de Materias)</title>
+<title>Matriz Académica – UIDE (filtros arriba + reprocesar + paralelos por estudiantes)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520}
@@ -13,12 +13,12 @@ header{display:flex;align-items:center;gap:16px;padding:16px;background:linear-g
 header img{height:50px;width:auto}
 header h1{margin:0;font-size:20px;font-weight:700}
 .brandbar{height:5px;background:linear-gradient(90deg,var(--azul) 20%,var(--mostaza) 20% 40%,var(--vino) 40% 60%,var(--celeste) 60% 80%,var(--verde) 80%)}
-.wrapper{max-width:1250px;margin:24px auto;padding:0 16px}
+.wrapper{max-width:1280px;margin:24px auto;padding:0 16px}
 .card{background:#fff;border:1px solid #e2e5ef;border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 label{font-size:13px;font-weight:700;color:#04136C;display:block;margin-bottom:6px}
 input[type="file"]{width:100%;padding:10px;border:1px solid #ccd2e3;border-radius:12px;background:#fafbff}
-select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-radius:10px;background:#fafbff}
+select{padding:8px 10px;border:1px solid #ccd2e3;border-radius:10px;background:#fafbff}
 .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 button{border:0;padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;transition:.2s}
 button:hover{opacity:.92}
@@ -26,6 +26,9 @@ button:hover{opacity:.92}
 .accent{background:var(--mostaza);color:#1b1200}
 .muted{background:#fff;color:var(--azul);border:2px solid var(--azul)}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#fff3f3;color:#7a0d18;border:1px solid #f2c9cf;font-size:12px}
+
+.filterbar{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:12px;align-items:end;margin-top:12px}
+.multi{min-height:148px}
 
 .scroll{overflow:auto;max-height:70vh;border:1px solid #e2e5ef;border-radius:14px}
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
@@ -37,12 +40,10 @@ thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
 
-h3{margin:0 0 8px;color:#04136C}
 #panelObs strong{color:#862B39}
-#obsBar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
 #obsInfo{border:1px solid #eef1f6;background:#fff;border-radius:10px;padding:12px}
-#obsInfo .meta{font-size:13px;margin:6px 0}
 .tag{display:inline-block;background:#f2f6ff;border:1px solid #dfe8ff;padding:2px 8px;border-radius:999px;margin:2px 6px 2px 0;font-size:12px;color:#04136C}
+small.hint{color:#555;margin-top:-6px;display:block}
 </style>
 </head>
 <body>
@@ -53,44 +54,43 @@ h3{margin:0 0 8px;color:#04136C}
 <div class="brandbar"></div>
 
 <div class="wrapper">
+
+  <!-- ARCHIVOS + FILTROS EN LA PARTE SUPERIOR -->
   <div class="card">
     <div class="row">
-      <div><label>Archivo: 0. Mallas.xlsx (Hoja: Malla)</label><input id="fileMalla" type="file" accept=".xlsx,.xls" /></div>
-      <div><label>Archivo: 1. Docentes.xlsx (Hoja: Docentes)</label><input id="fileDocentes" type="file" accept=".xlsx,.xls" /></div>
+      <div><label>0. Mallas.xlsx (Hoja: Malla)</label><input id="fileMalla" type="file" accept=".xlsx,.xls" /></div>
+      <div><label>1. Docentes.xlsx (Hoja: Docentes)</label><input id="fileDocentes" type="file" accept=".xlsx,.xls" /></div>
     </div>
+
+    <div class="filterbar">
+      <div>
+        <label>Carrera (multi-selección)</label>
+        <select id="fltCarrera" class="multi" multiple></select>
+        <small class="hint">Vacío = todas</small>
+      </div>
+      <div>
+        <label>Malla (multi-selección)</label>
+        <select id="fltMalla" class="multi" multiple></select>
+      </div>
+      <div>
+        <label>Ciclo (multi-selección)</label>
+        <select id="fltCiclo" class="multi" multiple></select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="btnProcesar" class="primary">Procesar / Reprocesar</button>
+        <button id="btnLimpiarFiltros" class="muted">Limpiar filtros</button>
+      </div>
+    </div>
+
     <div class="actions">
-      <button id="btnProcesar" class="primary">Procesar</button>
       <button id="btnXLSX" class="accent" disabled>Descargar XLSX</button>
       <button id="btnCSV"  class="accent" disabled>Descargar CSV</button>
-      <button id="btnLimpiar" class="muted">Limpiar</button>
+      <button id="btnLimpiar" class="muted">Limpiar todo</button>
       <span id="resumen" class="badge" style="display:none"></span>
     </div>
   </div>
 
-  <!-- Observaciones con menú de Materias -->
-  <div id="panelObs" class="card" style="display:none">
-    <strong>Observaciones / Conflictos</strong>
-    <div id="obsBar" style="display:none">
-      <label style="margin:0">Tipo:
-        <select id="fTipo">
-          <option value="">Todos</option>
-          <option value="SIN_DOCENTE">Materia sin docente</option>
-          <option value="SIN_HORARIO">Sin horario libre</option>
-        </select>
-      </label>
-      <label style="margin:0">Carrera:
-        <select id="fCarrera"><option value="">Todas</option></select>
-      </label>
-      <label style="margin:0">Malla:
-        <select id="fMalla"><option value="">Todas</option></select>
-      </label>
-      <label style="margin:0">Materia:
-        <select id="fMateria"><option value="">Seleccione…</option></select>
-      </label>
-    </div>
-    <div id="obsInfo" style="display:none"></div>
-  </div>
-
+  <!-- TABLA PRINCIPAL -->
   <div class="card">
     <div class="scroll">
       <table id="matriz">
@@ -123,6 +123,12 @@ h3{margin:0 0 8px;color:#04136C}
       </table>
     </div>
   </div>
+
+  <!-- OBSERVACIONES -->
+  <div id="panelObs" class="card" style="display:none">
+    <strong>Observaciones / Conflictos</strong>
+    <div id="obsInfo"></div>
+  </div>
 </div>
 
 <script>
@@ -147,6 +153,9 @@ function sheetToJSON(wb,name){const ws=wb.Sheets[name];return ws?XLSX.utils.shee
 function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
 function addRow(row){
   const tb=document.querySelector('#matriz tbody'); const tr=document.createElement('tr');
+  tr.dataset.carreras = row.CARRERAS_COMPARTEN;
+  tr.dataset.mallas = row.MALLA;
+  tr.dataset.ciclos = row.CICLO_MALLA;
   [
     row.DOCENTE,row.TITULO_ACADEMICO,row.DEDICACION,row.MATERIA,row.CODIGO_ANTHOLOGY,
     row.CARRERAS_COMPARTEN,row.MALLA,row.PRE_REQUISITO,row.CODIGO,
@@ -169,15 +178,34 @@ function canonMateria(s){
 function tokens(str){return new Set(canonMateria(str).split(' ').filter(Boolean));}
 function jaccard(aSet,bSet){let inter=0;const small=aSet.size<bSet.size?aSet:bSet,big=aSet.size<bSet.size?bSet:aSet;small.forEach(x=>{if(big.has(x))inter++;});const uni=aSet.size+bSet.size-inter;return uni?inter/uni:0;}
 
+/* ===== Carga anticipada de opciones (al elegir Mallas.xlsx) ===== */
+let PRE_MALLA_ROWS = [];
+document.getElementById('fileMalla').addEventListener('change', async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  const wb=await readWB(f); const rows=sheetToJSON(wb,'Malla'); PRE_MALLA_ROWS=rows;
+  const S=new Set(), M=new Set(), C=new Set();
+  rows.forEach(r=>{
+    if(r['CARRERA']) S.add(norm(r['CARRERA']));
+    if(r['MALLA']) M.add(norm(r['MALLA']));
+    const cic=r['CICLO']||r['CICLO MALLA']; if(cic) C.add(norm(cic));
+  });
+  const fill=(el,set)=>{el.innerHTML=[...set].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');};
+  fill(document.getElementById('fltCarrera'),S);
+  fill(document.getElementById('fltMalla'),M);
+  fill(document.getElementById('fltCiclo'),C);
+});
+
 /* ===== Índices Malla / Docentes ===== */
 function buildMallaAggregate(rows){
+  const studentCols = Object.keys(rows[0]||{}).filter(k=>/ESTUDIANT|MATRIC|ALUMN/i.test(k));
   const agg=new Map();
   for(const r of rows){
     const materia=norm(r['MATERIA']); if(!materia) continue;
     const k=canonMateria(materia);
     if(!agg.has(k)){
       agg.set(k,{materiaOrig:materia,carreras:new Set(),mallas:new Set(),prereqs:new Set(),
-        codigos:new Map(),hteor:new Map(),hprac:new Map(),hauton:new Map(),creditos:new Map(),campo:new Map(),ciclo:new Map(),norden:new Map()});
+        codigos:new Map(),hteor:new Map(),hprac:new Map(),hauton:new Map(),creditos:new Map(),
+        campo:new Map(),ciclo:new Map(),norden:new Map(),estudiantes:new Map(),estMax:0});
     }
     const a=agg.get(k), car=norm(r['CARRERA']);
     a.carreras.add(car);
@@ -190,8 +218,17 @@ function buildMallaAggregate(rows){
     put(a.hauton,  r['HORAS AUTÓNOMAS']||r['HORAS AUTONOMAS']);
     put(a.creditos,r['CRÉDITOS']||r['CREDITOS']);
     put(a.campo,   r['CAMPO DE FORMACIÓN']||r['CAMPO']);
-    put(a.ciclo,   r['CICLO']);
+    put(a.ciclo,   r['CICLO']||r['CICLO MALLA']);
     put(a.norden,  r['Nº ORDEN EN LA MALLA']||r['NUMERO DE ORDEN EN LA MALLA']||r['N ORDEN EN LA MALLA']);
+
+    // estudiantes
+    let est = 0;
+    for(const sc of studentCols){
+      const val = r[sc];
+      const n = parseInt(String(val).replace(/[^\d]/g,''),10);
+      if(!isNaN(n) && n>0){ est=n; break; }
+    }
+    if(est>0){ a.estudiantes.set(car, est); a.estMax = Math.max(a.estMax, est); }
   }
   return agg;
 }
@@ -236,8 +273,7 @@ function matchDocentesForMateria(canonKey, tokenSet, docentesIdx){
   let best=[],score=0; for(const it of docentesIdx.all){const s=jaccard(tokenSet,it.TOKENS); if(s>score){score=s; best=[it];} else if(s===score && s>0){best.push(it);} }
   return score>=0.60 ? best : [];
 }
-/* Dedupe paralelos por docente */
-function dedupeByDocente(candidates, targetTokens){
+function dedupeByDocente(candidates, targetTokens, required){
   const keyDoc = n => rmDiac(upper(n));
   const bestByDoc = new Map();
   for(const it of candidates){
@@ -247,27 +283,21 @@ function dedupeByDocente(candidates, targetTokens){
       bestByDoc.set(k, {item: it, score});
     }
   }
-  return Array.from(bestByDoc.values()).map(x=>x.item);
+  let out = Array.from(bestByDoc.values()).map(x=>x.item);
+  if(out.length>=required) return out;
+  while(out.length<required && out.length>0){ out.push(out[0]); }
+  return out;
 }
 
 /* ===== Observaciones ===== */
-let OBSERVACIONES = []; // {tipo, materia, carreras[], mallas[]}
+let OBSERVACIONES = [];
 
 /* ===== Ensamble + asignación ===== */
 function assembleRows(aggMalla, idxDoc){
   const filas=[]; OBSERVACIONES=[];
   for(const [k,info] of aggMalla.entries()){
-    let cand = matchDocentesForMateria(k, tokens(info.materiaOrig), idxDoc);
-    if(!cand.length){
-      OBSERVACIONES.push({
-        tipo:'SIN_DOCENTE',
-        materia:info.materiaOrig,
-        carreras:[...info.carreras].sort((a,b)=>a.localeCompare(b,'es')),
-        mallas:[...info.mallas].sort((a,b)=>a.localeCompare(b,'es'))
-      });
-      continue;
-    }
-    cand = dedupeByDocente(cand, tokens(info.materiaOrig));
+    const targetToks = tokens(info.materiaOrig);
+    let cand = matchDocentesForMateria(k, targetToks, idxDoc);
 
     const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
     const pack=mp=>carreras.map(c=>mp.get(c)??'').join(' / ');
@@ -278,14 +308,32 @@ function assembleRows(aggMalla, idxDoc){
       CAMPO_DE_FORMACION:pack(info.campo),CICLO_MALLA:pack(info.ciclo),
       N_ORDEN_MALLA:pack(info.norden),_carreras:carreras,_ciclos:carreras.map(c=>info.ciclo.get(c)??'')};
 
-    cand.forEach((d,j)=>{
-      filas.push({DOCENTE:d.DOCENTE,TITULO_ACADEMICO:d.TITULO,DEDICACION:d.DEDIC,MATERIA:base.MATERIA,
+    const parallels = (info.estMax && info.estMax>28)?2:1;
+
+    if(!cand.length){
+      OBSERVACIONES.push(`Materia sin docente: ${info.materiaOrig} (Carreras: ${base.CARRERAS_COMPARTEN||'—'}, Malla: ${base.MALLA||'—'})`);
+      for(let j=0;j<parallels;j++){
+        filas.push({DOCENTE:'',TITULO_ACADEMICO:'',DEDICACION:'',MATERIA:base.MATERIA,
+          CODIGO_ANTHOLOGY:'',CARRERAS_COMPARTEN:base.CARRERAS_COMPARTEN,MALLA:base.MALLA,PRE_REQUISITO:base.PRE_REQUISITO,
+          CODIGO:base.CODIGO,HORAS_TEORICAS:base.HORAS_TEORICAS,HORAS_PRACTICAS:base.HORAS_PRACTICAS,HORAS_AUTONOMAS:base.HORAS_AUTONOMAS,
+          CREDITOS:base.CREDITOS,CAMPO_DE_FORMACION:base.CAMPO_DE_FORMACION,CICLO_MALLA:base.CICLO_MALLA,N_ORDEN_MALLA:base.N_ORDEN_MALLA,
+          PARALELO:ABC[j],DIA:'',HORA:'',MODALIDAD:'',NRO_HORAS:'',
+          _dias:DIAS,_slots:SLOTS,_carreras:base._carreras,_ciclos:base._ciclos,_flag:'estricto'});
+      }
+      continue;
+    }
+
+    cand = dedupeByDocente(cand, targetToks, parallels);
+
+    for(let j=0;j<parallels;j++){
+      const d = cand[j] ?? cand[0];
+      filas.push({DOCENTE:d.DOCENTE||'',TITULO_ACADEMICO:d.TITULO||'',DEDICACION:d.DEDIC||'',MATERIA:base.MATERIA,
         CODIGO_ANTHOLOGY:'',CARRERAS_COMPARTEN:base.CARRERAS_COMPARTEN,MALLA:base.MALLA,PRE_REQUISITO:base.PRE_REQUISITO,
         CODIGO:base.CODIGO,HORAS_TEORICAS:base.HORAS_TEORICAS,HORAS_PRACTICAS:base.HORAS_PRACTICAS,HORAS_AUTONOMAS:base.HORAS_AUTONOMAS,
         CREDITOS:base.CREDITOS,CAMPO_DE_FORMACION:base.CAMPO_DE_FORMACION,CICLO_MALLA:base.CICLO_MALLA,N_ORDEN_MALLA:base.N_ORDEN_MALLA,
-        PARALELO:ABC[j]??`P${j+1}`,DIA:'',HORA:'',MODALIDAD:d.MODALIDAD,NRO_HORAS:'',
-        _dias:d.DIAS,_slots:d.SLOTS,_carreras:base._carreras,_ciclos:base._ciclos,_flag:'estricto'});
-    });
+        PARALELO:ABC[j],DIA:'',HORA:'',MODALIDAD:d.MODALIDAD||'',NRO_HORAS:'',
+        _dias:(d.DIAS&&d.DIAS.length)?d.DIAS:DIAS,_slots:(d.SLOTS&&d.SLOTS.length)?d.SLOTS:SLOTS,_carreras:base._carreras,_ciclos:base._ciclos,_flag:'estricto'});
+    }
   }
   return {filas};
 }
@@ -295,7 +343,7 @@ function assignSchedules100(filas){
   function canPlace(row,dia,slot,{checkAdj=true,maxPerDay=2}){
     if(!occDoc.has(row.DOCENTE)) occDoc.set(row.DOCENTE,{});
     const rec=occDoc.get(row.DOCENTE)[dia]??{count:0,slots:new Set()};
-    if(rec.count>=maxPerDay) return false;
+    if(row.DOCENTE && rec.count>=maxPerDay) return false;
     if(rec.slots.has(slot)) return false;
     if(checkAdj){
       const slotKey=`${dia} ${slot}`;
@@ -310,6 +358,7 @@ function assignSchedules100(filas){
     return true;
   }
   function apply(row,dia,slot){
+    if(!occDoc.has(row.DOCENTE)) occDoc.set(row.DOCENTE,{});
     const rec=occDoc.get(row.DOCENTE)[dia]??{count:0,slots:new Set()};
     rec.count++; rec.slots.add(slot); occDoc.get(row.DOCENTE)[dia]=rec;
     const slotKey=`${dia} ${slot}`;
@@ -332,7 +381,7 @@ function assignSchedules100(filas){
   ];
 
   filas.sort((a,b)=>Math.min(...a._ciclos.map(c=>cicloIdx(c)))-Math.min(...b._ciclos.map(c=>cicloIdx(c))));
-  const conteo={estricto:0,sin_ady:0,hasta3dia:0,ignora_disp:0,forzado:0, sin_horario:0};
+  const conteo={estricto:0,sin_ady:0,hasta3dia:0,ignora_disp:0,forzado:0};
   for(const r of filas){
     let placed=false;
     for(const f of fases){
@@ -348,16 +397,7 @@ function assignSchedules100(filas){
       }
       if(placed) break;
     }
-    if(!placed){
-      conteo.sin_horario++;
-      OBSERVACIONES.push({
-        tipo:'SIN_HORARIO',
-        materia:r.MATERIA,
-        carreras:r._carreras.slice(),
-        mallas: (r.MALLA? r.MALLA.split(' / '):[])
-      });
-      apply(r,DIAS[0],SLOTS[0]); r._flag='forzado'; conteo.forzado++;
-    }
+    if(!placed){ apply(r,DIAS[0],SLOTS[0]); r._flag='forzado'; conteo.forzado++; }
   }
   return {filas,conteo};
 }
@@ -386,80 +426,16 @@ function assignSchedules100(filas){
   });
 })();
 
-/* ===== Render de observaciones con MENÚ de Materias ===== */
-function renderObsPanel(){
-  if(!OBSERVACIONES.length){
-    document.getElementById('panelObs').style.display='none';
-    return;
-  }
-  const panel = document.getElementById('panelObs');
-  panel.style.display='block';
-  document.getElementById('obsBar').style.display='flex';
-
-  // Poblar Carrera y Malla
-  const setCarr = new Set(), setMalla = new Set();
-  OBSERVACIONES.forEach(o=>{
-    o.carreras.forEach(c=>{ if(c) setCarr.add(c); });
-    o.mallas.forEach(m=>{ if(m) setMalla.add(m); });
-  });
-  const selCarr = document.getElementById('fCarrera');
-  const selMalla = document.getElementById('fMalla');
-  selCarr.innerHTML = '<option value="">Todas</option>' + [...setCarr].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
-  selMalla.innerHTML = '<option value="">Todas</option>' + [...setMalla].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
-
-  updateMateriaMenu(); // inicia
-  ['fTipo','fCarrera','fMalla'].forEach(id=>{
-    document.getElementById(id).onchange = updateMateriaMenu;
-  });
-  document.getElementById('fMateria').onchange = showMateriaInfo;
+/* ===== Procesamiento con filtros superiores ===== */
+function getMultiValues(id){return Array.from(document.getElementById(id).selectedOptions).map(o=>o.value);}
+function applyPreFilters(rows){
+  const s=getMultiValues('fltCarrera');
+  const m=getMultiValues('fltMalla');
+  const c=getMultiValues('fltCiclo');
+  const ok=(val,list)=>!list.length || list.includes(norm(val));
+  return rows.filter(r=> ok(r['CARRERA'],s) && ok(r['MALLA'],m) && ok(r['CICLO']||r['CICLO MALLA'],c));
 }
 
-function updateMateriaMenu(){
-  const tipo = document.getElementById('fTipo').value;
-  const carrera = document.getElementById('fCarrera').value;
-  const malla = document.getElementById('fMalla').value;
-  const selMat = document.getElementById('fMateria');
-  const opciones = Array.from(new Set(
-    OBSERVACIONES
-      .filter(o=>!tipo || o.tipo===tipo)
-      .filter(o=>!carrera || o.carreras.includes(carrera))
-      .filter(o=>!malla || o.mallas.includes(malla))
-      .map(o=>o.materia)
-  )).sort((a,b)=>a.localeCompare(b,'es'));
-  selMat.innerHTML = '<option value="">Seleccione…</option>' + opciones.map(m=>`<option value="${m}">${m}</option>`).join('');
-  document.getElementById('obsInfo').style.display = 'none';
-  document.getElementById('obsInfo').innerHTML = '';
-}
-
-function showMateriaInfo(){
-  const materia = document.getElementById('fMateria').value;
-  const tipo = document.getElementById('fTipo').value;
-  const carrera = document.getElementById('fCarrera').value;
-  const malla = document.getElementById('fMalla').value;
-  const info = document.getElementById('obsInfo');
-  if(!materia){ info.style.display='none'; info.innerHTML=''; return; }
-
-  const items = OBSERVACIONES
-    .filter(o=>o.materia===materia)
-    .filter(o=>!tipo || o.tipo===tipo)
-    .filter(o=>!carrera || o.carreras.includes(carrera))
-    .filter(o=>!malla || o.mallas.includes(malla));
-
-  // Agregar resumen combinado
-  const tipos = Array.from(new Set(items.map(i=>i.tipo)));
-  const carreras = Array.from(new Set(items.flatMap(i=>i.carreras))).sort((a,b)=>a.localeCompare(b,'es'));
-  const mallas = Array.from(new Set(items.flatMap(i=>i.mallas))).sort((a,b)=>a.localeCompare(b,'es'));
-
-  info.innerHTML = `
-    <div class="meta"><strong>Materia:</strong> ${materia}</div>
-    <div class="meta"><strong>Tipo(s):</strong> ${tipos.map(t=>`<span class="tag">${t==='SIN_DOCENTE'?'SIN DOCENTE':'SIN HORARIO'}</span>`).join(' ')||'—'}</div>
-    <div class="meta"><strong>Carrera(s):</strong> ${carreras.map(c=>`<span class="tag">${c}</span>`).join(' ')||'—'}</div>
-    <div class="meta"><strong>Malla(s):</strong> ${mallas.map(m=>`<span class="tag">${m}</span>`).join(' ')||'—'}</div>
-  `;
-  info.style.display='block';
-}
-
-/* ===== Flujo principal ===== */
 document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const fM=document.getElementById('fileMalla').files[0];
   const fD=document.getElementById('fileDocentes').files[0];
@@ -467,11 +443,15 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
 
   clearTable(); OBSERVACIONES=[];
   document.getElementById('panelObs').style.display='none';
+  document.getElementById('obsInfo').innerHTML='';
   document.getElementById('resumen').style.display='none';
 
   const wbM=await readWB(fM), wbD=await readWB(fD);
-  const malla=sheetToJSON(wbM,'Malla'), docentes=sheetToJSON(wbD,'Docentes');
-  if(!malla.length||!docentes.length){alert('Verifique hojas: Malla y Docentes.');return;}
+  let malla=sheetToJSON(wbM,'Malla');
+  // filtros previos
+  malla = applyPreFilters(malla);
+  if(!malla.length){alert('Sin filas tras aplicar filtros.');return;}
+  const docentes=sheetToJSON(wbD,'Docentes');
 
   const aggMalla=buildMallaAggregate(malla);
   const idxDoc=buildDocentesIndex(docentes);
@@ -480,15 +460,25 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
 
   asignadas.forEach(addRow);
 
+  if(OBSERVACIONES.length){
+    const info=document.getElementById('obsInfo');
+    info.innerHTML = OBSERVACIONES.map(x=>`<div class="tag">${x}</div>`).join('');
+    document.getElementById('panelObs').style.display='block';
+  }
+
   const badge=document.getElementById('resumen');
   const total=asignadas.length, estr=conteo.estricto||0;
-  badge.textContent=`TOTAL: ${total} | Estricto: ${estr} | Sin ady.: ${conteo.sin_ady||0} | Hasta 3/día: ${conteo.hasta3dia||0} | Ignora disp.: ${conteo.ignora_disp||0} | Forzado: ${conteo.forzado||0} | Observaciones: ${OBSERVACIONES.length}`;
+  badge.textContent=`TOTAL: ${total} | Estricto: ${estr} | Sin ady.: ${conteo.sin_ady||0} | Hasta 3/día: ${conteo.hasta3dia||0} | Ignora disp.: ${conteo.ignora_disp||0} | Forzado: ${conteo.forzado||0}`;
   badge.style.display='inline-block';
-
-  renderObsPanel();
 
   document.getElementById('btnXLSX').disabled=false;
   document.getElementById('btnCSV').disabled=false;
+});
+
+document.getElementById('btnLimpiarFiltros').addEventListener('click',()=>{
+  ['fltCarrera','fltMalla','fltCiclo'].forEach(id=>{
+    const el=document.getElementById(id); for(const o of el.options) o.selected=false;
+  });
 });
 
 /* Exportar y limpiar */
@@ -508,7 +498,8 @@ document.getElementById('btnCSV').addEventListener('click',()=>{
 });
 document.getElementById('btnLimpiar').addEventListener('click',()=>{
   document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value='';
-  clearTable(); OBSERVACIONES=[];
+  ['fltCarrera','fltMalla','fltCiclo'].forEach(id=>document.getElementById(id).innerHTML='');
+  clearTable(); OBSERVACIONES=[]; document.getElementById('obsInfo').innerHTML='';
   document.getElementById('panelObs').style.display='none';
   document.getElementById('btnXLSX').disabled=true; document.getElementById('btnCSV').disabled=true;
   document.getElementById('resumen').style.display='none';
