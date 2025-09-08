@@ -32,7 +32,7 @@ input[type="file"]{display:block}
   <img src="UIDE-Ecuador.png" alt="UIDE Ecuador">
   <div>
     <h1>Matriz de Planificación Académica</h1>
-    <small>Asignación automática sin vacíos: normalización + similitud, disponibilidad, 2 máx/día, sin choques de ciclos adyacentes.</small>
+    <small>Emparejamiento ESTRICTO Materia↔Docente + disponibilidad, 2 máx/día, sin choques de ciclos adyacentes.</small>
   </div>
 </header>
 
@@ -85,6 +85,8 @@ input[type="file"]{display:block}
 </div>
 
 <script>
+/* ========= Colores institucionales disponibles (en estilos) ========= */
+
 /* =================== Utilidades =================== */
 const SLOTS = [
   {label:"07:00-10:00", s:"07:00", e:"10:00"},
@@ -95,7 +97,6 @@ const SLOTS = [
 ];
 const DIAS = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"];
 const ORDEN_CICLOS = ["PRIMERO","SEGUNDO","TERCERO","CUARTO","QUINTO","SEXTO","SEPTIMO","SÉPTIMO","OCTAVO","NOVENO","DECIMO","DÉCIMO"];
-const STOP = new Set(["DE","DEL","LA","EL","LOS","LAS","Y","EN","PARA","DEL","AL","SU","SUS","II","I"]);
 
 const $status = document.getElementById('status');
 const $tbody  = document.querySelector('#tabla tbody');
@@ -104,33 +105,19 @@ function norm(s){return (s ?? "").toString().trim();}
 function normU(s){return norm(s).toUpperCase();}
 function stripAccents(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
 function squashSpaces(s){return s.replace(/\s+/g," ").trim();}
-function lettersDigitsOnly(s){return s.replace(/[^A-Z0-9 ]+/g," ").replace(/\s+/g," ").trim();}
-function normalizeText(s){
-  let t = stripAccents(normU(s));
-  t = t.replace(/\s+/g," ").trim();
-  t = lettersDigitsOnly(t);
-  return t;
-}
-function tokens(s){
-  return normalizeText(s).split(" ").filter(w=>w && !STOP.has(w));
-}
-function jaccard(a,b){
-  const A = new Set(a), B = new Set(b);
-  let inter = 0;
-  for(const x of A) if(B.has(x)) inter++;
-  const uni = new Set([...A,...B]).size || 1;
-  return inter/uni;
+function normalizeMateria(s){
+  return stripAccents(normU(squashSpaces(s))); // EJ: "Herramientas   Informáticas" -> "HERRAMIENTAS INFORMATICAS"
 }
 function toMin(hhmm){
-  const [h,m] = hhmm.split(":").slice(0,2).map(Number);
-  return (isNaN(h)?0:h)*60 + (isNaN(m)?0:m);
+  const parts = hhmm.split(':').slice(0,2).map(Number);
+  const h = parts[0] || 0, m = parts[1] || 0;
+  return h*60 + m;
 }
 function slotIncluyeRango(slot, rango){
   if(!rango) return false;
   let r = rango.toUpperCase().replace(/\s+/g,'');
   r = r.replace('A','-'); // "07:00A22:00"
   if(!r.includes('-')){
-    // Punto horario (ej. "13:00:00" o "13:00")
     const hhmm = r.split(':').slice(0,2).join(':');
     const t = toMin(hhmm);
     return t>=toMin(slot.s) && t<=toMin(slot.e);
@@ -142,7 +129,7 @@ function slotIncluyeRango(slot, rango){
 }
 function expandDias(txt){
   if(!txt) return [];
-  let t = stripAccents(normU(txt)).replace("MIERCOLES","MIERCOLES");
+  let t = stripAccents(normU(txt)).replace("MIÉRCOLES","MIERCOLES");
   if(t.includes("LUNES A VIERNES")) return [...DIAS];
   return t.split(/,| Y /g).map(x=>x.trim()).filter(Boolean);
 }
@@ -162,7 +149,7 @@ function leerHoja(file, sheet){
   });
 }
 
-/* =================== Disponibilidad Docentes =================== */
+/* =================== Disponibilidad Docentes e Índice Exacto =================== */
 function esDocenteValido(nombre){
   const n = normU(nombre);
   if(!n) return false;
@@ -170,59 +157,36 @@ function esDocenteValido(nombre){
   if(n==="CONFIRMAR") return false;
   return true;
 }
-function disponibilidadDocentes(rows){
-  // Map DOCENTE -> info (dias, slots, modalidad, titulo, dedic, materias[])
-  const map = new Map();
+function construirIndiceDocentes(rows){
+  // índice EXACTO por materia normalizada -> lista de docentes
+  const idx = new Map();
+  const meta = new Map(); // docente -> {dias,slots,modalidad,titulo,dedic}
   for(const r of rows){
     const d = normU(r["DOCENTE"]); if(!esDocenteValido(d)) continue;
+    const mat = normalizeMateria(r["MATERIA"]);
+    if(!mat) continue;
+
     const dias = new Set(expandDias(r["DIA DISPONIBLE"]));
     const horas = normU(r["HORA DISPONIBLE"]);
     const slots = new Set();
     for(const s of SLOTS) if(slotIncluyeRango(s, horas)) slots.add(s.label);
-    if(slots.size===0) for(const s of SLOTS) slots.add(s.label); // si no definió rango, permitir todas
+    if(slots.size===0) for(const s of SLOTS) slots.add(s.label);
 
-    if(!map.has(d)) map.set(d,{dias:new Set(), slots:new Set(), modalidad:new Set(), titulo:new Set(), dedic:new Set(), materias:[]});
-    const o = map.get(d);
-    dias.forEach(x=>o.dias.add(x));
-    slots.forEach(x=>o.slots.add(x));
-    if(r["Modalidad"]) o.modalidad.add(normU(r["Modalidad"]));
-    if(r["TITULO ACADÉMICO"]) o.titulo.add(normU(r["TITULO ACADÉMICO"]));
-    if(r["DEDICACION"] || r["DEDICACIÓN"]) o.dedic.add(normU(r["DEDICACION"]||r["DEDICACIÓN"]));
-    if(r["MATERIA"]){
-      const m = normalizeText(r["MATERIA"]);
-      if(m) o.materias.push({raw: r["MATERIA"], norm: m, tok: tokens(r["MATERIA"])});
-    }
+    if(!meta.has(d)) meta.set(d,{dias:new Set(), slots:new Set(), modalidad:new Set(), titulo:new Set(), dedic:new Set()});
+    const m = meta.get(d);
+    dias.forEach(x=>m.dias.add(x));
+    slots.forEach(x=>m.slots.add(x));
+    if(r["Modalidad"]) m.modalidad.add(normU(r["Modalidad"]));
+    if(r["TITULO ACADÉMICO"]) m.titulo.add(normU(r["TITULO ACADÉMICO"]));
+    if(r["DEDICACION"] || r["DEDICACIÓN"]) m.dedic.add(normU(r["DEDICACION"]||r["DEDICACIÓN"]));
+
+    if(!idx.has(mat)) idx.set(mat,[]);
+    idx.get(mat).push(d);
   }
-  return map;
+  return {idx, meta};
 }
 
-/* =================== Índice de Materia -> Docentes (por similitud) =================== */
-function indiceMateriaDocentes(docMap){
-  // Retorna función candidatos(materiaTexto) -> [{doc,score}]
-  const lista = [];
-  for(const [doc, info] of docMap.entries()){
-    for(const m of info.materias){
-      lista.push({doc, mnorm: m.norm, mtok: m.tok});
-    }
-  }
-  return function candidatos(texto){
-    const mn = normalizeText(texto);
-    const mt = tokens(texto);
-    const out = [];
-    for(const it of lista){
-      // similitud: jaccard tokens + contains de cadenas normalizadas
-      const sJ = jaccard(mt, it.mtok);
-      const contains = it.mnorm.includes(mn) || mn.includes(it.mnorm);
-      const score = contains ? Math.max(0.81, sJ) : sJ;
-      if(score >= 0.78) out.push({doc: it.doc, score});
-    }
-    // ordenar mejor score primero
-    out.sort((a,b)=>b.score-a.score);
-    return out;
-  };
-}
-
-/* =================== Construcción de filas base (una por carrera) =================== */
+/* =================== Filas de Malla (una por carrera) =================== */
 function construirFilasMalla(mallas){
   const out = mallas.map(r=>{
     const materia = squashSpaces(norm(r["MATERIA"]));
@@ -232,6 +196,7 @@ function construirFilasMalla(mallas){
       MALLA: norm(r["MALLA"]),
       CICLO: ciclo,
       MATERIA: materia,
+      _MAT_KEY: normalizeMateria(materia),
       "CÓDIGO ANTHOLOGY": norm(r["CÓDIGO ANTHOLOGY"]||""),
       "PRE-REQUISITO": norm(r["PRE-REQUISITO"]||r["PRERREQUISITO"]||r["PRE REQUISITO"]||""),
       CODIGO: norm(r["CÓDIGO"]||r["CODIGO"]),
@@ -245,30 +210,47 @@ function construirFilasMalla(mallas){
       DOCENTE: "",
       "TITULO ACADÉMICO": "",
       DEDICACIÓN: "",
-      "CARRERAS QUE COMPARTEN": "",
-      _NTOK: tokens(materia),
-      _NNORM: normalizeText(materia)
+      "CARRERAS QUE COMPARTEN": ""
     };
   });
+
   // CARRERAS QUE COMPARTEN por (materia,malla,ciclo)
-  const key = r=>[r._NNORM, r.MALLA, r.CICLO].join("|");
+  const key = r=>[r._MAT_KEY, r.MALLA, r.CICLO].join("|");
   const g = new Map();
   for(const r of out){ const k=key(r); if(!g.has(k)) g.set(k,[]); g.get(k).push(r); }
   for(const arr of g.values()){
     const lista = [...new Set(arr.map(x=>x.CARRERA))].join("/");
     arr.forEach(x=>x["CARRERAS QUE COMPARTEN"]=lista);
   }
-  // Paralelos A/B/C
-  const cont = new Map();
-  const kPar = r=>[r.CARRERA,r.MALLA,r.CICLO,r._NNORM].join("|");
-  for(const r of out){
-    const kp=kPar(r); const n=(cont.get(kp)||0)+1; cont.set(kp,n);
-    r.PARALELO = String.fromCharCode(64+n);
+  return out;
+}
+
+/* =================== Replicación por docentes (paralelos exactos) =================== */
+function expandirPorDocentes(filasMalla, idxDoc){
+  const out = [];
+  const contParalelo = new Map(); // (CARRERA|MALLA|CICLO|MATERIA) -> n
+  const kPar = r=>[r.CARRERA,r.MALLA,r.CICLO,r._MAT_KEY].join("|");
+
+  for(const r of filasMalla){
+    const lista = idxDoc.get(r._MAT_KEY) || [];
+    if(lista.length===0){
+      // sin docente conocido -> fila sin docente (no forzar emparejamientos erróneos)
+      const cp = {...r, PARALELO:"A"}; // único placeholder
+      out.push(cp);
+      continue;
+    }
+    for(const d of lista){
+      const cp = {...r};
+      const n = (contParalelo.get(kPar(cp))||0)+1; contParalelo.set(kPar(cp),n);
+      cp.PARALELO = String.fromCharCode(64+n); // A,B,C…
+      cp.DOCENTE = d;
+      out.push(cp);
+    }
   }
   return out;
 }
 
-/* =================== Asignador (Backtracking + MRV) =================== */
+/* =================== Asignación día/hora (Backtracking sobre filas ya asignadas a un docente) =================== */
 function vecinosCiclo(ciclo){
   const C = stripAccents(normU(ciclo));
   let idx = ORDEN_CICLOS.indexOf(C);
@@ -279,11 +261,9 @@ function vecinosCiclo(ciclo){
   const v=[]; if(idx>0) v.push(ORDEN_CICLOS[idx-1]); if(idx>=0 && idx<ORDEN_CICLOS.length-1) v.push(ORDEN_CICLOS[idx+1]);
   return v;
 }
-function planificar(filas, docMap, candidatosDe){
-  // Estado
+function planificar(filas, metaDoc){
   const ocupDocDia = new Map(); // docente -> { DIA -> {count, slots:Set} }
   const ocupCiclo  = new Map(); // key(carrera|malla|ciclo) -> Set("DIA|SLOT")
-  const cargaDoc   = new Map(); // docente -> total asignaciones
 
   function cicloKey(r){return `${r.CARRERA}|${r.MALLA}|${r.CICLO}`;}
   function puedeDoc(d, dia, slot){
@@ -311,17 +291,18 @@ function planificar(filas, docMap, candidatosDe){
     let set = ocupCiclo.get(k); if(!set){set=new Set(); ocupCiclo.set(k,set);}
     if(inc) set.add(`${dia}|${slot}`); else set.delete(`${dia}|${slot}`);
   }
-  function opcionesDoc(r, d){
-    const info = docMap.get(d);
-    const dias = info? [...info.dias]:DIAS;
-    const slots= info? [...info.slots]:SLOTS.map(s=>s.label);
+  function opciones(r, d){
+    const info = metaDoc.get(d);
+    if(!info) return []; // no hay disponibilidad declarada
+    const dias = [...info.dias];
+    const slots= [...info.slots];
     const out=[];
     for(const sl of slots) for(const di of dias){
       if(!puedeDoc(d,di,sl)) continue;
       if(hayChoqueCiclo(r,di,sl)) continue;
       out.push([di,sl]);
     }
-    // priorizar donde el docente tiene menos carga ese día
+    // priorizar por menor carga del día del docente
     out.sort((a,b)=>{
       const ra=(ocupDocDia.get(d)?.[a[0]]?.count)||0;
       const rb=(ocupDocDia.get(d)?.[b[0]]?.count)||0;
@@ -329,71 +310,35 @@ function planificar(filas, docMap, candidatosDe){
     });
     return out;
   }
-  function completarMetaDoc(r, d){
-    const info = docMap.get(d);
-    r.DOCENTE = d;
-    r["TITULO ACADÉMICO"] = info && info.titulo.size? [...info.titulo][0] : r["TITULO ACADÉMICO"];
-    r.DEDICACIÓN = info && info.dedic.size? [...info.dedic][0] : r.DEDICACIÓN;
-    r.MODALIDAD = info && info.modalidad.size? [...info.modalidad][0] : r.MODALIDAD;
-  }
 
-  // Ordenar filas por “difíciles primero”: menos candidatos
-  const problemas = filas.map((r,i)=>{
-    const cands = candidatosDe(r.MATERIA).map(x=>x.doc);
-    return {idx:i, fila:r, cands};
+  // Orden: primero las filas con menos opciones (MRV)
+  const trabajos = filas.map((r,i)=>{
+    if(!r.DOCENTE) return {idx:i, fila:r, ops:[]}; // quedará sin asignar
+    const ops = opciones(r, r.DOCENTE);
+    return {idx:i, fila:r, ops};
   });
-  problemas.sort((a,b)=>a.cands.length - b.cands.length);
+  trabajos.sort((a,b)=>a.ops.length - b.ops.length);
 
-  function elegirFallback(){
-    // docente con mayor disponibilidad y menor carga
-    const lista=[];
-    for(const [d,info] of docMap.entries()){
-      if(!esDocenteValido(d)) continue;
-      lista.push({d, cap: info.dias.size*info.slots.size, carga: (cargaDoc.get(d)||0)});
-    }
-    lista.sort((a,b)=> (b.cap-a.cap) || (a.carga-b.carga));
-    return lista.length? lista[0].d : null;
-  }
-
-  const N = problemas.length;
   function bt(k){
-    if(k===N) return true;
-    const p = problemas[k], r = p.fila;
-    let candidatos = p.cands.slice();
-
-    if(candidatos.length===0){
-      const fb = elegirFallback();
-      if(fb) candidatos=[fb]; else candidatos=[];
+    if(k===trabajos.length) return true;
+    const t = trabajos[k], r = t.fila;
+    if(!r.DOCENTE || t.ops.length===0){
+      r.DIA="[SIN ESPACIO]"; r.HORA="[SIN ESPACIO]";
+      return bt(k+1);
     }
-
-    // ordenar candidatos por (menor carga actual)
-    candidatos.sort((a,b)=> (cargaDoc.get(a)||0) - (cargaDoc.get(b)||0));
-
-    for(const d of candidatos){
-      const ops = opcionesDoc(r, d);
-      if(ops.length===0) continue;
-      completarMetaDoc(r,d);
-      for(const [dia,slot] of ops){
-        ocupaDoc(d,dia,slot,true);
-        ocupaCiclo(r,dia,slot,true);
-        r.DIA=dia; r.HORA=slot;
-        cargaDoc.set(d,(cargaDoc.get(d)||0)+1);
-        if(bt(k+1)) return true;
-        // backtrack
-        cargaDoc.set(d,(cargaDoc.get(d)||1)-1);
-        ocupaCiclo(r,dia,slot,false);
-        ocupaDoc(d,dia,slot,false);
-        r.DIA=""; r.HORA="";
-      }
-      // limpiar metadatos si no funcionó
-      r.DOCENTE=""; r["TITULO ACADÉMICO"]=""; r.DEDICACIÓN=""; r.MODALIDAD="";
+    for(const [dia,slot] of t.ops){
+      ocupaDoc(r.DOCENTE,dia,slot,true);
+      ocupaCiclo(r,dia,slot,true);
+      r.DIA=dia; r.HORA=slot;
+      if(bt(k+1)) return true;
+      // deshacer
+      ocupaCiclo(r,dia,slot,false);
+      ocupaDoc(r.DOCENTE,dia,slot,false);
+      r.DIA=""; r.HORA="";
     }
-
-    // Si nada funcionó, marcamos sin espacio y seguimos
     r.DIA="[SIN ESPACIO]"; r.HORA="[SIN ESPACIO]";
     return bt(k+1);
   }
-
   bt(0);
   return filas;
 }
@@ -430,9 +375,9 @@ document.getElementById('btn').addEventListener('click', async ()=>{
     $status.textContent = "Leyendo archivos…";
     const [mallasRaw, docentesRaw] = await Promise.all([leerHoja(fM,"Malla"), leerHoja(fD,"Docentes")]);
 
-    // Normalizaciones mínimas en Docentes (para robustez)
+    // Normalizaciones mínimas en Docentes
     for(const r of docentesRaw){
-      r["DOCENTE"]=squashSpaces(normU(r["DOCENTE"]));
+      r["DOCENTE"]=normU(squashSpaces(r["DOCENTE"]));
       r["DIA DISPONIBLE"]=normU(r["DIA DISPONIBLE"]).replace("MIÉRCOLES","MIERCOLES");
       r["HORA DISPONIBLE"]=normU(r["HORA DISPONIBLE"]);
       r["Modalidad"]=normU(r["Modalidad"]);
@@ -441,15 +386,31 @@ document.getElementById('btn').addEventListener('click', async ()=>{
       r["MATERIA"]=squashSpaces(norm(r["MATERIA"]));
     }
 
-    const docMap = disponibilidadDocentes(docentesRaw);
-    const candidatosDe = indiceMateriaDocentes(docMap);
-    const filasBase = construirFilasMalla(mallasRaw);
-    const filasPlan = planificar(filasBase, docMap, candidatosDe);
+    const {idx: idxMateriaDoc, meta: metaDoc} = construirIndiceDocentes(docentesRaw);
+    const filasMalla = construirFilasMalla(mallasRaw);
+    const filasExpand = expandirPorDocentes(filasMalla, idxMateriaDoc);
+
+    // Completar metadatos de docente (título, dedicación y modalidad) en filas con docente asignado
+    for(const r of filasExpand){
+      if(r.DOCENTE && metaDoc.has(r.DOCENTE)){
+        const info = metaDoc.get(r.DOCENTE);
+        r["TITULO ACADÉMICO"] = info.titulo.size ? [...info.titulo][0] : r["TITULO ACADÉMICO"];
+        r.DEDICACIÓN = info.dedic.size ? [...info.dedic][0] : r.DEDICACIÓN;
+        r.MODALIDAD = info.modalidad.size ? [...info.modalidad][0] : r.MODALIDAD;
+      }
+    }
+
+    // Asignación de día/hora SOLO para filas con docente asignado
+    const filasPlan = planificar(filasExpand, metaDoc);
 
     render(filasPlan);
     const total = filasPlan.length;
-    const sin = filasPlan.filter(x=>x.DIA==="[SIN ESPACIO]"||x.HORA==="[SIN ESPACIO]").length;
-    $status.innerHTML = `<span class="${sin? 'err':'ok'}">${sin? 'Atención':'OK'}:</span> Se procesaron <b>${total}</b> registros. ${sin? (sin+' sin espacio disponible según restricciones.') : 'Sin choques.'}`;
+    const sinEspacio = filasPlan.filter(x=>x.DIA==="[SIN ESPACIO]"||x.HORA==="[SIN ESPACIO]").length;
+    const sinDoc = filasPlan.filter(x=>!x.DOCENTE).length;
+    $status.innerHTML = `<span class="${sinEspacio? 'err':'ok'}">${sinEspacio? 'Atención':'OK'}:</span> `+
+      `Se procesaron <b>${total}</b> registros. `+
+      `${sinDoc? `<b>${sinDoc}</b> sin docente (materia no existe en Docentes). `:``}`+
+      `${sinEspacio? `<b>${sinEspacio}</b> sin espacio disponible según restricciones.` : 'Sin choques.'}`;
   }catch(err){
     console.error(err);
     $status.innerHTML = `<span class="err">Error:</span> ${err.message||err}`;
