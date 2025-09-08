@@ -61,7 +61,6 @@ h3{margin:0 0 8px;color:#04136C}
     <div class="actions">
       <button id="btnProcesar" class="primary">Procesar</button>
       <button id="btnXLSX" class="accent" disabled>Descargar XLSX</button>
-      <button id="btnCSV"  class="accent" disabled>Descargar CSV</button>
       <button id="btnLimpiar" class="muted">Limpiar</button>
       <span id="resumen" class="badge" style="display:none"></span>
     </div>
@@ -396,7 +395,6 @@ function renderObsPanel(){
   panel.style.display='block';
   document.getElementById('obsBar').style.display='flex';
 
-  // Poblar Carrera y Malla
   const setCarr = new Set(), setMalla = new Set();
   OBSERVACIONES.forEach(o=>{
     o.carreras.forEach(c=>{ if(c) setCarr.add(c); });
@@ -407,7 +405,7 @@ function renderObsPanel(){
   selCarr.innerHTML = '<option value="">Todas</option>' + [...setCarr].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
   selMalla.innerHTML = '<option value="">Todas</option>' + [...setMalla].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
 
-  updateMateriaMenu(); // inicia
+  updateMateriaMenu();
   ['fTipo','fCarrera','fMalla'].forEach(id=>{
     document.getElementById(id).onchange = updateMateriaMenu;
   });
@@ -445,7 +443,6 @@ function showMateriaInfo(){
     .filter(o=>!carrera || o.carreras.includes(carrera))
     .filter(o=>!malla || o.mallas.includes(malla));
 
-  // Agregar resumen combinado
   const tipos = Array.from(new Set(items.map(i=>i.tipo)));
   const carreras = Array.from(new Set(items.flatMap(i=>i.carreras))).sort((a,b)=>a.localeCompare(b,'es'));
   const mallas = Array.from(new Set(items.flatMap(i=>i.mallas))).sort((a,b)=>a.localeCompare(b,'es'));
@@ -488,7 +485,6 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   renderObsPanel();
 
   document.getElementById('btnXLSX').disabled=false;
-  document.getElementById('btnCSV').disabled=false;
 });
 
 /* Exportar y limpiar */
@@ -501,16 +497,11 @@ document.getElementById('btnXLSX').addEventListener('click',()=>{
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, tableToSheet(), 'Matriz');
   XLSX.writeFile(wb,'Planificacion_UIDE.xlsx');
 });
-document.getElementById('btnCSV').addEventListener('click',()=>{
-  const csv=XLSX.utils.sheet_to_csv(tableToSheet());
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download='Planificacion_UIDE.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-});
 document.getElementById('btnLimpiar').addEventListener('click',()=>{
   document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value='';
   clearTable(); OBSERVACIONES=[];
   document.getElementById('panelObs').style.display='none';
-  document.getElementById('btnXLSX').disabled=true; document.getElementById('btnCSV').disabled=true;
+  document.getElementById('btnXLSX').disabled=true;
   document.getElementById('resumen').style.display='none';
 });
 </script>
