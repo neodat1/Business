@@ -61,6 +61,7 @@ h3{margin:0 0 8px;color:#04136C}
     <div class="actions">
       <button id="btnProcesar" class="primary">Procesar</button>
       <button id="btnXLSX" class="accent" disabled>Descargar XLSX</button>
+      <button id="btnCSV"  class="accent" disabled>Descargar CSV</button>
       <button id="btnLimpiar" class="muted">Limpiar</button>
       <span id="resumen" class="badge" style="display:none"></span>
     </div>
@@ -395,6 +396,7 @@ function renderObsPanel(){
   panel.style.display='block';
   document.getElementById('obsBar').style.display='flex';
 
+  // Poblar Carrera y Malla
   const setCarr = new Set(), setMalla = new Set();
   OBSERVACIONES.forEach(o=>{
     o.carreras.forEach(c=>{ if(c) setCarr.add(c); });
@@ -405,7 +407,7 @@ function renderObsPanel(){
   selCarr.innerHTML = '<option value="">Todas</option>' + [...setCarr].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
   selMalla.innerHTML = '<option value="">Todas</option>' + [...setMalla].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
 
-  updateMateriaMenu();
+  updateMateriaMenu(); // inicia
   ['fTipo','fCarrera','fMalla'].forEach(id=>{
     document.getElementById(id).onchange = updateMateriaMenu;
   });
@@ -443,6 +445,7 @@ function showMateriaInfo(){
     .filter(o=>!carrera || o.carreras.includes(carrera))
     .filter(o=>!malla || o.mallas.includes(malla));
 
+  // Agregar resumen combinado
   const tipos = Array.from(new Set(items.map(i=>i.tipo)));
   const carreras = Array.from(new Set(items.flatMap(i=>i.carreras))).sort((a,b)=>a.localeCompare(b,'es'));
   const mallas = Array.from(new Set(items.flatMap(i=>i.mallas))).sort((a,b)=>a.localeCompare(b,'es'));
@@ -485,6 +488,7 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   renderObsPanel();
 
   document.getElementById('btnXLSX').disabled=false;
+  document.getElementById('btnCSV').disabled=false;
 });
 
 /* Exportar y limpiar */
@@ -497,197 +501,18 @@ document.getElementById('btnXLSX').addEventListener('click',()=>{
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, tableToSheet(), 'Matriz');
   XLSX.writeFile(wb,'Planificacion_UIDE.xlsx');
 });
+document.getElementById('btnCSV').addEventListener('click',()=>{
+  const csv=XLSX.utils.sheet_to_csv(tableToSheet());
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='Planificacion_UIDE.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+});
 document.getElementById('btnLimpiar').addEventListener('click',()=>{
   document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value='';
   clearTable(); OBSERVACIONES=[];
   document.getElementById('panelObs').style.display='none';
-  document.getElementById('btnXLSX').disabled=true;
+  document.getElementById('btnXLSX').disabled=true; document.getElementById('btnCSV').disabled=true;
   document.getElementById('resumen').style.display='none';
 });
 </script>
-
-<!-- ===================== ADICIONES SOLICITADAS ===================== -->
-<script>
-/*  Todo lo siguiente **solo añade** funcionalidad:
-    - Columna ESTUDIANTES y dos celdas editables: RESTR. DÍAS y RESTR. HORAS
-    - Paralelos automáticos: máx. 30 estudiantes por paralelo (si >28 se fuerzan ≥2)
-    - Respeto de restricciones al asignar día y hora
-*/
-
-(function(){
-  const DIAS=['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES'];
-  const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
-  const ABC="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-
-  /* Añadir cabeceras nuevas si no existen */
-  function ensureExtraHeaders(){
-    const tr=document.querySelector('#matriz thead tr');
-    const existing=Array.from(tr.cells).map(c=>c.textContent.trim().toUpperCase());
-    const labels=['ESTUDIANTES','RESTR. DÍAS','RESTR. HORAS'];
-    labels.forEach(lbl=>{
-      if(!existing.includes(lbl)){
-        const th=document.createElement('th');
-        th.textContent=lbl;
-        const span=document.createElement('span'); span.className='arrow'; span.textContent='↕';
-        th.appendChild(document.createTextNode(' ')); th.appendChild(span);
-        tr.appendChild(th);
-      }
-    });
-  }
-  ensureExtraHeaders();
-
-  /* Guardar y reutilizar restricciones entre reprocesos */
-  window.__restr = window.__restr || {};
-  const _oldClear = window.clearTable;
-  window.clearTable = function(){
-    const tb=document.querySelector('#matriz tbody');
-    if(tb){
-      for(const tr of tb.rows){
-        const materia=(tr.cells[3]?.textContent||'').trim();
-        const paralelo=(tr.cells[16]?.textContent||'').trim();
-        const key=materia+'||'+paralelo;
-        const valDias= tr.querySelector('input[data-restr="dias"]')?.value || '';
-        const valHoras=tr.querySelector('input[data-restr="horas"]')?.value || '';
-        if(materia) window.__restr[key]={dias:valDias, horas:valHoras};
-      }
-    }
-    _oldClear();
-  };
-
-  /* Decorar buildMallaAggregate para detectar columnas de estudiantes */
-  const _oldAgg = window.buildMallaAggregate;
-  window.buildMallaAggregate = function(rows){
-    const agg=_oldAgg(rows);
-    const studentCols = Object.keys(rows[0]||{}).filter(k=>/ESTUDIANT|MATRIC|ALUMN/i.test(k));
-    const counts=new Map();
-    rows.forEach(r=>{
-      const mat=(r['MATERIA']||'').toString().trim(); if(!mat) return;
-      let est=0;
-      for(const c of studentCols){
-        const n=parseInt(String(r[c]).replace(/[^\d]/g,''),10);
-        if(!isNaN(n) && n>0) est=Math.max(est,n);
-      }
-      const key = window.canonMateria ? window.canonMateria(mat) : mat.toUpperCase();
-      counts.set(key, Math.max(counts.get(key)||0, est));
-    });
-    for(const [k,info] of agg.entries()){ info.estTotal = counts.get(k)||0; }
-    window.__estByKey = counts;
-    return agg;
-  };
-
-  /* Paralelos por estudiantes + restricciones */
-  const _oldAsm = window.assembleRows;
-  window.assembleRows = function(aggMalla, idxDoc){
-    const filas=[]; window.OBSERVACIONES=[];
-    for(const [k,info] of aggMalla.entries()){
-      let cand = window.matchDocentesForMateria(k, window.tokens(info.materiaOrig), idxDoc);
-      const estTot = parseInt(info.estTotal||0,10) || 0;
-
-      let parallelsNeeded = 1;
-      if(estTot>28) parallelsNeeded = Math.max(2, Math.ceil(estTot/30));
-      else if(estTot>30) parallelsNeeded = Math.ceil(estTot/30);
-
-      if(cand.length){ cand = window.dedupeByDocente(cand, window.tokens(info.materiaOrig)); }
-      const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
-      const pack=mp=>carreras.map(c=>mp.get(c)??'').join(' / ');
-      const base={MATERIA:info.materiaOrig,CARRERAS_COMPARTEN:window.slashJoin?slashJoin(carreras):carreras.join(' / '),
-        MALLA:slashJoin([...info.mallas]),PRE_REQUISITO:slashJoin([...info.prereqs]),
-        CODIGO:pack(info.codigos),HORAS_TEORICAS:pack(info.hteor),HORAS_PRACTICAS:pack(info.hprac),
-        HORAS_AUTONOMAS:pack(info.hauton),CREDITOS:pack(info.creditos),
-        CAMPO_DE_FORMACION:pack(info.campo),CICLO_MALLA:pack(info.ciclo),N_ORDEN_MALLA:pack(info.norden),
-        _carreras:carreras,_ciclos:carreras.map(c=>info.ciclo.get(c)??'')};
-
-      if(!cand.length){ window.OBSERVACIONES.push({tipo:'SIN_DOCENTE',materia:info.materiaOrig,carreras:[...carreras],mallas:[...info.mallas]}); }
-
-      const par = Math.max(parallelsNeeded, cand.length || 1);
-      const distrib=[]; let rem=estTot;
-      for(let i=0;i<par;i++){
-        const left=par-i; const cap=Math.min(30, Math.ceil(rem/left)); const v=isFinite(cap)?cap:0;
-        distrib.push(v); rem=Math.max(0,rem-v);
-      }
-
-      for(let j=0;j<par;j++){
-        const d=cand[j]||{};
-        const paralelo=ABC[j]??`P${j+1}`;
-        const key=base.MATERIA+'||'+paralelo;
-        const restr=window.__restr[key]||{dias:'',horas:''};
-        filas.push({
-          DOCENTE:d.DOCENTE||'',TITULO_ACADEMICO:d.TITULO||'',DEDICACION:d.DEDIC||'',
-          MATERIA:base.MATERIA,CODIGO_ANTHOLOGY:'',
-          CARRERAS_COMPARTEN:base.CARRERAS_COMPARTEN,MALLA:base.MALLA,PRE_REQUISITO:base.PRE_REQUISITO,
-          CODIGO:base.CODIGO,HORAS_TEORICAS:base.HORAS_TEORICAS,HORAS_PRACTICAS:base.HORAS_PRACTICAS,HORAS_AUTONOMAS:base.HORAS_AUTONOMAS,
-          CREDITOS:base.CREDITOS,CAMPO_DE_FORMACION:base.CAMPO_DE_FORMACION,CICLO_MALLA:base.CICLO_MALLA,N_ORDEN_MALLA:base.N_ORDEN_MALLA,
-          PARALELO:paralelo,DIA:'',HORA:'',MODALIDAD:d.MODALIDAD||'',NRO_HORAS:'',
-          ESTUDIANTES:distrib[j]||0,
-          _dias:(d.DIAS&&d.DIAS.length)?d.DIAS:DIAS,_slots:(d.SLOTS&&d.SLOTS.length)?d.SLOTS:SLOTS,
-          _carreras:base._carreras,_ciclos:base._ciclos,_flag:'estricto',
-          _restrDias: restr.dias, _restrHoras: restr.horas
-        });
-      }
-    }
-    return {filas};
-  };
-
-  /* Parseo de restricciones en texto */
-  function parseRestrDiasStr(s){
-    if(!s) return [];
-    const map={'LUNES':'LUNES','MARTES':'MARTES','MIERCOLES':'MIÉRCOLES','MIÉRCOLES':'MIÉRCOLES','JUEVES':'JUEVES','VIERNES':'VIERNES'};
-    return s.toString().replace(/,/g,'/').split('/').map(x=>x.trim()).filter(Boolean)
-      .map(x=>window.rmDiac?rmDiac(x.toUpperCase()):x.toUpperCase()).map(x=>map[x]).filter(Boolean);
-  }
-  function parseRestrHoraStr(s){
-    if(!s) return [];
-    const items=s.toString().toUpperCase().replace(/,/g,'/').split('/').map(x=>x.trim()).filter(Boolean);
-    const norm=x=>x.replace(/\s+/g,'').replace(/–/g,'-');
-    const set=new Set();
-    for(const it of items){
-      if(window.SLOTS?.includes(it)){ set.add(it); continue; }
-      const n=norm(it), parts=n.split('-');
-      if(parts.length===2){
-        const toMin=h=>{const m=/^(\d{1,2}):(\d{2})$/.exec(h); if(!m) return null; let hh=+m[1],mm=+m[2]; if(hh<7) hh+=12; return hh*60+mm;};
-        const a=toMin(parts[0]), b=toMin(parts[1]);
-        if(a!=null&&b!=null){
-          for(const s of SLOTS){
-            const [sa,sb]=s.replace('–','-').split('-');
-            const toM=t=>{const m=/^(\d{1,2}):(\d{2})$/.exec(t);let hh=+m[1],mm=+m[2]; if(hh<7) hh+=12; return hh*60+mm;};
-            const sma=toM(sa), smb=toM(sb);
-            if(sma>=a && smb<=b) set.add(s);
-          }
-        }
-      }
-    }
-    return Array.from(set);
-  }
-
-  /* Respetar restricciones en la asignación */
-  const _oldAssign = window.assignSchedules100;
-  window.assignSchedules100 = function(filas){
-    filas.forEach(r=>{
-      const rd=parseRestrDiasStr(r._restrDias); const rh=parseRestrHoraStr(r._restrHoras);
-      if(rd.length) r._dias = r._dias.filter(d=>!rd.includes(d));
-      if(rh.length) r._slots = r._slots.filter(h=>!rh.includes(h));
-    });
-    return _oldAssign(filas);
-  };
-
-  /* Añadir celdas de estudiantes y restricciones a cada fila renderizada */
-  const _oldAddRow = window.addRow;
-  window.addRow = function(row){
-    _oldAddRow(row);
-    const tr=document.querySelector('#matriz tbody tr:last-child');
-
-    const tdEst=document.createElement('td'); tdEst.textContent = (row.ESTUDIANTES??''); tr.appendChild(tdEst);
-
-    const tdRD=document.createElement('td');
-    const inD=document.createElement('input'); inD.type='text'; inD.placeholder='Lunes/Miércoles'; inD.value=row._restrDias||''; inD.setAttribute('data-restr','dias'); inD.style.width='160px';
-    tdRD.appendChild(inD); tr.appendChild(tdRD);
-
-    const tdRH=document.createElement('td');
-    const inH=document.createElement('input'); inH.type='text'; inH.placeholder='10:00–13:00/19:00–22:00'; inH.value=row._restrHoras||''; inH.setAttribute('data-restr','horas'); inH.style.width='200px';
-    tdRH.appendChild(inH); tr.appendChild(tdRH);
-  };
-})();
-</script>
-<!-- =================== FIN ADICIONES SOLICITADAS =================== -->
 </body>
 </html>
