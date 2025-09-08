@@ -3,19 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (colores por carrera + abreviaturas + restricciones)</title>
+<title>Matriz Académica – UIDE (restricciones de días + ciclos contiguos en días distintos)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
-:root{
-  --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
-  --bg:#f6f7fb; --ink:#111;
-}
+:root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520;--bg:#f6f7fb;--ink:#111}
 *{box-sizing:border-box}
 body{margin:0;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
 header{display:flex;align-items:center;gap:16px;padding:16px;background:#fff;color:var(--azul);border-bottom:4px solid var(--mostaza);box-shadow:0 1px 6px rgba(0,0,0,.06)}
 header img{height:56px;width:auto}
 header h1{margin:0;font-size:20px;font-weight:700}
-
 .wrapper{max-width:1250px;margin:24px auto;padding:0 16px}
 .card{background:#fff;border:1px solid #e2e5ef;border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px}
 .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
@@ -28,15 +24,13 @@ button:hover{opacity:.92}
 .accent{background:var(--mostaza);color:#1b1200}
 .muted{background:#fff;color:var(--azul);border:2px solid var(--azul)}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#fff3f3;color:#7a0d18;border:1px solid #f2c9cf;font-size:12px}
-
 .scroll{overflow:auto;max-height:70vh;border:1px solid #e2e5ef;border-radius:14px}
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 thead th{position:sticky;top:0;background:#fff;border-bottom:2px solid var(--celeste);padding:10px 8px;text-align:left;color:#06114a;z-index:1;cursor:pointer;user-select:none}
 thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
-
-/* Chips coloreadas por carrera (solo valor, sin prefijos) */
+/* chips coloreadas (solo valor) */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{display:inline-flex;align-items:center;border-radius:999px;padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px}
 </style>
@@ -108,13 +102,13 @@ const STOP=new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','
 const PALETA=['#04136C','#DE912E','#862B39','#9CBEE3','#8A9520'];
 const carreraColor=new Map();
 
-/* Abreviaturas solicitadas */
+/* Abreviaturas de carreras */
 function abrevCarrera(name){
   const s=rmDiac(upper(name));
   if(/ADMINISTR/.test(s)) return 'ADM';
   if(/MARKETING/.test(s)) return 'MKT';
   if(/NEGOCIOS\s*INTERNACIONALES/.test(s)) return 'NNII';
-  return s; // por defecto, deja el nombre en mayúsculas
+  return s;
 }
 
 /* ===== Utilidades ===== */
@@ -131,31 +125,23 @@ function colorDe(carrera){
   return col;
 }
 function readWB(file){return file.arrayBuffer().then(buf=>XLSX.read(buf,{type:'array'}));}
-
-/* Selección robusta de hoja: intenta por nombre; si no, toma la de mayor tamaño */
 function sheetToJSONAuto(wb, prefer=[""]){
-  let target=null;
-  const lc = s => s.toLowerCase();
-  for(const name of wb.SheetNames){
-    const ln=lc(name);
-    if(prefer.some(k=>ln.includes(lc(k)))) { target=name; break; }
-  }
+  let target=null, lc=s=>s.toLowerCase();
+  for(const name of wb.SheetNames){const ln=lc(name); if(prefer.some(k=>ln.includes(lc(k)))){target=name;break;}}
   if(!target){
     let max=0;
     for(const name of wb.SheetNames){
       const ws=wb.Sheets[name]; const ref=ws['!ref']; if(!ref) continue;
-      const range=XLSX.utils.decode_range(ref);
-      const rows=range.e.r - range.s.r + 1;
+      const r=XLSX.utils.decode_range(ref); const rows=r.e.r-r.s.r+1;
       if(rows>max){max=rows; target=name;}
     }
   }
   const ws=wb.Sheets[target];
   return ws?XLSX.utils.sheet_to_json(ws,{defval:""}):[];
 }
-
 function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
 
-/* ===== Render: chips por carrera (SOLO VALOR, sin prefijo) ===== */
+/* chips por carrera (solo valor) */
 function chipsHTML(pares){
   const esc = s => String(s).replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
   return `<div class="chips">` + pares.map(p=>{
@@ -165,17 +151,14 @@ function chipsHTML(pares){
     return `<span class="chip" style="${style}">${esc(val)}</span>`;
   }).join('') + `</div>`;
 }
-
 function addRow(row){
   const tb=document.querySelector('#matriz tbody'); const tr=document.createElement('tr');
-
   const simple = (v)=>{const td=document.createElement('td'); td.textContent=nz(v); return td;};
   tr.appendChild(simple(row.DOCENTE));
   tr.appendChild(simple(row.TITULO_ACADEMICO));
   tr.appendChild(simple(row.DEDICACION));
   tr.appendChild(simple(row.MATERIA));
   tr.appendChild(simple(row.CODIGO_ANTHOLOGY));
-
   const tdCarr=document.createElement('td'); tdCarr.innerHTML = chipsHTML(row._chipsCarreras); tr.appendChild(tdCarr);
   const tdMalla=document.createElement('td'); tdMalla.innerHTML = chipsHTML(row._chipsMalla); tr.appendChild(tdMalla);
   const tdPre=document.createElement('td'); tdPre.innerHTML   = chipsHTML(row._chipsPrereq); tr.appendChild(tdPre);
@@ -187,14 +170,12 @@ function addRow(row){
   const tdCF=document.createElement('td'); tdCF.innerHTML     = chipsHTML(row._chipsCampo); tr.appendChild(tdCF);
   const tdCiclo=document.createElement('td'); tdCiclo.innerHTML = chipsHTML(row._chipsCiclo); tr.appendChild(tdCiclo);
   const tdOrd=document.createElement('td'); tdOrd.innerHTML     = chipsHTML(row._chipsOrden); tr.appendChild(tdOrd);
-
   tr.appendChild(simple(row.ESTUDIANTES));
   tr.appendChild(simple(row.PARALELO));
   tr.appendChild(simple(row.DIA));
   tr.appendChild(simple(row.HORA));
   tr.appendChild(simple(row.MODALIDAD));
   tr.appendChild(simple(row.NRO_HORAS));
-
   tb.appendChild(tr);
 }
 
@@ -210,21 +191,14 @@ function canonMateria(s){
 function tokens(str){return new Set(canonMateria(str).split(' ').filter(Boolean));}
 function jaccard(aSet,bSet){let inter=0;const small=aSet.size<bSet.size?aSet:bSet,big=aSet.size<bSet.size?bSet:aSet;small.forEach(x=>{if(big.has(x))inter++;});const uni=aSet.size+bSet.size-inter;return uni?inter/uni:0;}
 
-/* ===== Índices Malla / Docentes / Restricciones ===== */
+/* ===== Índices ===== */
 function buildMallaAggregate(rows){
   const agg=new Map();
-
-  // utilidades de lectura robusta
-  const firstVal = (...keys) => r => {
-    for(const k of keys){ if(r[k]!==undefined && r[k]!==null && String(r[k]).trim()!=="") return String(r[k]); }
-    return "";
-  };
+  const firstVal = (...keys) => r => {for(const k of keys){if(r[k]!==undefined&&r[k]!==null&&String(r[k]).trim()!=="")return String(r[k]);}return "";}
   const getEst   = firstVal('ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES','NRO ESTUDIANTES','# ESTUDIANTES');
   const getMat   = firstVal('MATERIA','ASIGNATURA');
   const getCar   = firstVal('CARRERA');
   const getMalla = firstVal('MALLA','PLAN','PLAN/MALLA','PLAN DE ESTUDIOS');
-
-  // equivalencias (abreviadas) por campo
   const getPre   = firstVal('PRERREQUISITO','PRE-REQUISITO','PRE REQUISITO','PRERREQUISITOS','PRE');
   const getCod   = firstVal('CÓDIGO','CODIGO','COD','COD ASIG');
   const getAnth  = firstVal('CÓDIGO ANTHOLOGY','CODIGO ANTHOLOGY','ANTHOLOGY','COD ANTHOLOGY');
@@ -237,46 +211,30 @@ function buildMallaAggregate(rows){
   const getOrden = firstVal('Nº ORDEN EN LA MALLA','NUMERO DE ORDEN EN LA MALLA','N ORDEN EN LA MALLA','ORDEN','NRO ORDEN');
 
   for(const r of rows){
-    // elimina materias con 0 estudiantes (si hay dato)
     const estRaw = getEst(r);
     if(estRaw!=="" && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue;
 
-    const materia = norm(getMat(r)); if(!materia) continue;
-    const k = canonMateria(materia);
-
+    const materia=norm(getMat(r)); if(!materia) continue;
+    const k=canonMateria(materia);
     if(!agg.has(k)){
-      agg.set(k,{
-        key:k, materiaOrig:materia,
-        carreras:new Set(),
-        mallas:new Set(), mallaByCar:new Map(),
-        prereqs:new Map(), codigos:new Map(), anth:new Map(),
-        hteor:new Map(), hprac:new Map(), hauton:new Map(),
-        creditos:new Map(), campo:new Map(), ciclo:new Map(),
-        norden:new Map(), estudiantes:new Map()
-      });
+      agg.set(k,{key:k,materiaOrig:materia,carreras:new Set(),mallas:new Set(),mallaByCar:new Map(),
+        prereqs:new Map(),codigos:new Map(),anth:new Map(),hteor:new Map(),hprac:new Map(),hauton:new Map(),
+        creditos:new Map(),campo:new Map(),ciclo:new Map(),norden:new Map(),estudiantes:new Map()});
     }
-    const a = agg.get(k), car = norm(getCar(r));
+    const a=agg.get(k), car=norm(getCar(r));
     a.carreras.add(car);
-
-    const put=(mp,val)=>{ if(val!=='' && val!==undefined && val!==null) mp.set(car, norm(val)); };
-
-    const vMalla = norm(getMalla(r));        if(vMalla){ a.mallas.add(vMalla); a.mallaByCar.set(car,vMalla); }
-    put(a.prereqs, getPre(r));
-    put(a.codigos, getCod(r));
-    put(a.anth,    getAnth(r));
-    put(a.hteor,   getHT(r));
-    put(a.hprac,   getHP(r));
-    put(a.hauton,  getHA(r));
-    put(a.creditos,getCred(r));
-    put(a.campo,   getCampo(r));
-    put(a.ciclo,   getCiclo(r));
-    put(a.norden,  getOrden(r));
-    put(a.estudiantes, estRaw);
+    const put=(mp,val)=>{if(val!==''&&val!==undefined&&val!==null) mp.set(car,norm(val));};
+    const vMalla=norm(getMalla(r)); if(vMalla){ a.mallas.add(vMalla); a.mallaByCar.set(car,vMalla); }
+    put(a.prereqs, getPre(r));  put(a.codigos, getCod(r)); put(a.anth, getAnth(r));
+    put(a.hteor, getHT(r));     put(a.hprac, getHP(r));    put(a.hauton, getHA(r));
+    put(a.creditos,getCred(r)); put(a.campo, getCampo(r));  put(a.ciclo, getCiclo(r));
+    put(a.norden, getOrden(r)); put(a.estudiantes, estRaw);
   }
   return agg;
 }
-  
 function sumEstudiantes(mp){ let s=0; mp.forEach(v=>{const n=Number(v); if(!Number.isNaN(n)) s+=n;}); return s; }
+function firstNonEmptyFrom(mp){ for(const v of mp.values()){ if(String(v).trim()!=='') return String(v); } return ''; }
+function perCarFill(mp,carreras){ const def=firstNonEmptyFrom(mp); return carreras.map(c=>({car:c,val:(mp.get(c)??def)||''})); }
 
 function parseDiasDisponibles(txt){
   if(!txt) return DIAS.includes('MIÉRCOLES')?['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES']:['LUNES','MARTES','MIERCOLES','JUEVES','VIERNES'];
@@ -314,21 +272,32 @@ function buildDocentesIndex(rows){
   }
   return {byCanon:idx,all};
 }
+
+/* ===== Restricciones
+   - Si DOCENTE está vacío: restricción GLOBAL (aplica a todos los docentes)
+   - Si hay DIA sin HORA: bloquea el día completo
+   - Si hay HORA sin DIA: bloquea ese tramo cualquier día
+   - Si hay ambos: bloquea esa combinación exacta
+*/
 function buildRestriccionesIndex(rows){
   const byDoc=new Map();
+  const global={dias:new Set(),slots:new Set(),pairs:new Set()};
+  const get = k => v => (v[k]!==undefined && v[k]!==null)? String(v[k]).trim() : '';
+  const gDoc = get('DOCENTE') || get('Profesor') || get('Nombre');
   for(const r of rows){
-    const d=norm(r['DOCENTE']||r['Profesor']||r['Nombre']); if(!d) continue;
-    const dia=upper(r['DIA']||r['DÍA']||''); const hora=norm(r['HORA']||r['HORARIO']||'');
-    if(!byDoc.has(d)) byDoc.set(d,{dias:new Set(),slots:new Set(),pairs:new Set()});
-    const ref=byDoc.get(d);
-    if(dia && !hora) ref.dias.add(dia);
-    else if(!dia && hora) ref.slots.add(hora.toUpperCase());
-    else if(dia && hora) ref.pairs.add(`${dia}|${hora.toUpperCase()}`);
+    const d = norm(r['DOCENTE']||r['Profesor']||r['Nombre']||'');
+    const dia = upper(r['DIA']||r['DÍA']||'');
+    const hora= upper(r['HORA']||r['HORARIO']||'');
+    const target = d ? (byDoc.get(d) || byDoc.set(d,{dias:new Set(),slots:new Set(),pairs:new Set()}).get(d))
+                     : global;
+    if(dia && !hora) target.dias.add(dia);
+    else if(!dia && hora) target.slots.add(hora);
+    else if(dia && hora) target.pairs.add(`${dia}|${hora}`);
   }
-  return byDoc;
+  return {byDoc,global};
 }
 
-/* ===== Matching docentes ===== */
+/* ===== Matching ===== */
 function matchDocentesForMateria(canonKey, tokenSet, docentesIdx){
   if(docentesIdx.byCanon.has(canonKey)) return docentesIdx.byCanon.get(canonKey);
   let best=[],score=0; for(const it of docentesIdx.all){const s=jaccard(tokenSet,it.TOKENS); if(s>score){score=s; best=[it];} else if(s===score && s>0){best.push(it);} }
@@ -347,133 +316,112 @@ function dedupeByDocente(candidates, targetTokens){
   return Array.from(bestByDoc.values()).map(x=>x.item);
 }
 
-/* ===== Observaciones ===== */
-let OBSERVACIONES = [];
-
-/* ===== Ensamble + paralelos (>28) y chips sin prefijos ===== */
-function firstNonEmptyFrom(mp){
-  for(const v of mp.values()){ if(String(v).trim()!=='') return String(v); }
-  return '';
-}
-function perCarFill(mp, carreras){
-  const def = firstNonEmptyFrom(mp);
-  return carreras.map(c=>({car:c, val:(mp.get(c)??def) || ''}));
-}
-
+/* ===== Ensamble + paralelos (>28) ===== */
 function assembleRows(aggMalla, idxDoc){
-  const filas=[]; OBSERVACIONES=[];
+  const filas=[];
   for(const [k,info] of aggMalla.entries()){
     const totalEst = sumEstudiantes(info.estudiantes);
     let cand = matchDocentesForMateria(k, tokens(info.materiaOrig), idxDoc);
     cand = dedupeByDocente(cand, tokens(info.materiaOrig));
-
     const requeridos = (totalEst>28) ? 2 : 1;
     if(cand.length===0){
-      OBSERVACIONES.push({tipo:'SIN_DOCENTE',materia:info.materiaOrig,
-        carreras:[...info.carreras].sort((a,b)=>a.localeCompare(b,'es')),
-        mallas:[...info.mallas].sort((a,b)=>a.localeCompare(b,'es'))});
       cand = Array.from({length:requeridos},()=>({DOCENTE:'',TITULO:'',DEDIC:'',MODALIDAD:'',DIAS:DIAS.slice(),SLOTS:SLOTS.slice()}));
     } else {
       if(cand.length>requeridos) cand = cand.slice(0,requeridos);
       while(cand.length<requeridos) cand.push(cand[0]);
     }
-
     const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
-    const perCar = (mp)=>carreras.map(c=>({car:c,val:mp.get(c)??''}));
-
-const base={
-  KEY:info.key, MATERIA:info.materiaOrig,
-  _per:{
-    carreras: carreras.map(c=>({car:c, val:abrevCarrera(c)})),
-    malla:    carreras.map(c=>({car:c, val:info.mallaByCar.get(c)??''})),
-    prereq:   perCarFill(info.prereqs, carreras),
-    codigo:   perCarFill(info.codigos, carreras),
-    anth:     perCarFill(info.anth, carreras),
-    ht:       perCarFill(info.hteor, carreras),
-    hp:       perCarFill(info.hprac, carreras),
-    ha:       perCarFill(info.hauton, carreras),
-    cred:     perCarFill(info.creditos, carreras),
-    campo:    perCarFill(info.campo, carreras),
-    ciclo:    perCarFill(info.ciclo, carreras),
-    orden:    perCarFill(info.norden, carreras)
-  },
-  ESTUDIANTES:String(totalEst),
-  _carreras:carreras,
-  _ciclos:carreras.map(c=>info.ciclo.get(c)??'')
-};
-
-
+    const base={
+      KEY:info.key,MATERIA:info.materiaOrig,
+      _per:{
+        carreras: carreras.map(c=>({car:c,val:abrevCarrera(c)})),
+        malla:    carreras.map(c=>({car:c,val:info.mallaByCar.get(c)??''})),
+        prereq:   perCarFill(info.prereqs, carreras),
+        codigo:   perCarFill(info.codigos, carreras),
+        anth:     perCarFill(info.anth, carreras),
+        ht:       perCarFill(info.hteor, carreras),
+        hp:       perCarFill(info.hprac, carreras),
+        ha:       perCarFill(info.hauton, carreras),
+        cred:     perCarFill(info.creditos, carreras),
+        campo:    perCarFill(info.campo, carreras),
+        ciclo:    perCarFill(info.ciclo, carreras),
+        orden:    perCarFill(info.norden, carreras)
+      },
+      ESTUDIANTES:String(totalEst),
+      _carreras:carreras,_ciclos:carreras.map(c=>info.ciclo.get(c)??'')
+    };
     cand.forEach((d,j)=>{
       filas.push({
         DOCENTE:d.DOCENTE||'',TITULO_ACADEMICO:d.TITULO||'',DEDICACION:d.DEDIC||'',
         MATERIA:base.MATERIA,CODIGO_ANTHOLOGY: base._per.anth.map(p=>p.val).filter(Boolean).join(' / '),
-        CARRERAS_COMPARTEN:'',MALLA:'',PRE_REQUISITO:'',CODIGO:'',
-        HORAS_TEORICAS:'',HORAS_PRACTICAS:'',HORAS_AUTONOMAS:'',CREDITOS:'',
+        CARRERAS_COMPARTEN:'',MALLA:'',PRE_REQUISITO:'',CODIGO:'',HORAS_TEORICAS:'',HORAS_PRACTICAS:'',HORAS_AUTONOMAS:'',CREDITOS:'',
         CAMPO_DE_FORMACION:'',CICLO_MALLA:'',N_ORDEN_MALLA:'',
         ESTUDIANTES:base.ESTUDIANTES,PARALELO:ABC[j]??`P${j+1}`,DIA:'',HORA:'',MODALIDAD:d.MODALIDAD||'',NRO_HORAS:'',
-        _dias:d.DIAS,_slots:d.SLOTS,_carreras:base._carreras,_ciclos:base._ciclos,_key:base.KEY,_flag:'estricto',
-
-        /* chips (solo valores) */
-        _chipsCarreras: base._per.carreras,
-        _chipsMalla:    base._per.malla,
-        _chipsPrereq:   base._per.prereq,
-        _chipsCodigo:   base._per.codigo,
-        _chipsHT:       base._per.ht,
-        _chipsHP:       base._per.hp,
-        _chipsHA:       base._per.ha,
-        _chipsCred:     base._per.cred,
-        _chipsCampo:    base._per.campo,
-        _chipsCiclo:    base._per.ciclo,
-        _chipsOrden:    base._per.orden
+        _dias:d.DIAS,_slots:d.SLOTS,_carreras:base._carreras,_ciclos:base._ciclos,_key:base.KEY,
+        _chipsCarreras: base._per.carreras,_chipsMalla:base._per.malla,_chipsPrereq:base._per.prereq,_chipsCodigo:base._per.codigo,
+        _chipsHT:base._per.ht,_chipsHP:base._per.hp,_chipsHA:base._per.ha,_chipsCred:base._per.cred,_chipsCampo:base._per.campo,
+        _chipsCiclo:base._per.ciclo,_chipsOrden:base._per.orden
       });
     });
   }
   return {filas};
 }
 
-/* ===== Asignación (respeta Restricciones.xlsx y evita choques/paralelos) ===== */
-function assignSchedules100(filas, restricciones){
-  const occDoc=new Map();      // control por docente (máx 2 por día y no repetir slot)
-  const occCar=new Map();      // evitar choques entre ciclos adyacentes por carrera
-  const occParallel=new Set(); // paralelos de la misma materia no comparten día/slot
+/* ===== Asignación (respeta días restringidos + ciclos contiguos en DÍAS distintos) ===== */
+function assignSchedules100(filas, restIdx){
+  const {byDoc,global} = restIdx;
+  const occDoc=new Map();        // por docente: máx 2 por día y no repetir franja
+  const occParallel=new Set();   // un mismo paralelo no comparte día/slot
+  const occCarSlot=new Map();    // choques por carrera+slot (opcional)
+  const occCarDay=new Map();     // *** NUEVO: por carrera + día guardamos ciclos para evitar que adyacentes coincidan en el MISMO DÍA ***
+
+  const getCarSlot = (car,day,slot)=>`${car}|${day}|${slot}`;
+  const getCarDay  = (car,day)=>`${car}|${day}`;
 
   function canPlace(row,dia,slot,{checkAdj=true,maxPerDay=2}){
-    const d= row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
+    const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
     if(!occDoc.has(d)) occDoc.set(d,{});
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
     if(rec.count>=maxPerDay) return false;
-    if(rec.slots.has(slot)) return false;
+    if(rec.slots.has(slot))  return false;
 
+    // paralelos de la misma materia no comparten exactamente el mismo día/slot
     const parKey=`${row._key}|${dia}|${slot}`;
     if(occParallel.has(parKey)) return false;
 
+    // evitar choques por carrera en la MISMA FRANJA (con cualquier ciclo)
+    const slotKey=`${dia} ${slot}`;
+    for(let i=0;i<row._carreras.length;i++){
+      const car=row._carreras[i];
+      const k=getCarSlot(car,dia,slot);
+      if(occCarSlot.has(k)) return false; // ya hay algo en esa franja para esa carrera
+    }
+
+    // ciclos contiguos deben tener DÍAS distintos (independiente de la hora)
     if(checkAdj){
-      const slotKey=`${dia} ${slot}`;
       for(let i=0;i<row._carreras.length;i++){
         const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
-        if(!occCar.has(car)) occCar.set(car,new Map());
-        const map=occCar.get(car);
-        if(!map.has(slotKey)) map.set(slotKey,new Set());
-        for(const u of map.get(slotKey)){ if(Math.abs(u-idx)<=1) return false; }
+        const kd=getCarDay(car,dia);
+        const set=occCarDay.get(kd);
+        if(set){ for(const u of set){ if(Math.abs(u-idx)<=1) return false; } }
       }
     }
     return true;
   }
+
   function apply(row,dia,slot){
-    const d= row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
+    const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
     rec.count++; rec.slots.add(slot); occDoc.get(d)[dia]=rec;
 
-    const slotKey=`${dia} ${slot}`;
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
-      if(!occCar.has(car)) occCar.set(car,new Map());
-      const map=occCar.get(car);
-      if(!map.has(slotKey)) map.set(slotKey,new Set());
-      map.get(slotKey).add(idx);
+      occCarSlot.set(getCarSlot(car,dia,slot), true);
+      const kd=getCarDay(car,dia);
+      if(!occCarDay.has(kd)) occCarDay.set(kd,new Set());
+      occCarDay.get(kd).add(idx);
     }
     occParallel.add(`${row._key}|${dia}|${slot}`);
-
     row.DIA=dia; row.HORA=slot;
   }
 
@@ -481,25 +429,31 @@ function assignSchedules100(filas, restricciones){
     {name:'estricto',   checkAdj:true,  maxPerDay:2, respectAvail:true},
     {name:'sin_ady',    checkAdj:false, maxPerDay:2, respectAvail:true},
     {name:'hasta3dia',  checkAdj:false, maxPerDay:3, respectAvail:true},
-    {name:'ignora_disp',checkAdj:false, maxPerDay:3, respectAvail:false}
-    // No se fuerza violando Restricciones.xlsx: si no hay hueco, queda vacío.
+    {name:'ignora_disp',checkAdj:false, maxPerDay:3, respectAvail:false} // nunca violamos Restricciones.xlsx
   ];
 
+  // ordenar por ciclo mínimo
   filas.sort((a,b)=>Math.min(...a._ciclos.map(c=>cicloIdx(c)))-Math.min(...b._ciclos.map(c=>cicloIdx(c))));
   const conteo={estricto:0,sin_ady:0,hasta3dia:0,ignora_disp:0,sin_horario:0};
+
   for(const r of filas){
     let placed=false;
-    const rr = restricciones.get(r.DOCENTE||'') || {dias:new Set(),slots:new Set(),pairs:new Set()};
+    const rd = byDoc.get(r.DOCENTE||'') || {dias:new Set(),slots:new Set(),pairs:new Set()};
     for(const f of fases){
+      // 1) respetar disponibilidad del docente (si la hay)
       const diasDoc = f.respectAvail && r._dias.length ? DIAS.filter(x=>r._dias.includes(x)) : DIAS;
-      const dias = diasDoc.filter(d=>!rr.dias.has(d));
       const slotsDoc = f.respectAvail && r._slots.length ? SLOTS.filter(x=>r._slots.includes(x)) : SLOTS;
-      const slots = slotsDoc.filter(s=>!rr.slots.has(s.toUpperCase()));
+
+      // 2) aplicar RESTRICCIONES: GLOBAL + por docente (bloquea totalmente esos días)
+      const dias = diasDoc.filter(d=>!global.dias.has(d) && !rd.dias.has(d));
+      const slots = slotsDoc.filter(s=>!global.slots.has(upper(s)) && !rd.slots.has(upper(s)));
+
       for(const d of dias){
         for(const s of slots){
-          if(rr.pairs.has(`${d}|${s.toUpperCase()}`)) continue; // par exacto prohibido
+          const keyPair = `${d}|${upper(s)}`;
+          if(global.pairs.has(keyPair) || rd.pairs.has(keyPair)) continue; // bloqueo exacto
           if(canPlace(r,d,s,{checkAdj:f.checkAdj,maxPerDay:f.maxPerDay})){
-            apply(r,d,s); r._flag=f.name; conteo[f.name]++; placed=true; break;
+            apply(r,d,s); conteo[f.name]++; placed=true; break;
           }
         }
         if(placed) break;
@@ -546,13 +500,10 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   document.getElementById('resumen').style.display='none';
 
   const wbM=await readWB(fM), wbD=await readWB(fD), wbR=await readWB(fR);
-
-  /* Lectura robusta: busca por nombre y, si no hay coincidencia, toma la hoja más grande */
   const malla=sheetToJSONAuto(wbM, ['malla','plan']);
   const docentes=sheetToJSONAuto(wbD, ['docente']);
   const rest=sheetToJSONAuto(wbR, ['restric','dispon','bloqueo']);
-
-  if(!malla.length||!docentes.length){alert('No se pudo leer Malla o Docentes (revise los nombres de hojas).');return;}
+  if(!malla.length||!docentes.length){alert('No se pudo leer Malla o Docentes.');return;}
 
   const aggMalla=buildMallaAggregate(malla);
   const idxDoc=buildDocentesIndex(docentes);
