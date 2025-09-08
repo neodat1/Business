@@ -4,10 +4,6 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Matriz de planificación académica</title>
-
-<!-- Carga SheetJS (sin SRI para evitar bloqueo que impedía ejecutar) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.2/xlsx.full.min.js"></script>
-
 <style>
   :root{
     --azul:#04136C; --most:#DE912E; --vino:#862B39; --celes:#9CBEE3; --verde:#8A9520;
@@ -92,31 +88,39 @@
 </div>
 
 <script>
-/* ====== utilidades ====== */
-const ACCENT_MAP = {'á':'a','é':'e','í':'i','ó':'o','ú':'u','Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U','ñ':'n','Ñ':'N'};
-const norm = s => (s??"").toString().trim();
-const normKey = s => norm(s).toLowerCase().replace(/[áéíóúÁÉÍÓÚñÑ]/g, ch => ACCENT_MAP[ch]||ch).replace(/\s+/g,' ').trim();
-function pickCol(sample, aliases){
-  const keyMap = {}; Object.keys(sample).forEach(k => keyMap[normKey(k)] = k);
-  for(const a of aliases){ const nk = normKey(a); if(keyMap[nk]) return keyMap[nk]; }
-  return null;
+/* ====== CARGA ROBUSTA DE SHEETJS (evita “XLSX is not defined”) ====== */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=()=>res();s.onerror=()=>rej(new Error("No se pudo cargar: "+src));document.head.appendChild(s);});}
+async function ensureXLSX(){
+  if(window.XLSX) return;
+  const cdns=[
+    "https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js",
+    "https://unpkg.com/xlsx@0.20.2/dist/xlsx.full.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.2/xlsx.full.min.js"
+  ];
+  let lastErr=null;
+  for(const url of cdns){
+    try{ await loadScript(url); if(window.XLSX) return; }catch(e){ lastErr=e; }
+  }
+  throw lastErr || new Error("XLSX no disponible");
 }
+
+/* ====== utilidades ====== */
+const ACCENT_MAP={'á':'a','é':'e','í':'i','ó':'o','ú':'u','Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U','ñ':'n','Ñ':'N'};
+const norm=s=>(s??"").toString().trim();
+const normKey=s=>norm(s).toLowerCase().replace(/[áéíóúÁÉÍÓÚñÑ]/g,ch=>ACCENT_MAP[ch]||ch).replace(/\s+/g,' ').trim();
+function pickCol(sample, aliases){ const m={}; Object.keys(sample).forEach(k=>m[normKey(k)]=k); for(const a of aliases){ const nk=normKey(a); if(m[nk]) return m[nk]; } return null; }
 
 /* ====== lectura excel ====== */
 async function readExcel(file){
-  try{
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data, { type:'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    return XLSX.utils.sheet_to_json(ws, { defval:null });
-  }catch(e){
-    alert("Error leyendo "+file.name+": "+e.message);
-    throw e;
-  }
+  await ensureXLSX();
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data, { type:'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, { defval:null });
 }
 
 /* ====== mapeos ====== */
-const MAP_MALLA = {
+const MAP_MALLA={
   carrera:["carrera","programa"],
   malla:["malla","plan","plan de estudios","plan estudios"],
   ciclo:["ciclo","semestre","nivel","periodo","periodo academico"],
@@ -136,115 +140,24 @@ const MAP_MALLA = {
   modalidad:["modalidad","tipo modalidad","presencial/virtual"],
   docente:["docente","profesor","profesora","nombres y apellidos","apellidos y nombres"]
 };
-const MAP_DOC = {
-  docente:["docente","nombre","profesor","profesora","apellidos y nombres","nombres y apellidos","docente responsable"],
-  titulo:["titulo academico","título académico","titulo","grado academico","titulacion"],
-  dedic:["dedicacion","tipo dedicacion","jornada","contrato","tc/mt/tp","tipo"],
-  modalidad:["modalidad","tipo modalidad","presencial/virtual"]
-};
-const MAP_RES = {
-  docente:["docente","profesor","nombre","apellidos y nombres"],
-  dia:["dia","día","day"],
-  hora:["hora","horario","time"]
-};
+const MAP_DOC={ docente:["docente","nombre","profesor","profesora","apellidos y nombres","nombres y apellidos","docente responsable"], titulo:["titulo academico","título académico","titulo","grado academico","titulacion"], dedic:["dedicacion","tipo dedicacion","jornada","contrato","tc/mt/tp","tipo"], modalidad:["modalidad","tipo modalidad","presencial/virtual"] };
+const MAP_RES={ docente:["docente","profesor","nombre","apellidos y nombres"], dia:["dia","día","day"], hora:["hora","horario","time"] };
 
 /* ====== normalización dedicación ====== */
-function stdDedic(s){
-  const t = " "+normKey(s)+" ";
-  if(t.includes(" tiempo completo ") || t.includes(" tc ")) return "TC";
-  if(t.includes(" medio tiempo ") || t.includes(" mt ")) return "MT";
-  if(t.includes(" tiempo parcial ") || t.includes(" tp ") || t.includes(" hora ")) return "TP";
-  return norm(s);
-}
+function stdDedic(s){ const t=" "+normKey(s)+" "; if(t.includes(" tiempo completo ")||t.includes(" tc "))return "TC"; if(t.includes(" medio tiempo ")||t.includes(" mt "))return "MT"; if(t.includes(" tiempo parcial ")||t.includes(" tp ")||t.includes(" hora "))return "TP"; return norm(s); }
 
 /* ====== días/slots y adyacencias ====== */
-const DAYS = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
-const SLOTS = ["07:00–10:00","10:00–13:00","13:00–16:00","16:00–19:00","19:00–22:00"];
-const ADJACENT = {
-  "PRIMERO":["SEGUNDO"],
-  "SEGUNDO":["PRIMERO","TERCERO"],
-  "TERCERO":["SEGUNDO","CUARTO"],
-  "CUARTO":["TERCERO","QUINTO"],
-  "QUINTO":["CUARTO","SEXTO"],
-  "SEXTO":["QUINTO","SÉPTIMO","SEPTIMO"],
-  "SÉPTIMO":["SEXTO","OCTAVO"],
-  "SEPTIMO":["SEXTO","OCTAVO"],
-  "OCTAVO":["SÉPTIMO","SEPTIMO"]
-};
+const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const SLOTS=["07:00–10:00","10:00–13:00","13:00–16:00","16:00–19:00","19:00–22:00"];
+const ADJACENT={"PRIMERO":["SEGUNDO"],"SEGUNDO":["PRIMERO","TERCERO"],"TERCERO":["SEGUNDO","CUARTO"],"CUARTO":["TERCERO","QUINTO"],"QUINTO":["CUARTO","SEXTO"],"SEXTO":["QUINTO","SÉPTIMO","SEPTIMO"],"SÉPTIMO":["SEXTO","OCTAVO"],"SEPTIMO":["SEXTO","OCTAVO"],"OCTAVO":["SÉPTIMO","SEPTIMO"]};
 
-/* ====== índices ====== */
-function buildIndex(rows, map){
-  if(!rows.length) return {data:[], cols:{}};
-  const sample = rows[0]; const resolved = {};
-  for(const [k, aliases] of Object.entries(map)){ resolved[k] = pickCol(sample, aliases); }
-  const data = rows.map(r=>{
-    const o={}; for(const [k, col] of Object.entries(resolved)){ o[k]=col? r[col]:null; }
-    return o;
-  });
-  return {data, cols:resolved};
-}
-function buildRestrictions(resRows){
-  const byDoc = {};
-  for(const r of resRows){
-    const doc = norm(r.docente||""); if(!doc) continue;
-    if(!byDoc[doc]) byDoc[doc]={days:new Set(),slots:new Set(),pairs:new Set()};
-    const dia = norm(r.dia||""); const hora = norm(r.hora||"");
-    if(dia && !hora) byDoc[doc].days.add(dia.toLowerCase());
-    else if(!dia && hora) byDoc[doc].slots.add(hora.toLowerCase());
-    else if(dia && hora) byDoc[doc].pairs.add((dia+"|"+hora).toLowerCase());
-  }
-  return byDoc;
-}
+/* ====== índices y scheduler ====== */
+function buildIndex(rows,map){ if(!rows.length) return {data:[],cols:{}}; const sample=rows[0], resolved={}; for(const [k,al] of Object.entries(map)) resolved[k]=pickCol(sample,al); const data=rows.map(r=>{ const o={}; for(const [k,c] of Object.entries(resolved)) o[k]=c? r[c]:null; return o; }); return {data,cols:resolved}; }
+function buildRestrictions(resRows){ const byDoc={}; for(const r of resRows){ const doc=norm(r.docente||""); if(!doc) continue; if(!byDoc[doc]) byDoc[doc]={days:new Set(),slots:new Set(),pairs:new Set()}; const d=norm(r.dia||""); const h=norm(r.hora||""); if(d&&!h) byDoc[doc].days.add(d.toLowerCase()); else if(!d&&h) byDoc[doc].slots.add(h.toLowerCase()); else if(d&&h) byDoc[doc].pairs.add((d+"|"+h).toLowerCase()); } return byDoc; }
+function schedule(assignments,restrictions){ const perDocDayCount={}, perCycleSlotDay={}, out=[]; for(const a of assignments){ const doc=norm(a.docente); const r=restrictions[doc]||{days:new Set(),slots:new Set(),pairs:new Set()}; let placed=false; outer: for(const dia of DAYS){ if(r.days.has(dia.toLowerCase())) continue; const dcKey=`${doc}|${dia}`; if(perDocDayCount[dcKey]>=2) continue; for(const slot of SLOTS){ const pairKey=(dia+"|"+slot).toLowerCase(); if(r.slots.has(slot.toLowerCase())) continue; if(r.pairs.has(pairKey)) continue; const cyc=norm(a.ciclo||a.cicloMalla); const cycKey=`${cyc.toUpperCase()}|${dia}|${slot}`; if(perCycleSlotDay[cycKey]) continue; const adjs=ADJACENT[cyc.toUpperCase()]||[]; let conflict=false; for(const adj of adjs){ if(perCycleSlotDay[`${adj}|${dia}|${slot}`]){ conflict=true; break; } } if(conflict) continue; out.push({...a,dia,hora:slot}); perDocDayCount[dcKey]=(perDocDayCount[dcKey]||0)+1; perCycleSlotDay[cycKey]=true; placed=true; break outer; } } if(!placed) out.push({...a,dia:"",hora:""}); } return out; }
+function uniqJoin(arr){ const seen=new Set(), out=[]; for(const v of arr){ const k=normKey(v); if(!k||seen.has(k)) continue; seen.add(k); out.push(norm(v)); } return out.join(" / "); }
 
-/* ====== scheduler ====== */
-function schedule(assignments, restrictions){
-  const perDocDayCount = {};
-  const perCycleSlotDay = {};
-  const results = [];
-  for(const a of assignments){
-    const doc = norm(a.docente);
-    const r = restrictions[doc] || {days:new Set(),slots:new Set(),pairs:new Set()};
-    let placed = false;
-    outer:
-    for(const dia of DAYS){
-      if(r.days.has(dia.toLowerCase())) continue;
-      const dcKey = `${doc}|${dia}`; if(perDocDayCount[dcKey] >= 2) continue;
-      for(const slot of SLOTS){
-        const pairKey = (dia+"|"+slot).toLowerCase();
-        if(r.slots.has(slot.toLowerCase())) continue;
-        if(r.pairs.has(pairKey)) continue;
-
-        const cyc = norm(a.ciclo || a.cicloMalla);
-        const cycKey = `${cyc.toUpperCase()}|${dia}|${slot}`;
-        if(perCycleSlotDay[cycKey]) continue;
-        const adjs = ADJACENT[cyc.toUpperCase()] || [];
-        let conflict=false;
-        for(const adj of adjs){
-          if(perCycleSlotDay[`${adj}|${dia}|${slot}`]){ conflict=true; break; }
-        }
-        if(conflict) continue;
-
-        // asignar
-        results.push({...a, dia, hora:slot});
-        perDocDayCount[dcKey] = (perDocDayCount[dcKey]||0)+1;
-        perCycleSlotDay[cycKey] = true;
-        placed = true;
-        break outer;
-      }
-    }
-    if(!placed) results.push({...a, dia:"", hora:""});
-  }
-  return results;
-}
-
-/* ====== helpers ====== */
-function uniqJoin(arr){
-  const seen=new Set(), out=[];
-  for(const v of arr){ const k=normKey(v); if(!k||seen.has(k)) continue; seen.add(k); out.push(norm(v)); }
-  return out.join(" / ");
-}
-
-/* ====== UI: habilitar botón ====== */
+/* ====== UI ====== */
 const $malla=document.getElementById('fileMalla');
 const $docs=document.getElementById('fileDocentes');
 const $rest=document.getElementById('fileRest');
@@ -254,94 +167,64 @@ const $btn=document.getElementById('btnProcesar');
 /* ====== ejecutar ====== */
 $btn.addEventListener('click', async ()=>{
   try{
-    const [mRows, dRows, rRows] = await Promise.all([
-      readExcel($malla.files[0]),
-      readExcel($docs.files[0]),
-      readExcel($rest.files[0])
-    ]);
+    const [mRows,dRows,rRows]=await Promise.all([ readExcel($malla.files[0]), readExcel($docs.files[0]), readExcel($rest.files[0]) ]);
+    const {data:malla}=buildIndex(mRows,MAP_MALLA);
+    const {data:docs}=buildIndex(dRows,MAP_DOC);
+    const {data:rest}=buildIndex(rRows,MAP_RES);
 
-    const {data:malla} = buildIndex(mRows, MAP_MALLA);
-    const {data:docs}  = buildIndex(dRows,  MAP_DOC);
-    const {data:rest}  = buildIndex(rRows,  MAP_RES);
+    const docIndex={};
+    for(const d of docs){ const nom=norm(d.docente); if(!nom) continue; docIndex[nom]={titulo:norm(d.titulo), dedic:stdDedic(d.dedic), modalidad:norm(d.modalidad)}; }
+    const restIndex=buildRestrictions(rest);
 
-    // índice de docentes
-    const docIndex = {};
-    for(const d of docs){
-      const nom = norm(d.docente); if(!nom) continue;
-      docIndex[nom] = {titulo:norm(d.titulo), dedic:stdDedic(d.dedic), modalidad:norm(d.modalidad)};
-    }
-    // restricciones
-    const restIndex = buildRestrictions(rest);
-
-    // filtrar materias con 0 estudiantes (si existe)
-    const filtered = malla.filter(r=>{
-      const est = r.estudiantes;
-      if(est===null || est===undefined || est==="") return true;
-      const n = Number(est); if(Number.isNaN(n)) return true;
-      return n > 0;
+    // materias con 0 estudiantes: fuera (si existe el dato)
+    const filtered=malla.filter(r=>{
+      const est=r.estudiantes;
+      if(est===null||est===undefined||est==="") return true;
+      const n=Number(est); if(Number.isNaN(n)) return true;
+      return n>0;
     });
 
     // agrupar por materia+codigo+paralelo
-    const groups={};
-    const keyOf = r => [norm(r.materia), norm(r.codigo), norm(r.paralelo||"")].join("||");
-    for(const r of filtered){
-      const k=keyOf(r); (groups[k]??=[]).push(r);
-    }
+    const keyOf=r=>[norm(r.materia),norm(r.codigo),norm(r.paralelo||"")].join("||");
+    const groups={}; for(const r of filtered){ const k=keyOf(r); (groups[k]??=[]).push(r); }
 
     const base=[];
     for(const k of Object.keys(groups)){
       const items=groups[k];
-      const take = f => uniqJoin(items.map(it=>it[f]));
-      const materia = norm(items[0].materia);
-      const codigo  = norm(items[0].codigo);
-      const paralelo= norm(items[0].paralelo);
-      const estudiantes = norm(items[0].estudiantes);
-      const docente = norm(items[0].docente);
-      const cicloRef = norm(items[0].ciclo || items[0].cicloMalla);
-
-      const dInfo = docIndex[docente] || {titulo:"", dedic:"", modalidad:""};
+      const take=f=>uniqJoin(items.map(it=>it[f]));
+      const materia=norm(items[0].materia);
+      const codigo=norm(items[0].codigo);
+      const paralelo=norm(items[0].paralelo);
+      const estudiantes=norm(items[0].estudiantes);
+      const docente=norm(items[0].docente);
+      const cicloRef=norm(items[0].ciclo||items[0].cicloMalla);
+      const dInfo=docIndex[docente]||{titulo:"",dedic:"",modalidad:""};
 
       base.push({
-        docente,
-        titulo:dInfo.titulo,
-        dedicacion:dInfo.dedic,
-        materia,
-        codAnth:take("codAnth"),
-        carreras:take("carrera"),
-        malla:take("malla"),
-        prerreq:take("prerreq"),
-        codigo,
-        ht:take("ht"),
-        hp:take("hp"),
-        ha:take("ha"),
-        creditos:take("creditos"),
-        campoForm:take("campoForm"),
-        ciclo:cicloRef,
-        ordenMalla:take("ordenMalla"),
-        estudiantes,
-        paralelo,
-        modalidad: norm(items[0].modalidad) || dInfo.modalidad,
+        docente, titulo:dInfo.titulo, dedicacion:dInfo.dedic,
+        materia, codAnth:take("codAnth"), carreras:take("carrera"), malla:take("malla"),
+        prerreq:take("prerreq"), codigo, ht:take("ht"), hp:take("hp"), ha:take("ha"),
+        creditos:take("creditos"), campoForm:take("campoForm"),
+        ciclo:cicloRef, ordenMalla:take("ordenMalla"),
+        estudiantes, paralelo, modalidad: (norm(items[0].modalidad)||dInfo.modalidad),
         dia:"", hora:"", nroHoras:""
       });
     }
 
-    const planned = schedule(base, restIndex);
+    const planned=schedule(base,restIndex);
 
-    const $tbody=document.getElementById('tbody');
-    $tbody.innerHTML="";
+    const $tbody=document.getElementById('tbody'); $tbody.innerHTML="";
     for(const r of planned){
       const tr=document.createElement('tr');
-      const cells=[
-        r.docente, r.titulo, r.dedicacion, r.materia, r.codAnth, r.carreras, r.malla,
-        r.prerreq, r.codigo, r.ht, r.hp, r.ha, r.creditos, r.campoForm, r.ciclo,
-        r.ordenMalla, r.estudiantes, r.paralelo, r.dia, r.hora, r.modalidad, r.nroHoras
-      ];
-      cells.forEach(c=>{ const td=document.createElement('td'); td.textContent=c??""; tr.appendChild(td); });
+      [ r.docente,r.titulo,r.dedicacion,r.materia,r.codAnth,r.carreras,r.malla,r.prerreq,r.codigo,
+        r.ht,r.hp,r.ha,r.creditos,r.campoForm,r.ciclo,r.ordenMalla,r.estudiantes,r.paralelo,
+        r.dia,r.hora,r.modalidad,r.nroHoras
+      ].forEach(c=>{ const td=document.createElement('td'); td.textContent=c??""; tr.appendChild(td); });
       $tbody.appendChild(tr);
     }
   }catch(e){
+    alert("No se pudo procesar: "+(e&&e.message?e.message:e));
     console.error(e);
-    alert("No se pudo procesar: "+e.message);
   }
 });
 </script>
