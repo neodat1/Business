@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (match robusto)</title>
+<title>Matriz Académica – UIDE</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520}
@@ -24,6 +24,7 @@ button:hover{opacity:.92}
 .primary{background:var(--azul);color:#fff}
 .accent{background:var(--mostaza);color:#1b1200}
 .muted{background:#fff;color:var(--azul);border:2px solid var(--azul)}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#fff3f3;color:#7a0d18;border:1px solid #f2c9cf;font-size:12px}
 #panelErrores strong{color:var(--vino)}
 .errors{margin:8px 0 0;padding-left:20px;font-size:13px}
 .scroll{overflow:auto;max-height:70vh;border:1px solid #e2e5ef;border-radius:14px}
@@ -32,9 +33,8 @@ thead th{position:sticky;top:0;background:#fff;border-bottom:2px solid var(--cel
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
 h3{margin:0 0 8px;color:#04136C}
-#docList{font-size:14px;margin:0;padding-left:18px}
+#docList{font-size:14px;margin:0;padding-left:18px;list-style:decimal}
 #docList li{padding:2px 0;border-bottom:1px solid #eee}
-.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#fff3f3;color:#7a0d18;border:1px solid #f2c9cf;font-size:12px}
 </style>
 </head>
 <body>
@@ -47,13 +47,13 @@ h3{margin:0 0 8px;color:#04136C}
 <div class="wrapper">
   <div class="card">
     <div class="row">
-      <div><label>Archivo: 0. Mallas.xlsx (Hoja: Malla)</label><input id="fileMalla" type="file" accept=".xlsx,.xls"></div>
-      <div><label>Archivo: 1. Docentes.xlsx (Hoja: Docentes)</label><input id="fileDocentes" type="file" accept=".xlsx,.xls"></div>
+      <div><label>Archivo: 0. Mallas.xlsx (Hoja: Malla)</label><input id="fileMalla" type="file" accept=".xlsx,.xls" /></div>
+      <div><label>Archivo: 1. Docentes.xlsx (Hoja: Docentes)</label><input id="fileDocentes" type="file" accept=".xlsx,.xls" /></div>
     </div>
     <div class="actions">
       <button id="btnProcesar" class="primary">Procesar</button>
       <button id="btnXLSX" class="accent" disabled>Descargar XLSX</button>
-      <button id="btnCSV" class="accent" disabled>Descargar CSV</button>
+      <button id="btnCSV"  class="accent" disabled>Descargar CSV</button>
       <button id="btnLimpiar" class="muted">Limpiar</button>
       <span id="resumen" class="badge" style="display:none"></span>
     </div>
@@ -83,28 +83,29 @@ h3{margin:0 0 8px;color:#04136C}
 
   <div class="card" id="cardDocentes" style="display:none">
     <h3>Lista de docentes (orden alfabético)</h3>
-    <ul id="docList"></ul>
+    <ol id="docList"></ol>
   </div>
 </div>
 
 <script>
-/* ===== Parámetros ===== */
+/* ===== Parámetros y utilidades ===== */
 const DIAS = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES'];
 const SLOTS = ['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
 const CYCLE_INDEX = {'PRIMERO':1,'SEGUNDO':2,'TERCERO':3,'CUARTO':4,'QUINTO':5,'SEXTO':6,'SÉPTIMO':7,'SEPTIMO':7,'OCTAVO':8,'NOVENO':9,'DÉCIMO':10,'DECIMO':10};
 const ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-const STOP = new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','AL','A','II','III','IV','VI','VII','VIII','IX','X']);
 
-/* ===== Utilidades ===== */
 const nz = v => (v===undefined || v===null) ? '' : v;
 const norm = v => nz(v).toString().replace(/\s+/g,' ').trim();
 const upper = v => norm(v).toUpperCase();
 const cicloIdx = c => CYCLE_INDEX[upper(c)] ?? 99;
 const slashJoin = arr => Array.from(new Set(arr.map(x=>norm(x)).filter(Boolean))).join(' / ');
+const removeDiacritics = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
+/* ===== Lectura Excel ===== */
 function readWB(file){ return file.arrayBuffer().then(buf=>XLSX.read(buf,{type:'array'})); }
 function sheetToJSON(wb, name){ const ws = wb.Sheets[name]; return ws ? XLSX.utils.sheet_to_json(ws,{defval:""}) : []; }
 
+/* ===== Tabla ===== */
 function clearTable(){ document.querySelector('#matriz tbody').innerHTML=''; }
 function addRow(row){
   const tbody = document.querySelector('#matriz tbody');
@@ -124,38 +125,20 @@ function addError(msg){
   document.getElementById('panelErrores').style.display = 'block';
 }
 
-/* ===== Canonicalización de materias ===== */
-function romanToInt(word){
-  const map={I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
-  let s=word.toUpperCase(); if(!/^[IVXLCDM]+$/.test(s)) return null;
-  let n=0; for(let i=0;i<s.length;i++){const v=map[s[i]], u=map[s[i+1]]||0; n+= v< u ? -v : v;} return n;
-}
+/* ===== Normalización materias y matching (igual que versión robusta previa) ===== */
+const STOP = new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','AL','A','II','III','IV','VI','VII','VIII','IX','X']);
+function romanToInt(word){ const map={I:1,V:5,X:10,L:50,C:100,D:500,M:1000}; let s=word.toUpperCase(); if(!/^[IVXLCDM]+$/.test(s)) return null; let n=0; for(let i=0;i<s.length;i++){const v=map[s[i]],u=map[s[i+1]]||0; n+= v<u? -v:v;} return n;}
 function canonMateria(s){
-  let t = upper(s).normalize('NFD').replace(/[\u0300-\u036f]/g,''); // sin tildes
+  let t = upper(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   t = t.replace(/&/g,' Y ').replace(/[_\-.,()]/g,' ').replace(/\s+/g,' ').trim();
-  // normalizaciones básicas
   t = t.replace(/\bMATEMATICAS?\b/g,'MATEMATICA');
-  t = t.replace(/\bCOMPUTACION\b/g,'COMPUTACION'); // placeholder para otros sinónimos si desea
-  // convertir romanos aislados a arábigos
-  t = t.split(' ').map(w=>{
-     const n = romanToInt(w);
-     return (n && n<=20) ? String(n) : w;
-  }).join(' ');
-  // eliminar stop-words
+  t = t.split(' ').map(w=>{const n=romanToInt(w); return (n && n<=20)? String(n): w;}).join(' ');
   const tokens = t.split(' ').filter(w=>w && !STOP.has(w));
   return tokens.join(' ').trim();
 }
 function tokens(str){ return new Set(canonMateria(str).split(' ').filter(Boolean)); }
-function jaccard(aSet, bSet){
-  const a=[...aSet], b=[...bSet]; let inter=0;
-  const small = aSet.size<bSet.size ? aSet : bSet;
-  const big   = aSet.size<bSet.size ? bSet : aSet;
-  small.forEach(x=>{ if(big.has(x)) inter++; });
-  const uni = aSet.size + bSet.size - inter;
-  return uni? inter/uni : 0;
-}
+function jaccard(aSet,bSet){ let inter=0; const small=aSet.size<bSet.size?aSet:bSet, big=aSet.size<bSet.size?bSet:aSet; small.forEach(x=>{ if(big.has(x)) inter++; }); const uni=aSet.size+bSet.size-inter; return uni? inter/uni : 0; }
 
-/* ===== Construcción y combinación ===== */
 function buildMallaAggregate(rows){
   const agg = new Map();
   for(const r of rows){
@@ -166,13 +149,11 @@ function buildMallaAggregate(rows){
         codigos:new Map(), hteor:new Map(), hprac:new Map(), hauton:new Map(),
         creditos:new Map(), campo:new Map(), ciclo:new Map(), norden:new Map()});
     }
-    const a = agg.get(k);
-    const carrera = norm(r['CARRERA']);
+    const a = agg.get(k), carrera = norm(r['CARRERA']);
     a.carreras.add(carrera);
     const vMalla = norm(r['MALLA']); if(vMalla) a.mallas.add(vMalla);
     const vPre   = norm(r['PRERREQUISITO'] || r['PRE-REQUISITO']); if(vPre) a.prereqs.add(vPre);
-
-    const put = (mp,val)=>{ if(val!=='' && val!==undefined && val!==null) mp.set(carrera, norm(val)); };
+    const put=(mp,val)=>{ if(val!==''&&val!==undefined&&val!==null) mp.set(carrera,norm(val)); };
     put(a.codigos, r['CÓDIGO'] || r['CODIGO']);
     put(a.hteor,   r['HORAS TEÓRICAS'] || r['HORAS TEORICAS']);
     put(a.hprac,   r['HORAS PRÁCTICAS'] || r['HORAS PRACTICAS']);
@@ -184,100 +165,140 @@ function buildMallaAggregate(rows){
   }
   return agg;
 }
-function buildDocentesIndex(rows){
-  // índice por canónico + bolsa de tokens para similitud
-  const idx = new Map(); // canon -> [{...}]
-  const all = [];        // para búsqueda por similitud
-  for(const r of rows){
-    const materia = norm(r['MATERIA']); if(!materia) continue;
-    const k = canonMateria(materia);
-    const item = {
-      MATERIA_ORIG: materia,
-      CANON: k,
-      TOKENS: tokens(materia),
-      DOCENTE:  norm(r['DOCENTE']),
-      TITULO:   norm(r['TITULO ACADÉMICO'] || r['TÍTULO ACADÉMICO']),
-      DEDIC:    norm(r['DEDICACION'] || r['DEDICACIÓN']),
-      MODALIDAD:norm(r['Modalidad'] || r['MODALIDAD']),
-      DIAS:     parseDiasDisponibles(r['DIA DISPONIBLE'] || r['DÍA DISPONIBLE'] || r['DIA']),
-      SLOTS:    parseHoraDisponible(r['HORA DISPONIBLE'] || r['HORA'])
-    };
-    if(!idx.has(k)) idx.set(k, []);
-    idx.get(k).push(item);
-    all.push(item);
-  }
-  return {byCanon: idx, all};
-}
 function parseDiasDisponibles(txt){
   if(!txt) return [...DIAS];
-  const canon = (s)=> s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  const canon = s=> removeDiacritics(upper(s));
   let t = canon(txt).replace(/,/g,' Y ').replace(/\s+/g,' ').trim();
-  const D = DIAS.map(canon);
-  const find = (s)=>{ const i=D.indexOf(s); return i>=0?DIAS[i]:null; };
-
-  if(t.includes(' A ')){
-    const [a,b] = t.split(' A ').map(s=>s.trim());
-    const A=find(a), B=find(b); if(A&&B){ const ai=DIAS.indexOf(A), bi=DIAS.indexOf(B); if(bi>=ai) return DIAS.slice(ai,bi+1); }
-  }
-  if(t.includes(' Y ')){
-    return t.split(' Y ').map(s=>find(s.trim())).filter(Boolean);
-  }
+  const Dcanon = DIAS.map(canon), find=s=>{const i=Dcanon.indexOf(s); return i>=0?DIAS[i]:null;};
+  if(t.includes(' A ')){ const [a,b]=t.split(' A ').map(s=>s.trim()); const A=find(a),B=find(b); if(A&&B){const ia=DIAS.indexOf(A),ib=DIAS.indexOf(B); if(ib>=ia) return DIAS.slice(ia,ib+1);} }
+  if(t.includes(' Y ')){ return t.split(' Y ').map(s=>find(s.trim())).filter(Boolean); }
   const u=find(t); return u?[u]:[...DIAS];
 }
 function parseHoraDisponible(txt){
   if(!txt) return [...SLOTS];
   let t = txt.toString().trim().toUpperCase().replace(/\s+/g,'').replace(/–/g,'-').replace('A','-');
-  const toMin = hhmm=>{
-    const m=/^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(hhmm); if(!m) return null;
-    let h=parseInt(m[1],10), mi=parseInt(m[2],10); if(h<7) h+=12; return h*60+mi;
-  };
+  const toMin = hhmm=>{ const m=/^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(hhmm); if(!m) return null; let h=parseInt(m[1],10),mi=parseInt(m[2],10); if(h<7) h+=12; return h*60+mi; };
   const parts=t.split('-').filter(Boolean);
-  if(parts.length===2){
-    const a=toMin(parts[0]), b=toMin(parts[1]); if(a!=null && b!=null && b>a){
-      return SLOTS.filter(s=>{
-        const [sa,sb]=s.replace('–','-').split('-');
-        const sma=toMin(sa), smb=toMin(sb);
-        return sma>=a && smb<=b;
-      });
-    }
-  }
+  if(parts.length===2){ const a=toMin(parts[0]), b=toMin(parts[1]); if(a!=null&&b!=null&&b>a){
+    return SLOTS.filter(s=>{ const [sa,sb]=s.replace('–','-').split('-'); const sma=toMin(sa), smb=toMin(sb); return sma>=a && smb<=b; });
+  }}
   return [...SLOTS];
 }
-
-/* Emparejamiento robusto Malla↔Docentes */
-function matchDocentesForMateria(canonKey, tokenSet, docentesIdx){
-  // 1) exacto por canónico
-  if(docentesIdx.byCanon.has(canonKey)) return docentesIdx.byCanon.get(canonKey);
-
-  // 2) similitud por tokens (Jaccard)
-  let best=[], bestScore=0;
-  for(const item of docentesIdx.all){
-    const s = jaccard(tokenSet, item.TOKENS);
-    if(s>bestScore){ bestScore=s; best=[item]; }
-    else if(s===bestScore && s>0){ best.push(item); }
+function buildDocentesIndex(rows){
+  const idx = new Map(); const all=[];
+  for(const r of rows){
+    const materia = norm(r['MATERIA']); if(!materia) continue;
+    const k = canonMateria(materia);
+    const item = {
+      MATERIA_ORIG: materia, CANON:k, TOKENS:tokens(materia),
+      DOCENTE:norm(r['DOCENTE']),
+      TITULO:norm(r['TITULO ACADÉMICO'] || r['TÍTULO ACADÉMICO']),
+      DEDIC:norm(r['DEDICACION'] || r['DEDICACIÓN']),
+      MODALIDAD:norm(r['Modalidad'] || r['MODALIDAD']),
+      DIAS:parseDiasDisponibles(r['DIA DISPONIBLE'] || r['DÍA DISPONIBLE'] || r['DIA']),
+      SLOTS:parseHoraDisponible(r['HORA DISPONIBLE'] || r['HORA'])
+    };
+    if(!idx.has(k)) idx.set(k,[]);
+    idx.get(k).push(item);
+    all.push(item);
   }
-  // Umbral: 0.60 (ajustable)
-  if(bestScore>=0.60) return best;
-  return [];
+  return {byCanon:idx, all};
 }
-function jaccard(aSet,bSet){
-  let inter=0;
-  const small=aSet.size<bSet.size?aSet:bSet, big=aSet.size<bSet.size?bSet:aSet;
-  small.forEach(x=>{ if(big.has(x)) inter++; });
-  const uni=aSet.size+bSet.size-inter;
-  return uni? inter/uni : 0;
+function tokens(str){ return new Set(canonMateria(str).split(' ').filter(Boolean)); }
+function matchDocentesForMateria(canonKey, tokenSet, docentesIdx){
+  if(docentesIdx.byCanon.has(canonKey)) return docentesIdx.byCanon.get(canonKey);
+  let best=[], bestScore=0;
+  for(const it of docentesIdx.all){ const s=jaccard(tokenSet,it.TOKENS); if(s>bestScore){bestScore=s; best=[it];} else if(s===bestScore && s>0){best.push(it);} }
+  return bestScore>=0.60 ? best : [];
 }
 
-/* Construcción de filas + asignación de horarios */
-function assembleAndSchedule(aggMalla, docentesIdx){
+/* Asignación de horarios */
+function assignSchedules(filas){
+  const occDoc=new Map(), occCar=new Map();
+  function canPlace(row,dia,slot){
+    if(!occDoc.has(row.DOCENTE)) occDoc.set(row.DOCENTE,{});
+    const rec=occDoc.get(row.DOCENTE)[dia]??{count:0,slots:new Set()};
+    if(rec.count>=2) return false;
+    if(rec.slots.has(slot)) return false;
+    const slotKey=`${dia} ${slot}`;
+    for(let i=0;i<row._carreras.length;i++){
+      const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
+      if(!occCar.has(car)) occCar.set(car,new Map());
+      const map=occCar.get(car);
+      if(!map.has(slotKey)) map.set(slotKey,new Set());
+      for(const u of map.get(slotKey)){ if(Math.abs(u-idx)<=1) return false; }
+    }
+    return true;
+  }
+  function place(row){
+    const dias=row._dias.length?row._dias:DIAS, slots=row._slots.length?row._slots:SLOTS;
+    for(const d of DIAS.filter(x=>dias.includes(x))){
+      for(const s of SLOTS.filter(x=>slots.includes(x))){
+        if(canPlace(row,d,s)){
+          const rec=occDoc.get(row.DOCENTE)[d]??{count:0,slots:new Set()};
+          rec.count++; rec.slots.add(s); occDoc.get(row.DOCENTE)[d]=rec;
+          const slotKey=`${d} ${s}`;
+          for(let i=0;i<row._carreras.length;i++){
+            const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
+            if(!occCar.has(car)) occCar.set(car,new Map());
+            const map=occCar.get(car);
+            if(!map.has(slotKey)) map.set(slotKey,new Set());
+            map.get(slotKey).add(idx);
+          }
+          row.DIA=d; row.HORA=s; return true;
+        }
+      }
+    }
+    return false;
+  }
+  filas.sort((a,b)=>Math.min(...a._ciclos.map(c=>cicloIdx(c))) - Math.min(...b._ciclos.map(c=>cicloIdx(c))));
+  let noHorario=0; for(const r of filas){ if(!place(r)) noHorario++; }
+  return {filas,noHorario};
+}
+
+/* ===== Export ===== */
+function tableToSheet(){
+  const headers=[...document.querySelectorAll('#matriz thead th')].map(th=>th.textContent);
+  const rows=[...document.querySelectorAll('#matriz tbody tr')].map(tr=>[...tr.children].map(td=>td.textContent));
+  return XLSX.utils.aoa_to_sheet([headers,...rows]);
+}
+
+/* ===== Lista de docentes (orden alfabético, depurada) ===== */
+const GENERICOS = [/^POWER SKILLS$/i, /^CONFIRMAR$/i, /\(PREGUNTAR\)/i];
+function esGenerico(nombre){ return GENERICOS.some(rx=>rx.test(nombre)); }
+function sortKeyNombre(s){
+  const t = removeDiacritics(s).toUpperCase().trim();
+  // “APELLIDO, NOMBRE” y “NOMBRE APELLIDO” quedan ordenados alfabéticamente sin acentos
+  return t;
+}
+
+/* ===== Evento principal ===== */
+document.getElementById('btnProcesar').addEventListener('click', async ()=>{
+  const fM=document.getElementById('fileMalla').files[0];
+  const fD=document.getElementById('fileDocentes').files[0];
+  if(!fM||!fD){ alert('Cargue ambos archivos.'); return; }
+
+  clearTable();
+  document.getElementById('panelErrores').style.display='none';
+  document.getElementById('errores').innerHTML='';
+  document.getElementById('docList').innerHTML='';
+  document.getElementById('cardDocentes').style.display='none';
+  document.getElementById('resumen').style.display='none';
+
+  const wbM=await readWB(fM), wbD=await readWB(fD);
+  const malla=sheetToJSON(wbM,'Malla'), docentes=sheetToJSON(wbD,'Docentes');
+  if(!malla.length || !docentes.length){ alert('Verifique hojas: Malla y Docentes.'); return; }
+
+  // Índices
+  const aggMalla=buildMallaAggregate(malla);
+  const idxDoc=buildDocentesIndex(docentes);
+
+  // Filas y horarios
   const filas=[];
   const noMatch=[];
-
-  // Construir filas por materia
   for(const [canonKey, info] of aggMalla.entries()){
-    const cand = matchDocentesForMateria(canonKey, tokens(info.materiaOrig), docentesIdx);
+    const cand = matchDocentesForMateria(canonKey, tokens(info.materiaOrig), idxDoc);
     if(!cand.length){ noMatch.push(info.materiaOrig); continue; }
-
     const carreras = Array.from(info.carreras).sort((a,b)=>a.localeCompare(b,'es'));
     const pack = mp => carreras.map(c=> mp.get(c) ?? '').join(' / ');
     const base = {
@@ -296,132 +317,40 @@ function assembleAndSchedule(aggMalla, docentesIdx){
       _carreras: carreras,
       _ciclos: carreras.map(c=> info.ciclo.get(c) ?? '')
     };
-
     cand.forEach((d,j)=>{
       filas.push({
-        DOCENTE: d.DOCENTE,
-        TITULO_ACADEMICO: d.TITULO,
-        DEDICACION: d.DEDIC,
-        MATERIA: base.MATERIA,
-        CODIGO_ANTHOLOGY: '',
-        CARRERAS_COMPARTEN: base.CARRERAS_COMPARTEN,
-        MALLA: base.MALLA,
-        PRE_REQUISITO: base.PRE_REQUISITO,
-        CODIGO: base.CODIGO,
-        HORAS_TEORICAS: base.HORAS_TEORICAS,
-        HORAS_PRACTICAS: base.HORAS_PRACTICAS,
-        HORAS_AUTONOMAS: base.HORAS_AUTONOMAS,
-        CREDITOS: base.CREDITOS,
-        CAMPO_DE_FORMACION: base.CAMPO_DE_FORMACION,
-        CICLO_MALLA: base.CICLO_MALLA,
-        N_ORDEN_MALLA: base.N_ORDEN_MALLA,
-        PARALELO: ABC[j] ?? `P${j+1}`,
-        DIA: '', HORA: '', MODALIDAD: d.MODALIDAD, NRO_HORAS: '',
-        _dias: d.DIAS, _slots: d.SLOTS,
-        _carreras: base._carreras, _ciclos: base._ciclos
+        DOCENTE:d.DOCENTE, TITULO_ACADEMICO:d.TITULO, DEDICACION:d.DEDIC, MATERIA:base.MATERIA,
+        CODIGO_ANTHOLOGY:'', CARRERAS_COMPARTEN:base.CARRERAS_COMPARTEN, MALLA:base.MALLA, PRE_REQUISITO:base.PRE_REQUISITO,
+        CODIGO:base.CODIGO, HORAS_TEORICAS:base.HORAS_TEORICAS, HORAS_PRACTICAS:base.HORAS_PRACTICAS, HORAS_AUTONOMAS:base.HORAS_AUTONOMAS,
+        CREDITOS:base.CREDITOS, CAMPO_DE_FORMACION:base.CAMPO_DE_FORMACION, CICLO_MALLA:base.CICLO_MALLA, N_ORDEN_MALLA:base.N_ORDEN_MALLA,
+        PARALELO:ABC[j]??`P${j+1}`, DIA:'', HORA:'', MODALIDAD:d.MODALIDAD, NRO_HORAS:'',
+        _dias:d.DIAS, _slots:d.SLOTS, _carreras:base._carreras, _ciclos:base._ciclos
       });
     });
   }
 
-  // Asignación con reglas
-  const occDoc = new Map(); // docente -> dia -> {count, slots:Set}
-  const occCar = new Map(); // carrera -> slotKey -> Set(cycleIdx)
+  const {filas:asignadas,noHorario}=assignSchedules(filas);
+  asignadas.forEach(addRow);
 
-  function canPlace(row,dia,slot){
-    if(!occDoc.has(row.DOCENTE)) occDoc.set(row.DOCENTE,{});
-    const rec = occDoc.get(row.DOCENTE)[dia] ?? {count:0, slots:new Set()};
-    if(rec.count>=2) return false;
-    if(rec.slots.has(slot)) return false;
+  // Lista de docentes (de todo el archivo Docentes.xlsx), depurada y ordenada
+  const nombres = docentes
+    .map(r=>norm(r['DOCENTE']))
+    .filter(n=>n && !esGenerico(n));
+  const unicos = Array.from(new Set(nombres)).sort((a,b)=>sortKeyNombre(a).localeCompare(sortKeyNombre(b)));
+  const ul = document.getElementById('docList'); ul.innerHTML='';
+  unicos.forEach(n=>{ const li=document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+  if(unicos.length){ document.getElementById('cardDocentes').style.display='block'; }
 
-    const slotKey = `${dia} ${slot}`;
-    for(let i=0;i<row._carreras.length;i++){
-      const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
-      if(!occCar.has(car)) occCar.set(car,new Map());
-      const map=occCar.get(car);
-      if(!map.has(slotKey)) map.set(slotKey,new Set());
-      for(const u of map.get(slotKey)){ if(Math.abs(u-idx)<=1) return false; }
-    }
-    return true;
-  }
-  function place(row){
-    const dias = row._dias.length?row._dias:DIAS;
-    const slots = row._slots.length?row._slots:SLOTS;
-    for(const d of DIAS.filter(x=>dias.includes(x))){
-      for(const s of SLOTS.filter(x=>slots.includes(x))){
-        if(canPlace(row,d,s)){
-          const rec = occDoc.get(row.DOCENTE)[d] ?? {count:0, slots:new Set()};
-          rec.count++; rec.slots.add(s); occDoc.get(row.DOCENTE)[d]=rec;
-
-          const slotKey = `${d} ${s}`;
-          for(let i=0;i<row._carreras.length;i++){
-            const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
-            if(!occCar.has(car)) occCar.set(car,new Map());
-            const map=occCar.get(car);
-            if(!map.has(slotKey)) map.set(slotKey,new Set());
-            map.get(slotKey).add(idx);
-          }
-          row.DIA=d; row.HORA=s; return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  filas.sort((a,b)=>Math.min(...a._ciclos.map(c=>cicloIdx(c))) - Math.min(...b._ciclos.map(c=>cicloIdx(c))));
-  let noHorario=0;
-  for(const r of filas){ if(!place(r)) { noHorario++; addError(`Sin horario libre: ${r.MATERIA} (${r.DOCENTE})`); } }
-
-  return {filas, noMatch, noHorario};
-}
-
-/* ===== Export ===== */
-function tableToSheet(){
-  const headers=[...document.querySelectorAll('#matriz thead th')].map(th=>th.textContent);
-  const rows=[...document.querySelectorAll('#matriz tbody tr')].map(tr=>[...tr.children].map(td=>td.textContent));
-  return XLSX.utils.aoa_to_sheet([headers,...rows]);
-}
-
-/* ===== Eventos UI ===== */
-document.getElementById('btnProcesar').addEventListener('click', async ()=>{
-  const fM=document.getElementById('fileMalla').files[0];
-  const fD=document.getElementById('fileDocentes').files[0];
-  if(!fM||!fD){ alert('Cargue ambos archivos.'); return; }
-  clearTable();
-  document.getElementById('panelErrores').style.display='none';
-  document.getElementById('errores').innerHTML='';
-  document.getElementById('docList').innerHTML='';
-  document.getElementById('cardDocentes').style.display='none';
-  document.getElementById('resumen').style.display='none';
-
-  const wbM=await readWB(fM), wbD=await readWB(fD);
-  const malla=sheetToJSON(wbM,'Malla'), docentes=sheetToJSON(wbD,'Docentes');
-  if(!malla.length || !docentes.length){ alert('Verifique hojas: Malla y Docentes.'); return; }
-
-  const aggMalla=buildMallaAggregate(malla);
-  const idxDoc=buildDocentesIndex(docentes);
-  const {filas,noMatch,noHorario}=assembleAndSchedule(aggMalla, idxDoc);
-
-  filas.forEach(addRow);
-
-  // Resumen visual
+  // Resumen
   const badge=document.getElementById('resumen');
-  badge.textContent = `Asignadas: ${filas.length} | Sin docente: ${noMatch.length} | Sin horario: ${noHorario}`;
+  badge.textContent=`Asignadas: ${asignadas.length} | Sin docente: ${noMatch.length} | Sin horario: ${noHorario} | Docentes: ${unicos.length}`;
   badge.style.display='inline-block';
-
-  // Observaciones de materias sin match (después de matching robusto)
-  noMatch.forEach(m=>addError(`Materia sin docente: ${m}`));
-
-  // Lista de docentes orden alfabético
-  const lista = Array.from(new Set(filas.map(r=>r.DOCENTE))).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
-  if(lista.length){
-    const ul=document.getElementById('docList'); lista.forEach(n=>{ const li=document.createElement('li'); li.textContent=n; ul.appendChild(li); });
-    document.getElementById('cardDocentes').style.display='block';
-  }
 
   document.getElementById('btnXLSX').disabled=false;
   document.getElementById('btnCSV').disabled=false;
 });
 
+/* Descargas y limpiar */
 document.getElementById('btnXLSX').addEventListener('click',()=>{
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, tableToSheet(), 'Matriz');
   XLSX.writeFile(wb,'Planificacion_UIDE.xlsx');
