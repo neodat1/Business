@@ -33,7 +33,7 @@ thead th{
   position:sticky;top:0;background:#fff;border-bottom:2px solid var(--celeste);
   padding:10px 8px;text-align:left;color:#06114a;z-index:1;cursor:pointer;user-select:none
 }
-thead th .sort{font-size:11px;opacity:.7;margin-left:6px}
+thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
 h3{margin:0 0 8px;color:#04136C}
@@ -75,27 +75,27 @@ select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-ra
       <table id="matriz">
         <thead>
           <tr>
-            <th data-col="0">DOCENTE <span class="sort">↕</span></th>
-            <th data-col="1">TITULO ACADÉMICO <span class="sort">↕</span></th>
-            <th data-col="2">DEDICACIÓN <span class="sort">↕</span></th>
-            <th data-col="3">MATERIA <span class="sort">↕</span></th>
-            <th data-col="4">CÓDIGO ANTHOLOGY <span class="sort">↕</span></th>
-            <th data-col="5">CARRERAS QUE COMPARTEN <span class="sort">↕</span></th>
-            <th data-col="6">MALLA <span class="sort">↕</span></th>
-            <th data-col="7">PRE-REQUISITO <span class="sort">↕</span></th>
-            <th data-col="8">CODIGO <span class="sort">↕</span></th>
-            <th data-col="9">HORAS TEÓRICAS <span class="sort">↕</span></th>
-            <th data-col="10">HORAS PRÁCTICAS <span class="sort">↕</span></th>
-            <th data-col="11">HORAS AUTÓNOMAS <span class="sort">↕</span></th>
-            <th data-col="12">CREDITOS <span class="sort">↕</span></th>
-            <th data-col="13">CAMPO DE FORMACIÓN <span class="sort">↕</span></th>
-            <th data-col="14">CICLO MALLA <span class="sort">↕</span></th>
-            <th data-col="15">Nº ORDEN EN LA MALLA <span class="sort">↕</span></th>
-            <th data-col="16">PARALELO <span class="sort">↕</span></th>
-            <th data-col="17">DIA <span class="sort">↕</span></th>
-            <th data-col="18">HORA <span class="sort">↕</span></th>
-            <th data-col="19">MODALIDAD <span class="sort">↕</span></th>
-            <th data-col="20">Nro. HORAS <span class="sort">↕</span></th>
+            <th>DOCENTE <span class="arrow">↕</span></th>
+            <th>TITULO ACADÉMICO <span class="arrow">↕</span></th>
+            <th>DEDICACIÓN <span class="arrow">↕</span></th>
+            <th>MATERIA <span class="arrow">↕</span></th>
+            <th>CÓDIGO ANTHOLOGY <span class="arrow">↕</span></th>
+            <th>CARRERAS QUE COMPARTEN <span class="arrow">↕</span></th>
+            <th>MALLA <span class="arrow">↕</span></th>
+            <th>PRE-REQUISITO <span class="arrow">↕</span></th>
+            <th>CODIGO <span class="arrow">↕</span></th>
+            <th>HORAS TEÓRICAS <span class="arrow">↕</span></th>
+            <th>HORAS PRÁCTICAS <span class="arrow">↕</span></th>
+            <th>HORAS AUTÓNOMAS <span class="arrow">↕</span></th>
+            <th>CREDITOS <span class="arrow">↕</span></th>
+            <th>CAMPO DE FORMACIÓN <span class="arrow">↕</span></th>
+            <th>CICLO MALLA <span class="arrow">↕</span></th>
+            <th>Nº ORDEN EN LA MALLA <span class="arrow">↕</span></th>
+            <th>PARALELO <span class="arrow">↕</span></th>
+            <th>DIA <span class="arrow">↕</span></th>
+            <th>HORA <span class="arrow">↕</span></th>
+            <th>MODALIDAD <span class="arrow">↕</span></th>
+            <th>Nro. HORAS <span class="arrow">↕</span></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -258,13 +258,11 @@ function assembleRows(aggMalla, idxDoc){
 
 function assignSchedules100(filas){
   const occDoc=new Map(); const occCar=new Map();
-
   function canPlace(row,dia,slot,{checkAdj=true,maxPerDay=2}){
     if(!occDoc.has(row.DOCENTE)) occDoc.set(row.DOCENTE,{});
     const rec=occDoc.get(row.DOCENTE)[dia]??{count:0,slots:new Set()};
     if(rec.count>=maxPerDay) return false;
     if(rec.slots.has(slot)) return false;
-
     if(checkAdj){
       const slotKey=`${dia} ${slot}`;
       for(let i=0;i<row._carreras.length;i++){
@@ -299,9 +297,7 @@ function assignSchedules100(filas){
     {name:'forzado',    checkAdj:false, maxPerDay:99,respectAvail:false}
   ];
 
-  // ordenar por ciclo bajo
   filas.sort((a,b)=>Math.min(...a._ciclos.map(c=>cicloIdx(c)))-Math.min(...b._ciclos.map(c=>cicloIdx(c))));
-
   const conteo={estricto:0,sin_ady:0,hasta3dia:0,ignora_disp:0,forzado:0};
   for(const r of filas){
     let placed=false;
@@ -318,33 +314,36 @@ function assignSchedules100(filas){
       }
       if(placed) break;
     }
-    if(!placed){ // último salvavidas total
-      apply(r,DIAS[0],SLOTS[0]); r._flag='forzado'; conteo.forzado++;
-    }
+    if(!placed){ apply(r,DIAS[0],SLOTS[0]); r._flag='forzado'; conteo.forzado++; }
   }
   return {filas,conteo};
 }
 
-/* ===== Ordenación de tabla por encabezado ===== */
-function sortTableBy(colIndex, asc=true){
-  const tb=document.querySelector('#matriz tbody');
-  const rows=[...tb.querySelectorAll('tr')];
-  const key=v=>rmDiac((v??'').toString()).toUpperCase();
-  rows.sort((a,b)=>{
-    const A=key(a.children[colIndex].textContent), B=key(b.children[colIndex].textContent);
-    if(A<B) return asc?-1:1; if(A>B) return asc?1:-1; return 0;
-  });
-  tb.innerHTML=''; rows.forEach(r=>tb.appendChild(r));
-}
-(function enableHeaderSort(){
-  const ths=document.querySelectorAll('#matriz thead th');
-  ths.forEach(th=>{
+/* ===== Ordenación por encabezado (#matriz) ===== */
+(function enableSortableMatrix(){
+  const table=document.getElementById('matriz'); if(!table) return;
+  const collator=new Intl.Collator('es',{sensitivity:'base',numeric:true});
+  const thead=table.tHead, tbody=table.tBodies[0];
+  const ths=Array.from(thead.rows[0].cells);
+  const arrows=Array.from(table.querySelectorAll('thead th .arrow'));
+  ths.forEach((th, colIndex)=>{
     let asc=true;
-    th.addEventListener('click',()=>{ sortTableBy(parseInt(th.dataset.col,10), asc); asc=!asc; });
+    th.addEventListener('click',()=>{
+      const rows=Array.from(tbody.rows);
+      rows.sort((ra,rb)=>{
+        const a=(ra.cells[colIndex]?.textContent||'').trim();
+        const b=(rb.cells[colIndex]?.textContent||'').trim();
+        const res=collator.compare(a,b);
+        return asc?res:-res;
+      });
+      const frag=document.createDocumentFragment(); rows.forEach(r=>frag.appendChild(r));
+      tbody.innerHTML=''; tbody.appendChild(frag);
+      arrows.forEach(s=>s.textContent='↕'); th.querySelector('.arrow').textContent=asc?'↑':'↓'; asc=!asc;
+    });
   });
 })();
 
-/* ===== Lista de docentes (orden y filtro) ===== */
+/* ===== Lista de docentes (orden/filtro) ===== */
 const GENERICOS=[/^POWER SKILLS$/i,/^CONFIRMAR$/i,/\(PREGUNTAR\)/i];
 const esGenerico=n=>GENERICOS.some(rx=>rx.test(n));
 const sortKeyNombre=s=>rmDiac(s).toUpperCase().trim();
@@ -383,25 +382,22 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
 
   asignadas.forEach(addRow);
 
-  // Resumen
   const badge=document.getElementById('resumen');
   const total=asignadas.length, estr=conteo.estricto||0;
   badge.textContent=`TOTAL: ${total} | Estricto: ${estr} | Sin ady.: ${conteo.sin_ady||0} | Hasta 3/día: ${conteo.hasta3dia||0} | Ignora disp.: ${conteo.ignora_disp||0} | Forzado: ${conteo.forzado||0} | Sin docente: ${noDoc.length}`;
   badge.style.display='inline-block';
 
-  // Observaciones (solo sin docente; todas las demás quedaron asignadas)
   noDoc.forEach(m=>addError(`Materia sin docente: ${m}`));
 
-  // Lista de docentes depurada
   const nombres = Array.from(new Set(docentes.map(r=>norm(r['DOCENTE'])).filter(n=>n && !esGenerico(n))));
-  window.__DOCENTES__ = nombres; // para orden/filtro dinámico
+  window.__DOCENTES__ = nombres;
   renderDocentes(nombres);
 
   document.getElementById('btnXLSX').disabled=false;
   document.getElementById('btnCSV').disabled=false;
 });
 
-/* Exportaciones y limpiar */
+/* Exportar y limpiar */
 function tableToSheet(){
   const headers=[...document.querySelectorAll('#matriz thead th')].map(th=>th.childNodes[0].textContent.trim());
   const rows=[...document.querySelectorAll('#matriz tbody tr')].map(tr=>[...tr.children].map(td=>td.textContent));
