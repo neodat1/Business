@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (observaciones filtrables)</title>
+<title>Matriz Académica – UIDE (observaciones con menú de Materias)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520}
@@ -18,6 +18,7 @@ header h1{margin:0;font-size:20px;font-weight:700}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 label{font-size:13px;font-weight:700;color:#04136C;display:block;margin-bottom:6px}
 input[type="file"]{width:100%;padding:10px;border:1px solid #ccd2e3;border-radius:12px;background:#fafbff}
+select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-radius:10px;background:#fafbff}
 .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 button{border:0;padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;transition:.2s}
 button:hover{opacity:.92}
@@ -37,13 +38,11 @@ tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
 
 h3{margin:0 0 8px;color:#04136C}
-select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-radius:10px;background:#fafbff}
-
-#panelErrores strong{color:var(--vino)}
+#panelObs strong{color:#862B39}
 #obsBar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-#obsList details{border:1px solid #eef1f6;border-radius:10px;padding:10px;margin:8px 0;background:#fff}
-#obsList summary{cursor:pointer;font-weight:600;color:#04136C}
-#obsList .meta{font-size:12px;color:#333;margin-top:6px}
+#obsInfo{border:1px solid #eef1f6;background:#fff;border-radius:10px;padding:12px}
+#obsInfo .meta{font-size:13px;margin:6px 0}
+.tag{display:inline-block;background:#f2f6ff;border:1px solid #dfe8ff;padding:2px 8px;border-radius:999px;margin:2px 6px 2px 0;font-size:12px;color:#04136C}
 </style>
 </head>
 <body>
@@ -68,9 +67,9 @@ select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-ra
     </div>
   </div>
 
-  <div id="panelErrores" class="card" style="display:none">
+  <!-- Observaciones con menú de Materias -->
+  <div id="panelObs" class="card" style="display:none">
     <strong>Observaciones / Conflictos</strong>
-    <!-- Barra de filtros -->
     <div id="obsBar" style="display:none">
       <label style="margin:0">Tipo:
         <select id="fTipo">
@@ -85,9 +84,11 @@ select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-ra
       <label style="margin:0">Malla:
         <select id="fMalla"><option value="">Todas</option></select>
       </label>
+      <label style="margin:0">Materia:
+        <select id="fMateria"><option value="">Seleccione…</option></select>
+      </label>
     </div>
-    <!-- Lista plegable -->
-    <div id="obsList"></div>
+    <div id="obsInfo" style="display:none"></div>
   </div>
 
   <div class="card">
@@ -249,8 +250,8 @@ function dedupeByDocente(candidates, targetTokens){
   return Array.from(bestByDoc.values()).map(x=>x.item);
 }
 
-/* ===== Observaciones (estructura) ===== */
-let OBSERVACIONES = []; // {tipo, materia, carreras[], mallas[], docente?}
+/* ===== Observaciones ===== */
+let OBSERVACIONES = []; // {tipo, materia, carreras[], mallas[]}
 
 /* ===== Ensamble + asignación ===== */
 function assembleRows(aggMalla, idxDoc){
@@ -355,7 +356,6 @@ function assignSchedules100(filas){
         carreras:r._carreras.slice(),
         mallas: (r.MALLA? r.MALLA.split(' / '):[])
       });
-      // colocar a la fuerza para mantener 100%
       apply(r,DIAS[0],SLOTS[0]); r._flag='forzado'; conteo.forzado++;
     }
   }
@@ -386,17 +386,17 @@ function assignSchedules100(filas){
   });
 })();
 
-/* ===== Render de observaciones con filtros ===== */
-function renderObservaciones(){
+/* ===== Render de observaciones con MENÚ de Materias ===== */
+function renderObsPanel(){
   if(!OBSERVACIONES.length){
-    document.getElementById('panelErrores').style.display='none';
+    document.getElementById('panelObs').style.display='none';
     return;
   }
-  const pe = document.getElementById('panelErrores');
-  pe.style.display='block';
+  const panel = document.getElementById('panelObs');
+  panel.style.display='block';
   document.getElementById('obsBar').style.display='flex';
 
-  // poblar selects (únicos)
+  // Poblar Carrera y Malla
   const setCarr = new Set(), setMalla = new Set();
   OBSERVACIONES.forEach(o=>{
     o.carreras.forEach(c=>{ if(c) setCarr.add(c); });
@@ -404,38 +404,59 @@ function renderObservaciones(){
   });
   const selCarr = document.getElementById('fCarrera');
   const selMalla = document.getElementById('fMalla');
-  const fill = (sel, set)=>{
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">Todas</option>' + [...set].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
-    if([...set].includes(cur)) sel.value = cur;
-  };
-  fill(selCarr,setCarr); fill(selMalla,setMalla);
+  selCarr.innerHTML = '<option value="">Todas</option>' + [...setCarr].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
+  selMalla.innerHTML = '<option value="">Todas</option>' + [...setMalla].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
 
-  const fTipo = document.getElementById('fTipo').value;
-  const fCarrera = selCarr.value;
-  const fMalla = selMalla.value;
-
-  const list = document.getElementById('obsList'); list.innerHTML = '';
-  OBSERVACIONES
-    .filter(o=> !fTipo || o.tipo===fTipo)
-    .filter(o=> !fCarrera || o.carreras.includes(fCarrera))
-    .filter(o=> !fMalla || o.mallas.includes(fMalla))
-    .sort((a,b)=> a.materia.localeCompare(b.materia,'es'))
-    .forEach(o=>{
-      const d = document.createElement('details');
-      const s = document.createElement('summary');
-      s.textContent = (o.tipo==='SIN_DOCENTE'?'Materia sin docente: ':'Sin horario libre: ') + o.materia;
-      const meta = document.createElement('div');
-      meta.className='meta';
-      meta.innerHTML = `<strong>Carrera(s):</strong> ${o.carreras.join(' / ')||'—'} &nbsp;&nbsp; <strong>Malla(s):</strong> ${o.mallas.join(' / ')||'—'}`;
-      d.appendChild(s); d.appendChild(meta);
-      list.appendChild(d);
-    });
-
-  // handlers
+  updateMateriaMenu(); // inicia
   ['fTipo','fCarrera','fMalla'].forEach(id=>{
-    document.getElementById(id).onchange = renderObservaciones;
+    document.getElementById(id).onchange = updateMateriaMenu;
   });
+  document.getElementById('fMateria').onchange = showMateriaInfo;
+}
+
+function updateMateriaMenu(){
+  const tipo = document.getElementById('fTipo').value;
+  const carrera = document.getElementById('fCarrera').value;
+  const malla = document.getElementById('fMalla').value;
+  const selMat = document.getElementById('fMateria');
+  const opciones = Array.from(new Set(
+    OBSERVACIONES
+      .filter(o=>!tipo || o.tipo===tipo)
+      .filter(o=>!carrera || o.carreras.includes(carrera))
+      .filter(o=>!malla || o.mallas.includes(malla))
+      .map(o=>o.materia)
+  )).sort((a,b)=>a.localeCompare(b,'es'));
+  selMat.innerHTML = '<option value="">Seleccione…</option>' + opciones.map(m=>`<option value="${m}">${m}</option>`).join('');
+  document.getElementById('obsInfo').style.display = 'none';
+  document.getElementById('obsInfo').innerHTML = '';
+}
+
+function showMateriaInfo(){
+  const materia = document.getElementById('fMateria').value;
+  const tipo = document.getElementById('fTipo').value;
+  const carrera = document.getElementById('fCarrera').value;
+  const malla = document.getElementById('fMalla').value;
+  const info = document.getElementById('obsInfo');
+  if(!materia){ info.style.display='none'; info.innerHTML=''; return; }
+
+  const items = OBSERVACIONES
+    .filter(o=>o.materia===materia)
+    .filter(o=>!tipo || o.tipo===tipo)
+    .filter(o=>!carrera || o.carreras.includes(carrera))
+    .filter(o=>!malla || o.mallas.includes(malla));
+
+  // Agregar resumen combinado
+  const tipos = Array.from(new Set(items.map(i=>i.tipo)));
+  const carreras = Array.from(new Set(items.flatMap(i=>i.carreras))).sort((a,b)=>a.localeCompare(b,'es'));
+  const mallas = Array.from(new Set(items.flatMap(i=>i.mallas))).sort((a,b)=>a.localeCompare(b,'es'));
+
+  info.innerHTML = `
+    <div class="meta"><strong>Materia:</strong> ${materia}</div>
+    <div class="meta"><strong>Tipo(s):</strong> ${tipos.map(t=>`<span class="tag">${t==='SIN_DOCENTE'?'SIN DOCENTE':'SIN HORARIO'}</span>`).join(' ')||'—'}</div>
+    <div class="meta"><strong>Carrera(s):</strong> ${carreras.map(c=>`<span class="tag">${c}</span>`).join(' ')||'—'}</div>
+    <div class="meta"><strong>Malla(s):</strong> ${mallas.map(m=>`<span class="tag">${m}</span>`).join(' ')||'—'}</div>
+  `;
+  info.style.display='block';
 }
 
 /* ===== Flujo principal ===== */
@@ -445,9 +466,7 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   if(!fM||!fD){alert('Cargue ambos archivos.');return;}
 
   clearTable(); OBSERVACIONES=[];
-  document.getElementById('obsList').innerHTML='';
-  document.getElementById('obsBar').style.display='none';
-  document.getElementById('panelErrores').style.display='none';
+  document.getElementById('panelObs').style.display='none';
   document.getElementById('resumen').style.display='none';
 
   const wbM=await readWB(fM), wbD=await readWB(fD);
@@ -466,7 +485,7 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   badge.textContent=`TOTAL: ${total} | Estricto: ${estr} | Sin ady.: ${conteo.sin_ady||0} | Hasta 3/día: ${conteo.hasta3dia||0} | Ignora disp.: ${conteo.ignora_disp||0} | Forzado: ${conteo.forzado||0} | Observaciones: ${OBSERVACIONES.length}`;
   badge.style.display='inline-block';
 
-  renderObservaciones();
+  renderObsPanel();
 
   document.getElementById('btnXLSX').disabled=false;
   document.getElementById('btnCSV').disabled=false;
@@ -490,9 +509,7 @@ document.getElementById('btnCSV').addEventListener('click',()=>{
 document.getElementById('btnLimpiar').addEventListener('click',()=>{
   document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value='';
   clearTable(); OBSERVACIONES=[];
-  document.getElementById('obsList').innerHTML='';
-  document.getElementById('obsBar').style.display='none';
-  document.getElementById('panelErrores').style.display='none';
+  document.getElementById('panelObs').style.display='none';
   document.getElementById('btnXLSX').disabled=true; document.getElementById('btnCSV').disabled=true;
   document.getElementById('resumen').style.display='none';
 });
