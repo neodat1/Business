@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (100% asignado + sin lista + dedupe paralelos)</title>
+<title>Matriz Académica – UIDE (observaciones filtrables)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520}
@@ -25,8 +25,7 @@ button:hover{opacity:.92}
 .accent{background:var(--mostaza);color:#1b1200}
 .muted{background:#fff;color:var(--azul);border:2px solid var(--azul)}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#fff3f3;color:#7a0d18;border:1px solid #f2c9cf;font-size:12px}
-#panelErrores strong{color:var(--vino)}
-.errors{margin:8px 0 0;padding-left:20px;font-size:13px}
+
 .scroll{overflow:auto;max-height:70vh;border:1px solid #e2e5ef;border-radius:14px}
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 thead th{
@@ -36,7 +35,15 @@ thead th{
 thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
+
 h3{margin:0 0 8px;color:#04136C}
+select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-radius:10px;background:#fafbff}
+
+#panelErrores strong{color:var(--vino)}
+#obsBar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+#obsList details{border:1px solid #eef1f6;border-radius:10px;padding:10px;margin:8px 0;background:#fff}
+#obsList summary{cursor:pointer;font-weight:600;color:#04136C}
+#obsList .meta{font-size:12px;color:#333;margin-top:6px}
 </style>
 </head>
 <body>
@@ -63,7 +70,24 @@ h3{margin:0 0 8px;color:#04136C}
 
   <div id="panelErrores" class="card" style="display:none">
     <strong>Observaciones / Conflictos</strong>
-    <ul id="errores" class="errors"></ul>
+    <!-- Barra de filtros -->
+    <div id="obsBar" style="display:none">
+      <label style="margin:0">Tipo:
+        <select id="fTipo">
+          <option value="">Todos</option>
+          <option value="SIN_DOCENTE">Materia sin docente</option>
+          <option value="SIN_HORARIO">Sin horario libre</option>
+        </select>
+      </label>
+      <label style="margin:0">Carrera:
+        <select id="fCarrera"><option value="">Todas</option></select>
+      </label>
+      <label style="margin:0">Malla:
+        <select id="fMalla"><option value="">Todas</option></select>
+      </label>
+    </div>
+    <!-- Lista plegable -->
+    <div id="obsList"></div>
   </div>
 
   <div class="card">
@@ -119,7 +143,6 @@ const rmDiac=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 function readWB(file){return file.arrayBuffer().then(buf=>XLSX.read(buf,{type:'array'}));}
 function sheetToJSON(wb,name){const ws=wb.Sheets[name];return ws?XLSX.utils.sheet_to_json(ws,{defval:""}):[];}
 
-function addError(msg){const ul=document.getElementById('errores');const li=document.createElement('li');li.textContent=msg;ul.appendChild(li);document.getElementById('panelErrores').style.display='block';}
 function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
 function addRow(row){
   const tb=document.querySelector('#matriz tbody'); const tr=document.createElement('tr');
@@ -145,7 +168,7 @@ function canonMateria(s){
 function tokens(str){return new Set(canonMateria(str).split(' ').filter(Boolean));}
 function jaccard(aSet,bSet){let inter=0;const small=aSet.size<bSet.size?aSet:bSet,big=aSet.size<bSet.size?bSet:aSet;small.forEach(x=>{if(big.has(x))inter++;});const uni=aSet.size+bSet.size-inter;return uni?inter/uni:0;}
 
-/* ===== Índices ===== */
+/* ===== Índices Malla / Docentes ===== */
 function buildMallaAggregate(rows){
   const agg=new Map();
   for(const r of rows){
@@ -212,10 +235,10 @@ function matchDocentesForMateria(canonKey, tokenSet, docentesIdx){
   let best=[],score=0; for(const it of docentesIdx.all){const s=jaccard(tokenSet,it.TOKENS); if(s>score){score=s; best=[it];} else if(s===score && s>0){best.push(it);} }
   return score>=0.60 ? best : [];
 }
-/* ===== Dedupe: un solo paralelo por DOCENTE para la misma materia ===== */
+/* Dedupe paralelos por docente */
 function dedupeByDocente(candidates, targetTokens){
   const keyDoc = n => rmDiac(upper(n));
-  const bestByDoc = new Map(); // DOCENTE -> {item, score}
+  const bestByDoc = new Map();
   for(const it of candidates){
     const score = jaccard(targetTokens, it.TOKENS);
     const k = keyDoc(it.DOCENTE);
@@ -226,13 +249,23 @@ function dedupeByDocente(candidates, targetTokens){
   return Array.from(bestByDoc.values()).map(x=>x.item);
 }
 
-/* ===== Ensamble + asignación (100%) ===== */
+/* ===== Observaciones (estructura) ===== */
+let OBSERVACIONES = []; // {tipo, materia, carreras[], mallas[], docente?}
+
+/* ===== Ensamble + asignación ===== */
 function assembleRows(aggMalla, idxDoc){
-  const filas=[]; const noDoc=[];
+  const filas=[]; OBSERVACIONES=[];
   for(const [k,info] of aggMalla.entries()){
     let cand = matchDocentesForMateria(k, tokens(info.materiaOrig), idxDoc);
-    if(!cand.length){ noDoc.push(info.materiaOrig); continue; }
-    // Evitar paralelos duplicados para el MISMO docente (materias casi iguales)
+    if(!cand.length){
+      OBSERVACIONES.push({
+        tipo:'SIN_DOCENTE',
+        materia:info.materiaOrig,
+        carreras:[...info.carreras].sort((a,b)=>a.localeCompare(b,'es')),
+        mallas:[...info.mallas].sort((a,b)=>a.localeCompare(b,'es'))
+      });
+      continue;
+    }
     cand = dedupeByDocente(cand, tokens(info.materiaOrig));
 
     const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
@@ -243,6 +276,7 @@ function assembleRows(aggMalla, idxDoc){
       HORAS_AUTONOMAS:pack(info.hauton),CREDITOS:pack(info.creditos),
       CAMPO_DE_FORMACION:pack(info.campo),CICLO_MALLA:pack(info.ciclo),
       N_ORDEN_MALLA:pack(info.norden),_carreras:carreras,_ciclos:carreras.map(c=>info.ciclo.get(c)??'')};
+
     cand.forEach((d,j)=>{
       filas.push({DOCENTE:d.DOCENTE,TITULO_ACADEMICO:d.TITULO,DEDICACION:d.DEDIC,MATERIA:base.MATERIA,
         CODIGO_ANTHOLOGY:'',CARRERAS_COMPARTEN:base.CARRERAS_COMPARTEN,MALLA:base.MALLA,PRE_REQUISITO:base.PRE_REQUISITO,
@@ -252,7 +286,7 @@ function assembleRows(aggMalla, idxDoc){
         _dias:d.DIAS,_slots:d.SLOTS,_carreras:base._carreras,_ciclos:base._ciclos,_flag:'estricto'});
     });
   }
-  return {filas,noDoc};
+  return {filas};
 }
 
 function assignSchedules100(filas){
@@ -297,7 +331,7 @@ function assignSchedules100(filas){
   ];
 
   filas.sort((a,b)=>Math.min(...a._ciclos.map(c=>cicloIdx(c)))-Math.min(...b._ciclos.map(c=>cicloIdx(c))));
-  const conteo={estricto:0,sin_ady:0,hasta3dia:0,ignora_disp:0,forzado:0};
+  const conteo={estricto:0,sin_ady:0,hasta3dia:0,ignora_disp:0,forzado:0, sin_horario:0};
   for(const r of filas){
     let placed=false;
     for(const f of fases){
@@ -313,7 +347,17 @@ function assignSchedules100(filas){
       }
       if(placed) break;
     }
-    if(!placed){ apply(r,DIAS[0],SLOTS[0]); r._flag='forzado'; conteo.forzado++; }
+    if(!placed){
+      conteo.sin_horario++;
+      OBSERVACIONES.push({
+        tipo:'SIN_HORARIO',
+        materia:r.MATERIA,
+        carreras:r._carreras.slice(),
+        mallas: (r.MALLA? r.MALLA.split(' / '):[])
+      });
+      // colocar a la fuerza para mantener 100%
+      apply(r,DIAS[0],SLOTS[0]); r._flag='forzado'; conteo.forzado++;
+    }
   }
   return {filas,conteo};
 }
@@ -342,14 +386,69 @@ function assignSchedules100(filas){
   });
 })();
 
+/* ===== Render de observaciones con filtros ===== */
+function renderObservaciones(){
+  if(!OBSERVACIONES.length){
+    document.getElementById('panelErrores').style.display='none';
+    return;
+  }
+  const pe = document.getElementById('panelErrores');
+  pe.style.display='block';
+  document.getElementById('obsBar').style.display='flex';
+
+  // poblar selects (únicos)
+  const setCarr = new Set(), setMalla = new Set();
+  OBSERVACIONES.forEach(o=>{
+    o.carreras.forEach(c=>{ if(c) setCarr.add(c); });
+    o.mallas.forEach(m=>{ if(m) setMalla.add(m); });
+  });
+  const selCarr = document.getElementById('fCarrera');
+  const selMalla = document.getElementById('fMalla');
+  const fill = (sel, set)=>{
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Todas</option>' + [...set].sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${x}">${x}</option>`).join('');
+    if([...set].includes(cur)) sel.value = cur;
+  };
+  fill(selCarr,setCarr); fill(selMalla,setMalla);
+
+  const fTipo = document.getElementById('fTipo').value;
+  const fCarrera = selCarr.value;
+  const fMalla = selMalla.value;
+
+  const list = document.getElementById('obsList'); list.innerHTML = '';
+  OBSERVACIONES
+    .filter(o=> !fTipo || o.tipo===fTipo)
+    .filter(o=> !fCarrera || o.carreras.includes(fCarrera))
+    .filter(o=> !fMalla || o.mallas.includes(fMalla))
+    .sort((a,b)=> a.materia.localeCompare(b.materia,'es'))
+    .forEach(o=>{
+      const d = document.createElement('details');
+      const s = document.createElement('summary');
+      s.textContent = (o.tipo==='SIN_DOCENTE'?'Materia sin docente: ':'Sin horario libre: ') + o.materia;
+      const meta = document.createElement('div');
+      meta.className='meta';
+      meta.innerHTML = `<strong>Carrera(s):</strong> ${o.carreras.join(' / ')||'—'} &nbsp;&nbsp; <strong>Malla(s):</strong> ${o.mallas.join(' / ')||'—'}`;
+      d.appendChild(s); d.appendChild(meta);
+      list.appendChild(d);
+    });
+
+  // handlers
+  ['fTipo','fCarrera','fMalla'].forEach(id=>{
+    document.getElementById(id).onchange = renderObservaciones;
+  });
+}
+
 /* ===== Flujo principal ===== */
 document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const fM=document.getElementById('fileMalla').files[0];
   const fD=document.getElementById('fileDocentes').files[0];
   if(!fM||!fD){alert('Cargue ambos archivos.');return;}
 
-  clearTable(); document.getElementById('panelErrores').style.display='none';
-  document.getElementById('errores').innerHTML=''; document.getElementById('resumen').style.display='none';
+  clearTable(); OBSERVACIONES=[];
+  document.getElementById('obsList').innerHTML='';
+  document.getElementById('obsBar').style.display='none';
+  document.getElementById('panelErrores').style.display='none';
+  document.getElementById('resumen').style.display='none';
 
   const wbM=await readWB(fM), wbD=await readWB(fD);
   const malla=sheetToJSON(wbM,'Malla'), docentes=sheetToJSON(wbD,'Docentes');
@@ -357,17 +456,17 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
 
   const aggMalla=buildMallaAggregate(malla);
   const idxDoc=buildDocentesIndex(docentes);
-  const {filas,noDoc}=assembleRows(aggMalla, idxDoc);
+  const {filas}=assembleRows(aggMalla, idxDoc);
   const {filas:asignadas,conteo}=assignSchedules100(filas);
 
   asignadas.forEach(addRow);
 
   const badge=document.getElementById('resumen');
   const total=asignadas.length, estr=conteo.estricto||0;
-  badge.textContent=`TOTAL: ${total} | Estricto: ${estr} | Sin ady.: ${conteo.sin_ady||0} | Hasta 3/día: ${conteo.hasta3dia||0} | Ignora disp.: ${conteo.ignora_disp||0} | Forzado: ${conteo.forzado||0} | Sin docente: ${noDoc.length}`;
+  badge.textContent=`TOTAL: ${total} | Estricto: ${estr} | Sin ady.: ${conteo.sin_ady||0} | Hasta 3/día: ${conteo.hasta3dia||0} | Ignora disp.: ${conteo.ignora_disp||0} | Forzado: ${conteo.forzado||0} | Observaciones: ${OBSERVACIONES.length}`;
   badge.style.display='inline-block';
 
-  noDoc.forEach(m=>addError(`Materia sin docente: ${m}`));
+  renderObservaciones();
 
   document.getElementById('btnXLSX').disabled=false;
   document.getElementById('btnCSV').disabled=false;
@@ -390,7 +489,10 @@ document.getElementById('btnCSV').addEventListener('click',()=>{
 });
 document.getElementById('btnLimpiar').addEventListener('click',()=>{
   document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value='';
-  clearTable(); document.getElementById('panelErrores').style.display='none'; document.getElementById('errores').innerHTML='';
+  clearTable(); OBSERVACIONES=[];
+  document.getElementById('obsList').innerHTML='';
+  document.getElementById('obsBar').style.display='none';
+  document.getElementById('panelErrores').style.display='none';
   document.getElementById('btnXLSX').disabled=true; document.getElementById('btnCSV').disabled=true;
   document.getElementById('resumen').style.display='none';
 });
