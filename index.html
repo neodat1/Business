@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (100% asignado + ordenación)</title>
+<title>Matriz Académica – UIDE (100% asignado + sin lista + dedupe paralelos)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520}
@@ -37,10 +37,6 @@ thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
 h3{margin:0 0 8px;color:#04136C}
-#docBar{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-#docList{font-size:14px;margin:0;padding-left:18px;list-style:decimal}
-#docList li{padding:2px 0;border-bottom:1px solid #eee}
-select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-radius:10px;background:#fafbff}
 </style>
 </head>
 <body>
@@ -101,19 +97,6 @@ select, input[type="search"]{padding:8px 10px;border:1px solid #ccd2e3;border-ra
         <tbody></tbody>
       </table>
     </div>
-  </div>
-
-  <div class="card" id="cardDocentes" style="display:none">
-    <h3>Lista de docentes</h3>
-    <div id="docBar">
-      <label for="docSort" style="margin:0">Orden:</label>
-      <select id="docSort">
-        <option value="az">A → Z</option>
-        <option value="za">Z → A</option>
-      </select>
-      <input id="docSearch" type="search" placeholder="Buscar docente…" />
-    </div>
-    <ol id="docList"></ol>
   </div>
 </div>
 
@@ -229,13 +212,29 @@ function matchDocentesForMateria(canonKey, tokenSet, docentesIdx){
   let best=[],score=0; for(const it of docentesIdx.all){const s=jaccard(tokenSet,it.TOKENS); if(s>score){score=s; best=[it];} else if(s===score && s>0){best.push(it);} }
   return score>=0.60 ? best : [];
 }
+/* ===== Dedupe: un solo paralelo por DOCENTE para la misma materia ===== */
+function dedupeByDocente(candidates, targetTokens){
+  const keyDoc = n => rmDiac(upper(n));
+  const bestByDoc = new Map(); // DOCENTE -> {item, score}
+  for(const it of candidates){
+    const score = jaccard(targetTokens, it.TOKENS);
+    const k = keyDoc(it.DOCENTE);
+    if(!bestByDoc.has(k) || score > bestByDoc.get(k).score){
+      bestByDoc.set(k, {item: it, score});
+    }
+  }
+  return Array.from(bestByDoc.values()).map(x=>x.item);
+}
 
 /* ===== Ensamble + asignación (100%) ===== */
 function assembleRows(aggMalla, idxDoc){
   const filas=[]; const noDoc=[];
   for(const [k,info] of aggMalla.entries()){
-    const cand = matchDocentesForMateria(k, tokens(info.materiaOrig), idxDoc);
+    let cand = matchDocentesForMateria(k, tokens(info.materiaOrig), idxDoc);
     if(!cand.length){ noDoc.push(info.materiaOrig); continue; }
+    // Evitar paralelos duplicados para el MISMO docente (materias casi iguales)
+    cand = dedupeByDocente(cand, tokens(info.materiaOrig));
+
     const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
     const pack=mp=>carreras.map(c=>mp.get(c)??'').join(' / ');
     const base={MATERIA:info.materiaOrig,CARRERAS_COMPARTEN:slashJoin(carreras),
@@ -343,24 +342,6 @@ function assignSchedules100(filas){
   });
 })();
 
-/* ===== Lista de docentes (orden/filtro) ===== */
-const GENERICOS=[/^POWER SKILLS$/i,/^CONFIRMAR$/i,/\(PREGUNTAR\)/i];
-const esGenerico=n=>GENERICOS.some(rx=>rx.test(n));
-const sortKeyNombre=s=>rmDiac(s).toUpperCase().trim();
-
-function renderDocentes(nombres){
-  const sel=document.getElementById('docSort');
-  const q=document.getElementById('docSearch').value.trim();
-  let arr=nombres.filter(n=>!q || n.toUpperCase().includes(q.toUpperCase()));
-  arr.sort((a,b)=>sortKeyNombre(a).localeCompare(sortKeyNombre(b)));
-  if(sel.value==='za') arr.reverse();
-  const ol=document.getElementById('docList'); ol.innerHTML='';
-  arr.forEach(n=>{const li=document.createElement('li'); li.textContent=n; ol.appendChild(li);});
-  document.getElementById('cardDocentes').style.display=arr.length?'block':'none';
-}
-document.getElementById('docSort').addEventListener('change',()=>renderDocentes(window.__DOCENTES__||[]));
-document.getElementById('docSearch').addEventListener('input',()=>renderDocentes(window.__DOCENTES__||[]));
-
 /* ===== Flujo principal ===== */
 document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const fM=document.getElementById('fileMalla').files[0];
@@ -368,8 +349,7 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   if(!fM||!fD){alert('Cargue ambos archivos.');return;}
 
   clearTable(); document.getElementById('panelErrores').style.display='none';
-  document.getElementById('errores').innerHTML=''; document.getElementById('docList').innerHTML='';
-  document.getElementById('cardDocentes').style.display='none'; document.getElementById('resumen').style.display='none';
+  document.getElementById('errores').innerHTML=''; document.getElementById('resumen').style.display='none';
 
   const wbM=await readWB(fM), wbD=await readWB(fD);
   const malla=sheetToJSON(wbM,'Malla'), docentes=sheetToJSON(wbD,'Docentes');
@@ -388,10 +368,6 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   badge.style.display='inline-block';
 
   noDoc.forEach(m=>addError(`Materia sin docente: ${m}`));
-
-  const nombres = Array.from(new Set(docentes.map(r=>norm(r['DOCENTE'])).filter(n=>n && !esGenerico(n))));
-  window.__DOCENTES__ = nombres;
-  renderDocentes(nombres);
 
   document.getElementById('btnXLSX').disabled=false;
   document.getElementById('btnCSV').disabled=false;
@@ -416,7 +392,6 @@ document.getElementById('btnLimpiar').addEventListener('click',()=>{
   document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value='';
   clearTable(); document.getElementById('panelErrores').style.display='none'; document.getElementById('errores').innerHTML='';
   document.getElementById('btnXLSX').disabled=true; document.getElementById('btnCSV').disabled=true;
-  document.getElementById('docList').innerHTML=''; document.getElementById('cardDocentes').style.display='none';
   document.getElementById('resumen').style.display='none';
 });
 </script>
