@@ -25,7 +25,7 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             background-color: var(--blanco);
             border-radius: 10px;
@@ -107,51 +107,6 @@
             margin-bottom: 20px;
         }
         
-        .schedule-container {
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-            font-size: 14px;
-        }
-        
-        th {
-            background-color: var(--azul);
-            color: var(--blanco);
-            position: sticky;
-            top: 0;
-        }
-        
-        .time-header {
-            background-color: var(--vino);
-            color: var(--blanco);
-        }
-        
-        .day-header {
-            background-color: var(--verde);
-            color: var(--blanco);
-        }
-        
-        .course-cell {
-            background-color: var(--celeste);
-            border-radius: 4px;
-            margin: 2px;
-            font-weight: bold;
-        }
-        
-        .empty-cell {
-            background-color: var(--gris-claro);
-        }
-        
         .filters {
             display: flex;
             gap: 15px;
@@ -164,25 +119,6 @@
             border: 1px solid var(--azul);
             border-radius: 4px;
             background-color: var(--blanco);
-        }
-        
-        .legend {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
         }
         
         .status {
@@ -202,6 +138,123 @@
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+        }
+        
+        .list-view {
+            margin-top: 20px;
+        }
+        
+        .list-header {
+            background-color: var(--azul);
+            color: var(--blanco);
+            padding: 12px 15px;
+            border-radius: 5px 5px 0 0;
+            font-weight: bold;
+        }
+        
+        .list-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .list-item:nth-child(even) {
+            background-color: var(--gris-claro);
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .subject-info {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .subject-name {
+            font-weight: bold;
+            font-size: 18px;
+            color: var(--azul);
+            margin-bottom: 5px;
+        }
+        
+        .subject-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--vino);
+            font-weight: bold;
+        }
+        
+        .detail-value {
+            font-weight: 500;
+        }
+        
+        .career-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .administration {
+            background-color: var(--celeste);
+        }
+        
+        .marketing {
+            background-color: var(--mostaza);
+        }
+        
+        .international-business {
+            background-color: var(--verde);
+        }
+        
+        .schedule-info {
+            flex: 0 0 200px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: var(--gris-claro);
+        }
+        
+        .schedule-time {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .schedule-day {
+            margin-top: 5px;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .list-item {
+                flex-direction: column;
+            }
+            
+            .schedule-info {
+                margin-top: 15px;
+            }
         }
     </style>
 </head>
@@ -253,36 +306,11 @@
             <button id="print-btn">Imprimir Horario</button>
         </div>
         
-        <div class="schedule-container">
-            <table id="schedule-table">
-                <thead>
-                    <tr>
-                        <th>Hora</th>
-                        <th>Lunes</th>
-                        <th>Martes</th>
-                        <th>Miércoles</th>
-                        <th>Jueves</th>
-                        <th>Viernes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Los horarios se generarán aquí -->
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: var(--celeste);"></div>
-                <span>Administración</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: var(--mostaza);"></div>
-                <span>Marketing</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: var(--verde);"></div>
-                <span>Negocios Internacionales</span>
+        <div class="list-view">
+            <div class="list-header">Lista de Materias y Horarios</div>
+            <div id="list-container">
+                <!-- Los datos se mostrarán aquí en formato de lista -->
+                <div class="no-data">Cargue los archivos Excel y haga clic en "Procesar" para generar la lista de horarios.</div>
             </div>
         </div>
     </div>
@@ -295,26 +323,18 @@
             const processBtn = document.getElementById('process-btn');
             const exportBtn = document.getElementById('export-btn');
             const printBtn = document.getElementById('print-btn');
-            const scheduleTable = document.getElementById('schedule-table');
             const statusDiv = document.getElementById('status');
             const carreraFilter = document.getElementById('carrera-filter');
             const cicloFilter = document.getElementById('ciclo-filter');
+            const listContainer = document.getElementById('list-container');
             
             let scheduleData = [];
-            let timeSlots = [
-                '07:00-10:00',
-                '10:00-13:00',
-                '13:00-16:00',
-                '16:00-19:00',
-                '19:00-22:00'
-            ];
-            let days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
             
             processBtn.addEventListener('click', processFiles);
             exportBtn.addEventListener('click', exportToExcel);
             printBtn.addEventListener('click', printSchedule);
-            carreraFilter.addEventListener('change', renderSchedule);
-            cicloFilter.addEventListener('change', renderSchedule);
+            carreraFilter.addEventListener('change', renderList);
+            cicloFilter.addEventListener('change', renderList);
             
             function processFiles() {
                 statusDiv.style.display = 'none';
@@ -356,9 +376,6 @@
             }
             
             function generateSchedule(mallasData, docentesData, restriccionesData) {
-                // Aquí procesaríamos los datos y generaríamos el horario
-                // Esta es una implementación simplificada
-                
                 // Filtrar materias con 0 estudiantes
                 const filteredMallas = mallasData.filter(row => {
                     // Asumiendo que la columna de estudiantes es una de las últimas
@@ -374,8 +391,8 @@
                 // Llenar filtros
                 populateFilters(scheduleData);
                 
-                // Renderizar horario
-                renderSchedule();
+                // Renderizar lista
+                renderList();
                 
                 showStatus('Horario generado exitosamente.', 'success');
             }
@@ -430,36 +447,51 @@
                     if (row.length >= 15) {
                         const carrera = row[0];
                         const materia = row[3];
+                        const codigo = row[4];
                         const ciclo = row[2];
+                        const horasTeoricas = row[6];
+                        const horasPracticas = row[7];
+                        const horasAutonomas = row[8];
+                        const creditos = row[9];
                         const estudiantes = row[row.length - 1];
                         
                         // Solo agregar materias con estudiantes
                         if (estudiantes > 0) {
+                            // Encontrar docente para esta materia
+                            let docente = "Por asignar";
+                            for (const [teacher, subjects] of Object.entries(teacherSubjectMap)) {
+                                if (subjects.includes(materia)) {
+                                    docente = teacher;
+                                    break;
+                                }
+                            }
+                            
                             // Asignar días y horas aleatorios para demostración
+                            const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+                            const timeSlots = ['07:00-10:00', '10:00-13:00', '13:00-16:00', '16:00-19:00', '19:00-22:00'];
+                            
                             const dayIndex = Math.floor(Math.random() * 5);
                             const timeIndex = Math.floor(Math.random() * 5);
                             
                             schedule.push({
                                 carrera: carrera,
                                 materia: materia,
+                                codigo: codigo,
                                 ciclo: ciclo,
+                                docente: docente,
+                                horasTeoricas: horasTeoricas,
+                                horasPracticas: horasPracticas,
+                                horasAutonomas: horasAutonomas,
+                                creditos: creditos,
                                 dia: days[dayIndex],
                                 hora: timeSlots[timeIndex],
-                                estudiantes: estudiantes,
-                                color: getColorForCareer(carrera)
+                                estudiantes: estudiantes
                             });
                         }
                     }
                 }
                 
                 return schedule;
-            }
-            
-            function getColorForCareer(carrera) {
-                if (carrera.includes('ADMINISTRACIÓN')) return '#9CBEE3'; // Celeste
-                if (carrera.includes('MARKETING')) return '#DE912E'; // Mostaza
-                if (carrera.includes('NEGOCIOS INTERNACIONALES')) return '#8A9520'; // Verde
-                return '#862B39'; // Vino por defecto
             }
             
             function populateFilters(scheduleData) {
@@ -488,7 +520,7 @@
                 });
             }
             
-            function renderSchedule() {
+            function renderList() {
                 const selectedCarrera = carreraFilter.value;
                 const selectedCiclo = cicloFilter.value;
                 
@@ -498,51 +530,60 @@
                            (selectedCiclo === 'all' || item.ciclo === selectedCiclo);
                 });
                 
-                // Limpiar tabla
-                const tbody = scheduleTable.querySelector('tbody');
-                tbody.innerHTML = '';
+                // Limpiar contenedor
+                listContainer.innerHTML = '';
                 
-                // Crear filas para cada franja horaria
-                timeSlots.forEach(timeSlot => {
-                    const row = document.createElement('tr');
+                if (filteredData.length === 0) {
+                    listContainer.innerHTML = '<div class="no-data">No hay datos que coincidan con los filtros seleccionados.</div>';
+                    return;
+                }
+                
+                // Crear elementos de lista
+                filteredData.forEach(item => {
+                    const listItem = document.createElement('div');
+                    listItem.classList.add('list-item');
                     
-                    // Celda de hora
-                    const timeCell = document.createElement('td');
-                    timeCell.textContent = timeSlot;
-                    timeCell.classList.add('time-header');
-                    row.appendChild(timeCell);
+                    // Determinar clase de badge según la carrera
+                    let badgeClass = '';
+                    if (item.carrera.includes('ADMINISTRACIÓN')) badgeClass = 'administration';
+                    if (item.carrera.includes('MARKETING')) badgeClass = 'marketing';
+                    if (item.carrera.includes('NEGOCIOS INTERNACIONALES')) badgeClass = 'international-business';
                     
-                    // Celdas para cada día
-                    days.forEach(day => {
-                        const cell = document.createElement('td');
-                        
-                        // Buscar materias para este día y hora
-                        const matchingItems = filteredData.filter(item => 
-                            item.dia === day && item.hora === timeSlot
-                        );
-                        
-                        if (matchingItems.length > 0) {
-                            matchingItems.forEach(item => {
-                                const courseDiv = document.createElement('div');
-                                courseDiv.classList.add('course-cell');
-                                courseDiv.style.backgroundColor = item.color;
-                                courseDiv.style.color = '#04136C';
-                                courseDiv.innerHTML = `
-                                    <strong>${item.materia}</strong><br>
-                                    ${item.carrera}<br>
-                                    Ciclo: ${item.ciclo}<br>
-                                    Estudiantes: ${item.estudiantes}
-                                `;
-                                cell.appendChild(courseDiv);
-                            });
-                        } else {
-                            cell.classList.add('empty-cell');
-                        }
-                        
-                        row.appendChild(cell);
-                    });
+                    listItem.innerHTML = `
+                        <div class="subject-info">
+                            <div class="subject-name">${item.materia}</div>
+                            <span class="career-badge ${badgeClass}">${item.carrera}</span>
+                            <span>Código: ${item.codigo}</span>
+                            <div class="subject-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">DOCENTE</span>
+                                    <span class="detail-value">${item.docente}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">CICLO</span>
+                                    <span class="detail-value">${item.ciclo}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">HORAS</span>
+                                    <span class="detail-value">T: ${item.horasTeoricas} | P: ${item.horasPracticas} | A: ${item.horasAutonomas}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">CRÉDITOS</span>
+                                    <span class="detail-value">${item.creditos}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">ESTUDIANTES</span>
+                                    <span class="detail-value">${item.estudiantes}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="schedule-info">
+                            <div class="schedule-time">${item.hora}</div>
+                            <div class="schedule-day">${item.dia}</div>
+                        </div>
+                    `;
                     
-                    tbody.appendChild(row);
+                    listContainer.appendChild(listItem);
                 });
             }
             
@@ -555,7 +596,13 @@
                     return {
                         'Carrera': item.carrera,
                         'Materia': item.materia,
+                        'Código': item.codigo,
                         'Ciclo': item.ciclo,
+                        'Docente': item.docente,
+                        'Horas Teóricas': item.horasTeoricas,
+                        'Horas Prácticas': item.horasPracticas,
+                        'Horas Autónomas': item.horasAutonomas,
+                        'Créditos': item.creditos,
                         'Día': item.dia,
                         'Hora': item.hora,
                         'Estudiantes': item.estudiantes
