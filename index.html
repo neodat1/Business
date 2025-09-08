@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (colores por carrera + restricciones)</title>
+<title>Matriz Académica – UIDE (colores por carrera + abreviaturas + restricciones)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -36,11 +36,9 @@ thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
 
-/* Chips coloreadas por carrera */
+/* Chips coloreadas por carrera (solo valor, sin prefijos) */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:2px 8px;border:1px solid rgba(0,0,0,.05);font-weight:600;font-size:12px}
-.chip small{opacity:.85;font-weight:700}
-.sep{margin:0 2px;opacity:.4}
+.chip{display:inline-flex;align-items:center;border-radius:999px;padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px}
 </style>
 </head>
 <body>
@@ -52,9 +50,9 @@ tbody tr:nth-child(odd){background:#fbfdff}
 <div class="wrapper">
   <div class="card">
     <div class="row">
-      <div><label>0. Mallas.xlsx (Hoja: Malla)</label><input id="fileMalla" type="file" accept=".xlsx,.xls" /></div>
-      <div><label>1. Docentes.xlsx (Hoja: Docentes)</label><input id="fileDocentes" type="file" accept=".xlsx,.xls" /></div>
-      <div><label>2. Restricciones.xlsx (Hoja: Restricciones)</label><input id="fileRest" type="file" accept=".xlsx,.xls" /></div>
+      <div><label>0. Mallas.xlsx</label><input id="fileMalla" type="file" accept=".xlsx,.xls" /></div>
+      <div><label>1. Docentes.xlsx</label><input id="fileDocentes" type="file" accept=".xlsx,.xls" /></div>
+      <div><label>2. Restricciones.xlsx</label><input id="fileRest" type="file" accept=".xlsx,.xls" /></div>
     </div>
     <div class="actions">
       <button id="btnProcesar" class="primary">Procesar</button>
@@ -104,12 +102,20 @@ tbody tr:nth-child(odd){background:#fbfdff}
 /* ===== Parámetros ===== */
 const DIAS=['LUNES','MARTES','MIÉRCOLES','MIERCOLES','JUEVES','VIERNES'];
 const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
-const CYCLE_INDEX={'PRIMERO':1,'SEGUNDO':2,'TERCERO':3,'CUARTO':4,'QUINTO':5,'SEXTO':6,'SÉPTIMO':7,'SEPTIMO':7,'OCTAVO':8};
+const CYCLE_INDEX={'PRIMERO':1,'SEGUNDO':2,'TERCERO':3,'CUARTO':4,'QUINTO':5,'SEXTO':6,'SÉPTIMO':7,'SEPTIMO':7,'OCTAVO':8,'NOVENO':9,'DÉCIMO':10,'DECIMO':10};
 const ABC="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const STOP=new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','AL','A','II','III','IV','VI','VII','VIII','IX','X']);
-/* Paleta institucional para carreras (asignación estable) */
 const PALETA=['#04136C','#DE912E','#862B39','#9CBEE3','#8A9520'];
 const carreraColor=new Map();
+
+/* Abreviaturas solicitadas */
+function abrevCarrera(name){
+  const s=rmDiac(upper(name));
+  if(/ADMINISTR/.test(s)) return 'ADM';
+  if(/MARKETING/.test(s)) return 'MKT';
+  if(/NEGOCIOS\s*INTERNACIONALES/.test(s)) return 'NNII';
+  return s; // por defecto, deja el nombre en mayúsculas
+}
 
 /* ===== Utilidades ===== */
 const nz=v=>(v===undefined||v===null)?'':v;
@@ -125,23 +131,43 @@ function colorDe(carrera){
   return col;
 }
 function readWB(file){return file.arrayBuffer().then(buf=>XLSX.read(buf,{type:'array'}));}
-function sheetToJSON(wb,name){const ws=wb.Sheets[name];return ws?XLSX.utils.sheet_to_json(ws,{defval:""}):[];}
+
+/* Selección robusta de hoja: intenta por nombre; si no, toma la de mayor tamaño */
+function sheetToJSONAuto(wb, prefer=[""]){
+  let target=null;
+  const lc = s => s.toLowerCase();
+  for(const name of wb.SheetNames){
+    const ln=lc(name);
+    if(prefer.some(k=>ln.includes(lc(k)))) { target=name; break; }
+  }
+  if(!target){
+    let max=0;
+    for(const name of wb.SheetNames){
+      const ws=wb.Sheets[name]; const ref=ws['!ref']; if(!ref) continue;
+      const range=XLSX.utils.decode_range(ref);
+      const rows=range.e.r - range.s.r + 1;
+      if(rows>max){max=rows; target=name;}
+    }
+  }
+  const ws=wb.Sheets[target];
+  return ws?XLSX.utils.sheet_to_json(ws,{defval:""}):[];
+}
+
 function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
 
-/* ===== Render de celdas con chips coloreadas por carrera ===== */
-function chipsHTML(pares){ // [{car, label, val}]
+/* ===== Render: chips por carrera (SOLO VALOR, sin prefijo) ===== */
+function chipsHTML(pares){ // [{car, val}]
   const esc = s => String(s).replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
   return `<div class="chips">` + pares.map(p=>{
     const col=colorDe(p.car);
-    const style=`background: ${col}10; border-color:${col}33; color:${col};`;
-    const label = p.label ? `<small>${esc(p.label)}:</small>` : '';
-    return `<span class="chip" style="${style}">${label} ${esc(p.val||'')}</span>`;
+    const style=`background: ${col}10; border:1px solid ${col}33; color:${col};`;
+    return `<span class="chip" style="${style}">${esc(p.val||'')}</span>`;
   }).join('') + `</div>`;
 }
+
 function addRow(row){
   const tb=document.querySelector('#matriz tbody'); const tr=document.createElement('tr');
 
-  // columnas simples
   const simple = (v)=>{const td=document.createElement('td'); td.textContent=nz(v); return td;};
   tr.appendChild(simple(row.DOCENTE));
   tr.appendChild(simple(row.TITULO_ACADEMICO));
@@ -149,7 +175,6 @@ function addRow(row){
   tr.appendChild(simple(row.MATERIA));
   tr.appendChild(simple(row.CODIGO_ANTHOLOGY));
 
-  // coloreadas por carrera (chips)
   const tdCarr=document.createElement('td'); tdCarr.innerHTML = chipsHTML(row._chipsCarreras); tr.appendChild(tdCarr);
   const tdMalla=document.createElement('td'); tdMalla.innerHTML = chipsHTML(row._chipsMalla); tr.appendChild(tdMalla);
   const tdPre=document.createElement('td'); tdPre.innerHTML   = chipsHTML(row._chipsPrereq); tr.appendChild(tdPre);
@@ -188,7 +213,7 @@ function jaccard(aSet,bSet){let inter=0;const small=aSet.size<bSet.size?aSet:bSe
 function buildMallaAggregate(rows){
   const agg=new Map();
   for(const r of rows){
-    // elimina materias con 0 estudiantes
+    // quita materias con 0 estudiantes si existe el dato
     const estRaw = r['ESTUDIANTES']??r['N ESTUDIANTES']??r['NUM ESTUDIANTES']??'';
     if(estRaw!=='' && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue;
 
@@ -292,7 +317,7 @@ function dedupeByDocente(candidates, targetTokens){
 /* ===== Observaciones ===== */
 let OBSERVACIONES = [];
 
-/* ===== Ensamble + paralelos (>28) y chips por carrera ===== */
+/* ===== Ensamble + paralelos (>28) y chips sin prefijos ===== */
 function assembleRows(aggMalla, idxDoc){
   const filas=[]; OBSERVACIONES=[];
   for(const [k,info] of aggMalla.entries()){
@@ -313,10 +338,11 @@ function assembleRows(aggMalla, idxDoc){
 
     const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
     const perCar = (mp)=>carreras.map(c=>({car:c,val:mp.get(c)??''}));
+
     const base={
       KEY:info.key,MATERIA:info.materiaOrig,
       _per:{
-        carreras: carreras.map(c=>({car:c,val:c})),
+        carreras: carreras.map(c=>({car:c,val:abrevCarrera(c)})),
         malla:    carreras.map(c=>({car:c,val:info.mallaByCar.get(c)??''})),
         prereq:   perCar(info.prereqs),
         codigo:   perCar(info.codigos),
@@ -338,23 +364,23 @@ function assembleRows(aggMalla, idxDoc){
         DOCENTE:d.DOCENTE||'',TITULO_ACADEMICO:d.TITULO||'',DEDICACION:d.DEDIC||'',
         MATERIA:base.MATERIA,CODIGO_ANTHOLOGY: base._per.anth.map(p=>p.val).filter(Boolean).join(' / '),
         CARRERAS_COMPARTEN:'',MALLA:'',PRE_REQUISITO:'',CODIGO:'',
-        HORAS_TEORICAS:'',HORAS_PRÁCTICAS:'',HORAS_PRACTICAS:'',HORAS_AUTONOMAS:'',CREDITOS:'',
+        HORAS_TEORICAS:'',HORAS_PRACTICAS:'',HORAS_AUTONOMAS:'',CREDITOS:'',
         CAMPO_DE_FORMACION:'',CICLO_MALLA:'',N_ORDEN_MALLA:'',
         ESTUDIANTES:base.ESTUDIANTES,PARALELO:ABC[j]??`P${j+1}`,DIA:'',HORA:'',MODALIDAD:d.MODALIDAD||'',NRO_HORAS:'',
         _dias:d.DIAS,_slots:d.SLOTS,_carreras:base._carreras,_ciclos:base._ciclos,_key:base.KEY,_flag:'estricto',
 
-        /* chips prearmadas por carrera */
-        _chipsCarreras: base._per.carreras.map(p=>({car:p.car,label:'Carrera',val:p.val})),
-        _chipsMalla:    base._per.malla.map(p=>({car:p.car,label:'Malla',val:p.val})),
-        _chipsPrereq:   base._per.prereq.map(p=>({car:p.car,label:'Pre',val:p.val})),
-        _chipsCodigo:   base._per.codigo.map(p=>({car:p.car,label:'Código',val:p.val})),
-        _chipsHT:       base._per.ht.map(p=>({car:p.car,label:'HT',val:p.val})),
-        _chipsHP:       base._per.hp.map(p=>({car:p.car,label:'HP',val:p.val})),
-        _chipsHA:       base._per.ha.map(p=>({car:p.car,label:'HA',val:p.val})),
-        _chipsCred:     base._per.cred.map(p=>({car:p.car,label:'Cr',val:p.val})),
-        _chipsCampo:    base._per.campo.map(p=>({car:p.car,label:'Campo',val:p.val})),
-        _chipsCiclo:    base._per.ciclo.map(p=>({car:p.car,label:'Ciclo',val:p.val})),
-        _chipsOrden:    base._per.orden.map(p=>({car:p.car,label:'Orden',val:p.val}))
+        /* chips (solo valores) */
+        _chipsCarreras: base._per.carreras,
+        _chipsMalla:    base._per.malla,
+        _chipsPrereq:   base._per.prereq,
+        _chipsCodigo:   base._per.codigo,
+        _chipsHT:       base._per.ht,
+        _chipsHP:       base._per.hp,
+        _chipsHA:       base._per.ha,
+        _chipsCred:     base._per.cred,
+        _chipsCampo:    base._per.campo,
+        _chipsCiclo:    base._per.ciclo,
+        _chipsOrden:    base._per.orden
       });
     });
   }
@@ -368,18 +394,15 @@ function assignSchedules100(filas, restricciones){
   const occParallel=new Set(); // paralelos de la misma materia no comparten día/slot
 
   function canPlace(row,dia,slot,{checkAdj=true,maxPerDay=2}){
-    // docente
     const d= row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
     if(!occDoc.has(d)) occDoc.set(d,{});
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
     if(rec.count>=maxPerDay) return false;
     if(rec.slots.has(slot)) return false;
 
-    // paralelos de la misma materia
     const parKey=`${row._key}|${dia}|${slot}`;
     if(occParallel.has(parKey)) return false;
 
-    // adyacencias de ciclo (entre ciclos contiguos)
     if(checkAdj){
       const slotKey=`${dia} ${slot}`;
       for(let i=0;i<row._carreras.length;i++){
@@ -439,10 +462,7 @@ function assignSchedules100(filas, restricciones){
       }
       if(placed) break;
     }
-    if(!placed){
-      conteo.sin_horario++;
-      // Se registra observación pero NO se asigna horario violando restricciones.
-    }
+    if(!placed){ conteo.sin_horario++; }
   }
   return {filas,conteo};
 }
@@ -482,8 +502,13 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   document.getElementById('resumen').style.display='none';
 
   const wbM=await readWB(fM), wbD=await readWB(fD), wbR=await readWB(fR);
-  const malla=sheetToJSON(wbM,'Malla'), docentes=sheetToJSON(wbD,'Docentes'), rest=sheetToJSON(wbR,'Restricciones');
-  if(!malla.length||!docentes.length){alert('Verifique hojas: Malla y Docentes.');return;}
+
+  /* Lectura robusta: busca por nombre y, si no hay coincidencia, toma la hoja más grande */
+  const malla=sheetToJSONAuto(wbM, ['malla','plan']);
+  const docentes=sheetToJSONAuto(wbD, ['docente']);
+  const rest=sheetToJSONAuto(wbR, ['restric','dispon','bloqueo']);
+
+  if(!malla.length||!docentes.length){alert('No se pudo leer Malla o Docentes (revise los nombres de hojas).');return;}
 
   const aggMalla=buildMallaAggregate(malla);
   const idxDoc=buildDocentesIndex(docentes);
