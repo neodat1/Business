@@ -3,14 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz de Planificación Académica – UIDE</title>
+<title>Matriz Académica – UIDE</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-:root{
-  --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
-}
+:root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520}
 body{margin:0;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f6f7fb;color:#111}
 header{display:flex;align-items:center;gap:16px;padding:16px;background:linear-gradient(135deg,var(--azul),#000a3d);color:#fff}
 header img{height:50px}
@@ -34,12 +32,14 @@ tbody tr:nth-child(odd){background:#fbfdff}
 #panelErrores strong{color:var(--vino)}
 .errors{margin:8px 0 0;padding-left:20px;font-size:13px}
 .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+#listaDocentes{font-size:14px;padding:0;margin:0;list-style:none}
+#listaDocentes li{padding:2px 0;border-bottom:1px solid #eee}
 </style>
 </head>
 <body>
 <header>
   <img src="UIDE-Ecuador.png" alt="UIDE Ecuador">
-  <h1>Matriz de Planificación Académica – UIDE</h1>
+  <h1>Matriz Académica – UIDE</h1>
 </header>
 <div class="brandbar"></div>
 
@@ -78,11 +78,16 @@ tbody tr:nth-child(odd){background:#fbfdff}
       </table>
     </div>
   </div>
+
+  <div class="card">
+    <h3>Lista de docentes (orden alfabético)</h3>
+    <ul id="listaDocentes"></ul>
+  </div>
 </div>
 
 <script>
-const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
 const DIAS=['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES'];
+const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
 const CYCLE_IDX={'PRIMERO':1,'SEGUNDO':2,'TERCERO':3,'CUARTO':4,'QUINTO':5,'SEXTO':6,'SÉPTIMO':7,'OCTAVO':8,'NOVENO':9,'DÉCIMO':10};
 const ABC="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -91,11 +96,9 @@ function upper(v){return norm(v).toUpperCase();}
 function cicloIdx(c){return CYCLE_IDX[upper(c)]||99;}
 function slashJoin(arr){return [...new Set(arr.filter(x=>x))].join(" / ");}
 
-/* === Excel util === */
 async function readWB(file){const data=await file.arrayBuffer();return XLSX.read(data,{type:"array"});}
 function sheetToJSON(wb,name){const ws=wb.Sheets[name];return ws?XLSX.utils.sheet_to_json(ws,{defval:""}):[];}
 
-/* === Manejo tabla === */
 function clearTable(){document.querySelector("#matriz tbody").innerHTML="";}
 function addRow(row){
   const tbody=document.querySelector("#matriz tbody");
@@ -115,7 +118,6 @@ function addError(msg){
   document.getElementById("panelErrores").style.display="block";
 }
 
-/* === Eventos === */
 document.getElementById("btnProcesar").addEventListener("click",async()=>{
   const fM=document.getElementById("fileMalla").files[0];
   const fD=document.getElementById("fileDocentes").files[0];
@@ -124,16 +126,16 @@ document.getElementById("btnProcesar").addEventListener("click",async()=>{
 
   const wbM=await readWB(fM);const wbD=await readWB(fD);
   const malla=sheetToJSON(wbM,"Malla");const docs=sheetToJSON(wbD,"Docentes");
-  if(!malla.length||!docs.length){alert("Archivos vacíos o hojas incorrectas");return;}
 
-  // Índice docentes por materia
+  // índice docentes
   const dmap=new Map();
   docs.forEach(r=>{
-    const mat=upper(norm(r.MATERIA));if(!dmap.has(mat))dmap.set(mat,[]);
+    const mat=upper(norm(r.MATERIA));
+    if(!dmap.has(mat))dmap.set(mat,[]);
     dmap.get(mat).push({DOCENTE:norm(r.DOCENTE),TITULO:norm(r["TITULO ACADÉMICO"]),DEDIC:norm(r.DEDICACION),MODALIDAD:norm(r.Modalidad),DIAS:DIAS,SLOTS:SLOTS});
   });
 
-  // Agrupar malla
+  // agrupar malla
   const agg=new Map();
   malla.forEach(r=>{
     const mat=norm(r.MATERIA);if(!mat)return;const k=upper(mat);
@@ -143,16 +145,20 @@ document.getElementById("btnProcesar").addEventListener("click",async()=>{
     if(r["PRERREQUISITO"]||r["PRE-REQUISITO"])a.PRER.add(norm(r["PRERREQUISITO"]||r["PRE-REQUISITO"]));
     const c=norm(r.CARRERA);
     a.CODES.set(c,norm(r["CÓDIGO"]||r.CODIGO));
-    a.HT.set(c,norm(r["HORAS TEÓRICAS"]));a.HP.set(c,norm(r["HORAS PRÁCTICAS"]));
-    a.HA.set(c,norm(r["HORAS AUTÓNOMAS"]));a.CR.set(c,norm(r.CREDITOS||r["CRÉDITOS"]));
-    a.CAM.set(c,norm(r["CAMPO DE FORMACIÓN"]));a.CIC.set(c,norm(r.CICLO));
+    a.HT.set(c,norm(r["HORAS TEÓRICAS"]));
+    a.HP.set(c,norm(r["HORAS PRÁCTICAS"]));
+    a.HA.set(c,norm(r["HORAS AUTÓNOMAS"]));
+    a.CR.set(c,norm(r.CREDITOS||r["CRÉDITOS"]));
+    a.CAM.set(c,norm(r["CAMPO DE FORMACIÓN"]));
+    a.CIC.set(c,norm(r.CICLO));
     a.ORD.set(c,norm(r["NUMERO DE ORDEN EN LA MALLA"]||r["Nº ORDEN EN LA MALLA"]));
   });
 
-  // Construir filas
+  // filas
   const filas=[];
   agg.forEach((a,k)=>{
-    const docsFor=dmap.get(k)||[];if(!docsFor.length){addError("Materia sin docente: "+a.MATERIA);return;}
+    const docsFor=dmap.get(k)||[];
+    if(!docsFor.length){addError("Materia sin docente: "+a.MATERIA);return;}
     const carreras=[...a.CARRERAS];
     docsFor.forEach((d,j)=>{
       filas.push({
@@ -166,23 +172,63 @@ document.getElementById("btnProcesar").addEventListener("click",async()=>{
         CAMPO_DE_FORMACION:carreras.map(c=>a.CAM.get(c)||"").join(" / "),
         CICLO_MALLA:carreras.map(c=>a.CIC.get(c)||"").join(" / "),
         N_ORDEN_MALLA:carreras.map(c=>a.ORD.get(c)||"").join(" / "),
-        PARALELO:ABC[j],DIA:"",HORA:"",MODALIDAD:d.MODALIDAD,NRO_HORAS:""
+        PARALELO:ABC[j],DIA:"",HORA:"",MODALIDAD:d.MODALIDAD,NRO_HORAS:"",_ciclos:carreras.map(c=>a.CIC.get(c)||"")
       });
     });
   });
 
-  // Asignar horarios simples
-  let idx=0;
-  filas.forEach(r=>{
-    r.DIA=DIAS[idx%DIAS.length];r.HORA=SLOTS[Math.floor(idx/DIAS.length)%SLOTS.length];idx++;
-    addRow(r);
-  });
+  // asignación horarios
+  const ocupacionDoc=new Map();
+  const ocupacionCar=new Map();
+  function canPlace(row,dia,slot){
+    const doc=row.DOCENTE;if(!ocupacionDoc.has(doc))ocupacionDoc.set(doc,{});
+    const rec=ocupacionDoc.get(doc)[dia]||{count:0,slots:new Set()};
+    if(rec.count>=2)return false;
+    if(rec.slots.has(slot))return false;
+    const slotKey=dia+" "+slot;
+    for(const c of row._ciclos){
+      const idx=cicloIdx(c);
+      if(!ocupacionCar.has(c))ocupacionCar.set(c,new Map());
+      const m=ocupacionCar.get(c);
+      if(!m.has(slotKey))m.set(slotKey,new Set());
+      const usados=m.get(slotKey);
+      for(const u of usados){if(Math.abs(u-idx)<=1)return false;}
+    }
+    return true;
+  }
+  function place(row){
+    for(const d of DIAS){
+      for(const s of SLOTS){
+        if(canPlace(row,d,s)){
+          const doc=row.DOCENTE;
+          const rec=ocupacionDoc.get(doc)[d]||{count:0,slots:new Set()};
+          rec.count++;rec.slots.add(s);ocupacionDoc.get(doc)[d]=rec;
+          const slotKey=d+" "+s;
+          for(const c of row._ciclos){
+            const idx=cicloIdx(c);
+            const m=ocupacionCar.get(c)||new Map();
+            if(!m.has(slotKey))m.set(slotKey,new Set());
+            m.get(slotKey).add(idx);
+            ocupacionCar.set(c,m);
+          }
+          row.DIA=d;row.HORA=s;return true;
+        }
+      }
+    }
+    return false;
+  }
+  filas.sort((a,b)=>Math.min(...a._ciclos.map(c=>cicloIdx(c)))-Math.min(...b._ciclos.map(c=>cicloIdx(c))));
+  filas.forEach(r=>{if(!place(r))addError("No se pudo asignar horario: "+r.MATERIA+" ("+r.DOCENTE+")");addRow(r);});
+
+  // lista docentes ordenada
+  const docentesUnicos=[...new Set(filas.map(f=>f.DOCENTE))].sort((a,b)=>a.localeCompare(b,'es'));
+  const ul=document.getElementById("listaDocentes");ul.innerHTML="";
+  docentesUnicos.forEach(d=>{const li=document.createElement("li");li.textContent=d;ul.appendChild(li);});
 
   document.getElementById("btnXLSX").disabled=false;
   document.getElementById("btnCSV").disabled=false;
 });
 
-/* Descargar */
 function tableToSheet(){
   const headers=[...document.querySelectorAll("#matriz thead th")].map(th=>th.textContent);
   const rows=[...document.querySelectorAll("#matriz tbody tr")].map(tr=>[...tr.children].map(td=>td.textContent));
@@ -199,6 +245,7 @@ document.getElementById("btnCSV").addEventListener("click",()=>{
 });
 document.getElementById("btnLimpiar").addEventListener("click",()=>{
   clearTable();document.getElementById("panelErrores").style.display="none";document.getElementById("errores").innerHTML="";
+  document.getElementById("listaDocentes").innerHTML="";
   document.getElementById("btnXLSX").disabled=true;document.getElementById("btnCSV").disabled=true;
 });
 </script>
