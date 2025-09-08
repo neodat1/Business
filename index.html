@@ -5,38 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Matriz de Planificación Académica – UIDE</title>
 
-<!-- Librería para leer y exportar Excel -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-  :root{
-    --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
-  }
-  *{box-sizing:border-box}
-  body{margin:0; font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#f6f7fb; color:#111}
-  header{display:flex; align-items:center; gap:16px; padding:16px 18px; background:linear-gradient(135deg,var(--azul),#000a3d); color:#fff}
-  header img{height:50px; width:auto}
-  header h1{font-size:20px; margin:0; font-weight:700}
-  .brandbar{height:5px; background:linear-gradient(90deg,var(--azul) 25%,var(--mostaza) 25% 40%,var(--vino) 40% 60%,var(--celeste) 60% 80%,var(--verde) 80%)}
-  .wrapper{max-width:1250px; margin:24px auto; padding:0 16px}
-  .card{background:#fff; border:1px solid #e2e5ef; border-radius:16px; padding:18px; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:20px}
-  .row{display:grid; grid-template-columns:1fr 1fr; gap:16px}
-  label{font-size:13px; font-weight:700; color:#04136C; margin-bottom:6px; display:block}
-  input[type="file"]{width:100%; padding:10px; border:1px solid #ccd2e3; border-radius:12px; background:#fafbff}
-  button{border:0; padding:10px 16px; border-radius:12px; font-weight:700; letter-spacing:.2px; cursor:pointer; transition:all .2s}
-  button:hover{opacity:.9}
-  .primary{background:var(--azul); color:#fff}
-  .accent{background:var(--mostaza); color:#1b1200}
-  .danger{background:var(--vino); color:#fff}
-  .muted{background:#fff; color:var(--azul); border:2px solid var(--azul)}
-  .actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:14px}
-  table{width:100%; border-collapse:separate; border-spacing:0; font-size:13px}
-  thead th{position:sticky; top:0; background:#fff; border-bottom:2px solid var(--celeste); padding:10px 8px; text-align:left; color:#06114a; z-index:2}
-  tbody td{border-bottom:1px solid #eef1f6; padding:8px; vertical-align:top}
-  tbody tr:nth-child(odd){background:#fbfdff}
-  .scroll{overflow:auto; max-height:70vh; border:1px solid #e2e5ef; border-radius:14px}
-  #panelErrores strong{color:var(--vino)}
-  .errors{margin:8px 0 0; padding-left:20px; font-size:13px}
+:root{
+  --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
+}
+body{margin:0;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f6f7fb;color:#111}
+header{display:flex;align-items:center;gap:16px;padding:16px;background:linear-gradient(135deg,var(--azul),#000a3d);color:#fff}
+header img{height:50px}
+header h1{margin:0;font-size:20px;font-weight:700}
+.brandbar{height:5px;background:linear-gradient(90deg,var(--azul) 20%,var(--mostaza) 20% 40%,var(--vino) 40% 60%,var(--celeste) 60% 80%,var(--verde) 80%)}
+.wrapper{max-width:1250px;margin:24px auto;padding:0 16px}
+.card{background:#fff;border:1px solid #e2e5ef;border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{font-size:13px;font-weight:700;color:#04136C;display:block;margin-bottom:6px}
+input[type="file"]{width:100%;padding:10px;border:1px solid #ccd2e3;border-radius:12px;background:#fafbff}
+button{border:0;padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;transition:.2s}
+button:hover{opacity:.9}
+.primary{background:var(--azul);color:#fff}
+.accent{background:var(--mostaza);color:#1b1200}
+.muted{background:#fff;color:var(--azul);border:2px solid var(--azul)}
+.scroll{overflow:auto;max-height:70vh;border:1px solid #e2e5ef;border-radius:14px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+thead th{position:sticky;top:0;background:#fff;border-bottom:2px solid var(--celeste);padding:10px 8px;text-align:left;color:#06114a}
+tbody td{border-bottom:1px solid #eef1f6;padding:8px}
+tbody tr:nth-child(odd){background:#fbfdff}
+#panelErrores strong{color:var(--vino)}
+.errors{margin:8px 0 0;padding-left:20px;font-size:13px}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 </style>
 </head>
 <body>
@@ -49,17 +46,11 @@
 <div class="wrapper">
   <div class="card">
     <div class="row">
-      <div>
-        <label>Archivo de Malla</label>
-        <input id="fileMalla" type="file" accept=".xlsx,.xls" />
-      </div>
-      <div>
-        <label>Archivo de Docentes</label>
-        <input id="fileDocentes" type="file" accept=".xlsx,.xls" />
-      </div>
+      <div><label>Malla</label><input id="fileMalla" type="file" accept=".xlsx,.xls"></div>
+      <div><label>Docentes</label><input id="fileDocentes" type="file" accept=".xlsx,.xls"></div>
     </div>
     <div class="actions">
-      <button id="btnProcesar" class="primary">Procesar y llenar matriz</button>
+      <button id="btnProcesar" class="primary">Procesar</button>
       <button id="btnXLSX" class="accent" disabled>Descargar XLSX</button>
       <button id="btnCSV" class="accent" disabled>Descargar CSV</button>
       <button id="btnLimpiar" class="muted">Limpiar</button>
@@ -76,13 +67,11 @@
       <table id="matriz">
         <thead>
           <tr>
-            <th>DOCENTE</th><th>TITULO ACADÉMICO</th><th>DEDICACIÓN</th>
-            <th>MATERIA</th><th>CÓDIGO ANTHOLOGY</th><th>CARRERAS QUE COMPARTEN</th>
-            <th>MALLA</th><th>PRE-REQUISITO</th><th>CODIGO</th>
-            <th>HORAS TEÓRICAS</th><th>HORAS PRÁCTICAS</th><th>HORAS AUTÓNOMAS</th>
-            <th>CREDITOS</th><th>CAMPO DE FORMACIÓN</th><th>CICLO MALLA</th>
-            <th>Nº ORDEN EN LA MALLA</th><th>PARALELO</th><th>DIA</th><th>HORA</th>
-            <th>MODALIDAD</th><th>Nro. HORAS</th>
+            <th>DOCENTE</th><th>TITULO ACADÉMICO</th><th>DEDICACIÓN</th><th>MATERIA</th><th>CÓDIGO ANTHOLOGY</th>
+            <th>CARRERAS QUE COMPARTEN</th><th>MALLA</th><th>PRE-REQUISITO</th><th>CODIGO</th>
+            <th>HORAS TEÓRICAS</th><th>HORAS PRÁCTICAS</th><th>HORAS AUTÓNOMAS</th><th>CREDITOS</th>
+            <th>CAMPO DE FORMACIÓN</th><th>CICLO MALLA</th><th>Nº ORDEN EN LA MALLA</th>
+            <th>PARALELO</th><th>DIA</th><th>HORA</th><th>MODALIDAD</th><th>Nro. HORAS</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -92,79 +81,125 @@
 </div>
 
 <script>
-/* ============ utilidades generales ============ */
-const nz=v=>(v===undefined||v===null)?"":v;
-const norm=v=>nz(v).toString().replace(/\s+/g," ").trim();
+const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
+const DIAS=['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES'];
+const CYCLE_IDX={'PRIMERO':1,'SEGUNDO':2,'TERCERO':3,'CUARTO':4,'QUINTO':5,'SEXTO':6,'SÉPTIMO':7,'OCTAVO':8,'NOVENO':9,'DÉCIMO':10};
+const ABC="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-/* === Limpieza tabla === */
-function clearTable(){document.querySelector('#matriz tbody').innerHTML="";}
+function norm(v){return (v||"").toString().trim();}
+function upper(v){return norm(v).toUpperCase();}
+function cicloIdx(c){return CYCLE_IDX[upper(c)]||99;}
+function slashJoin(arr){return [...new Set(arr.filter(x=>x))].join(" / ");}
 
-/* === Añadir fila === */
+/* === Excel util === */
+async function readWB(file){const data=await file.arrayBuffer();return XLSX.read(data,{type:"array"});}
+function sheetToJSON(wb,name){const ws=wb.Sheets[name];return ws?XLSX.utils.sheet_to_json(ws,{defval:""}):[];}
+
+/* === Manejo tabla === */
+function clearTable(){document.querySelector("#matriz tbody").innerHTML="";}
 function addRow(row){
-  const tbody=document.querySelector('#matriz tbody');
-  const tr=document.createElement('tr');
-  const cols=[
-    row.DOCENTE,row.TITULO_ACADEMICO,row.DEDICACION,row.MATERIA,
-    row.CODIGO_ANTHOLOGY,row.CARRERAS_COMPARTEN,row.MALLA,row.PRE_REQUISITO,
-    row.CODIGO,row.HORAS_TEORICAS,row.HORAS_PRACTICAS,row.HORAS_AUTONOMAS,
-    row.CREDITOS,row.CAMPO_DE_FORMACION,row.CICLO_MALLA,row.N_ORDEN_MALLA,
-    row.PARALELO,row.DIA,row.HORA,row.MODALIDAD,row.NRO_HORAS];
-  cols.forEach(v=>{const td=document.createElement('td');td.textContent=nz(v);tr.appendChild(td);});
+  const tbody=document.querySelector("#matriz tbody");
+  const tr=document.createElement("tr");
+  [row.DOCENTE,row.TITULO_ACADEMICO,row.DEDICACION,row.MATERIA,row.CODIGO_ANTHOLOGY,
+   row.CARRERAS_COMPARTEN,row.MALLA,row.PRE_REQUISITO,row.CODIGO,
+   row.HORAS_TEORICAS,row.HORAS_PRACTICAS,row.HORAS_AUTONOMAS,row.CREDITOS,
+   row.CAMPO_DE_FORMACION,row.CICLO_MALLA,row.N_ORDEN_MALLA,
+   row.PARALELO,row.DIA,row.HORA,row.MODALIDAD,row.NRO_HORAS].forEach(v=>{
+     const td=document.createElement("td");td.textContent=v||"";tr.appendChild(td);
+   });
   tbody.appendChild(tr);
 }
-
-/* === Manejo de errores === */
 function addError(msg){
-  const panel=document.getElementById('panelErrores');
-  const ul=document.getElementById('errores');
-  const li=document.createElement('li'); li.textContent=msg; ul.appendChild(li);
-  panel.style.display='block';
+  const ul=document.getElementById("errores");
+  const li=document.createElement("li");li.textContent=msg;ul.appendChild(li);
+  document.getElementById("panelErrores").style.display="block";
 }
 
-/* === Exportar === */
+/* === Eventos === */
+document.getElementById("btnProcesar").addEventListener("click",async()=>{
+  const fM=document.getElementById("fileMalla").files[0];
+  const fD=document.getElementById("fileDocentes").files[0];
+  if(!fM||!fD){alert("Cargue ambos archivos");return;}
+  clearTable();document.getElementById("panelErrores").style.display="none";document.getElementById("errores").innerHTML="";
+
+  const wbM=await readWB(fM);const wbD=await readWB(fD);
+  const malla=sheetToJSON(wbM,"Malla");const docs=sheetToJSON(wbD,"Docentes");
+  if(!malla.length||!docs.length){alert("Archivos vacíos o hojas incorrectas");return;}
+
+  // Índice docentes por materia
+  const dmap=new Map();
+  docs.forEach(r=>{
+    const mat=upper(norm(r.MATERIA));if(!dmap.has(mat))dmap.set(mat,[]);
+    dmap.get(mat).push({DOCENTE:norm(r.DOCENTE),TITULO:norm(r["TITULO ACADÉMICO"]),DEDIC:norm(r.DEDICACION),MODALIDAD:norm(r.Modalidad),DIAS:DIAS,SLOTS:SLOTS});
+  });
+
+  // Agrupar malla
+  const agg=new Map();
+  malla.forEach(r=>{
+    const mat=norm(r.MATERIA);if(!mat)return;const k=upper(mat);
+    if(!agg.has(k))agg.set(k,{MATERIA:mat,CARRERAS:new Set(),MALLAS:new Set(),PRER:new Set(),CODES:new Map(),HT:new Map(),HP:new Map(),HA:new Map(),CR:new Map(),CAM:new Map(),CIC:new Map(),ORD:new Map()});
+    const a=agg.get(k);
+    a.CARRERAS.add(norm(r.CARRERA));if(r.MALLA)a.MALLAS.add(norm(r.MALLA));
+    if(r["PRERREQUISITO"]||r["PRE-REQUISITO"])a.PRER.add(norm(r["PRERREQUISITO"]||r["PRE-REQUISITO"]));
+    const c=norm(r.CARRERA);
+    a.CODES.set(c,norm(r["CÓDIGO"]||r.CODIGO));
+    a.HT.set(c,norm(r["HORAS TEÓRICAS"]));a.HP.set(c,norm(r["HORAS PRÁCTICAS"]));
+    a.HA.set(c,norm(r["HORAS AUTÓNOMAS"]));a.CR.set(c,norm(r.CREDITOS||r["CRÉDITOS"]));
+    a.CAM.set(c,norm(r["CAMPO DE FORMACIÓN"]));a.CIC.set(c,norm(r.CICLO));
+    a.ORD.set(c,norm(r["NUMERO DE ORDEN EN LA MALLA"]||r["Nº ORDEN EN LA MALLA"]));
+  });
+
+  // Construir filas
+  const filas=[];
+  agg.forEach((a,k)=>{
+    const docsFor=dmap.get(k)||[];if(!docsFor.length){addError("Materia sin docente: "+a.MATERIA);return;}
+    const carreras=[...a.CARRERAS];
+    docsFor.forEach((d,j)=>{
+      filas.push({
+        DOCENTE:d.DOCENTE,TITULO_ACADEMICO:d.TITULO,DEDICACION:d.DEDIC,MATERIA:a.MATERIA,CODIGO_ANTHOLOGY:"",
+        CARRERAS_COMPARTEN:slashJoin(carreras),MALLA:slashJoin([...a.MALLAS]),PRE_REQUISITO:slashJoin([...a.PRER]),
+        CODIGO:carreras.map(c=>a.CODES.get(c)||"").join(" / "),
+        HORAS_TEORICAS:carreras.map(c=>a.HT.get(c)||"").join(" / "),
+        HORAS_PRACTICAS:carreras.map(c=>a.HP.get(c)||"").join(" / "),
+        HORAS_AUTONOMAS:carreras.map(c=>a.HA.get(c)||"").join(" / "),
+        CREDITOS:carreras.map(c=>a.CR.get(c)||"").join(" / "),
+        CAMPO_DE_FORMACION:carreras.map(c=>a.CAM.get(c)||"").join(" / "),
+        CICLO_MALLA:carreras.map(c=>a.CIC.get(c)||"").join(" / "),
+        N_ORDEN_MALLA:carreras.map(c=>a.ORD.get(c)||"").join(" / "),
+        PARALELO:ABC[j],DIA:"",HORA:"",MODALIDAD:d.MODALIDAD,NRO_HORAS:""
+      });
+    });
+  });
+
+  // Asignar horarios simples
+  let idx=0;
+  filas.forEach(r=>{
+    r.DIA=DIAS[idx%DIAS.length];r.HORA=SLOTS[Math.floor(idx/DIAS.length)%SLOTS.length];idx++;
+    addRow(r);
+  });
+
+  document.getElementById("btnXLSX").disabled=false;
+  document.getElementById("btnCSV").disabled=false;
+});
+
+/* Descargar */
 function tableToSheet(){
-  const headers=Array.from(document.querySelectorAll('#matriz thead th')).map(th=>th.textContent);
-  const rows=Array.from(document.querySelectorAll('#matriz tbody tr')).map(tr=>Array.from(tr.children).map(td=>td.textContent));
+  const headers=[...document.querySelectorAll("#matriz thead th")].map(th=>th.textContent);
+  const rows=[...document.querySelectorAll("#matriz tbody tr")].map(tr=>[...tr.children].map(td=>td.textContent));
   return XLSX.utils.aoa_to_sheet([headers,...rows]);
 }
-document.getElementById('btnXLSX').addEventListener('click',()=>{
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,tableToSheet(),'Matriz');
-  XLSX.writeFile(wb,'Planificacion_UIDE.xlsx');
+document.getElementById("btnXLSX").addEventListener("click",()=>{
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,tableToSheet(),"Matriz");
+  XLSX.writeFile(wb,"Planificacion_UIDE.xlsx");
 });
-document.getElementById('btnCSV').addEventListener('click',()=>{
-  const ws=tableToSheet();
-  const csv=XLSX.utils.sheet_to_csv(ws);
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);a.download='Planificacion_UIDE.csv';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
+document.getElementById("btnCSV").addEventListener("click",()=>{
+  const csv=XLSX.utils.sheet_to_csv(tableToSheet());
+  const blob=new Blob([csv],{type:"text/csv"});const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="Planificacion_UIDE.csv";a.click();
 });
-
-/* === Limpiar === */
-document.getElementById('btnLimpiar').addEventListener('click',()=>{
-  document.getElementById('fileMalla').value='';
-  document.getElementById('fileDocentes').value='';
-  clearTable();
-  document.getElementById('panelErrores').style.display='none';
-  document.getElementById('errores').innerHTML='';
-  document.getElementById('btnXLSX').disabled=true;
-  document.getElementById('btnCSV').disabled=true;
-});
-
-/* === Procesar (estructura simplificada de ejemplo) === */
-document.getElementById('btnProcesar').addEventListener('click',()=>{
-  clearTable();
-  document.getElementById('panelErrores').style.display='none';
-  document.getElementById('errores').innerHTML='';
-  // Ejemplo de filas simuladas; en integración real aquí se unen las dos bases
-  const exampleRows=[
-    {DOCENTE:"PAULA ORDOÑEZ",TITULO_ACADEMICO:"MAGISTER",DEDICACION:"TIEMPO COMPLETO",MATERIA:"MACROECONOMÍA",CODIGO_ANTHOLOGY:"",CARRERAS_COMPARTEN:"ADMINISTRACIÓN",MALLA:"2019",PRE_REQUISITO:"",CODIGO:"FT-02-ECO1",HORAS_TEORICAS:"3",HORAS_PRACTICAS:"0",HORAS_AUTONOMAS:"6",CREDITOS:"3",CAMPO_DE_FORMACION:"",CICLO_MALLA:"SEGUNDO",N_ORDEN_MALLA:"9",PARALELO:"A",DIA:"LUNES",HORA:"10:00–13:00",MODALIDAD:"PRESENCIAL",NRO_HORAS:""},
-    {DOCENTE:"DARÍO HURTADO",TITULO_ACADEMICO:"MAGISTER",DEDICACION:"TIEMPO PARCIAL",MATERIA:"CÁLCULO",CODIGO_ANTHOLOGY:"",CARRERAS_COMPARTEN:"NEGOCIOS INTERNACIONALES",MALLA:"2023",PRE_REQUISITO:"",CODIGO:"MAT-01",HORAS_TEORICAS:"3",HORAS_PRACTICAS:"1",HORAS_AUTONOMAS:"5",CREDITOS:"3",CAMPO_DE_FORMACION:"",CICLO_MALLA:"PRIMERO",N_ORDEN_MALLA:"2",PARALELO:"A",DIA:"MARTES",HORA:"07:00–10:00",MODALIDAD:"PRESENCIAL",NRO_HORAS:""}
-  ];
-  exampleRows.forEach(addRow);
-  document.getElementById('btnXLSX').disabled=false;
-  document.getElementById('btnCSV').disabled=false;
+document.getElementById("btnLimpiar").addEventListener("click",()=>{
+  clearTable();document.getElementById("panelErrores").style.display="none";document.getElementById("errores").innerHTML="";
+  document.getElementById("btnXLSX").disabled=true;document.getElementById("btnCSV").disabled=true;
 });
 </script>
 </body>
