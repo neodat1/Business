@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (columnas, asignación con restricciones)</title>
+<title>Matriz Académica – UIDE (asignación inteligente con restricciones)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520;--bg:#f6f7fb;--ink:#111}
@@ -42,15 +42,9 @@ tbody tr:nth-child(odd){background:#fbfdff}
 #matriz th:nth-child(n+5),#matriz td:nth-child(n+5){text-align:center}
 #matriz th:nth-child(-n+4),#matriz td:nth-child(-n+4){text-align:left}
 
-/* Chips: ahora EN COLUMNA */
-.chips{
-  display:flex;flex-direction:column; /* <— columna */
-  gap:6px;justify-content:center;align-items:center
-}
-.chip{
-  display:inline-flex;align-items:center;justify-content:center;border-radius:999px;
-  padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px;min-height:22px
-}
+/* Chips en COLUMNA */
+.chips{display:flex;flex-direction:column;gap:6px;justify-content:center;align-items:center}
+.chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px;min-height:22px}
 </style>
 </head>
 <body>
@@ -119,7 +113,7 @@ const STOP=new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','
 const PALETA=['#04136C','#DE912E','#862B39','#9CBEE3','#8A9520'];
 const carreraColor=new Map();
 
-/* Abreviaturas */
+/* Abreviaturas carreras */
 function abrevCarrera(name){
   const s=rmDiac(upper(name));
   if(/ADMINISTR/.test(s)) return 'ADM';
@@ -152,7 +146,7 @@ function sheetToJSONAuto(wb, prefer=[""]){
 }
 function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
 
-/* Chips */
+/* Chips (columna) */
 function chipsHTML(pares,{dedupe=true}={}){
   const esc=s=>String(s).replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
   const vals=[...new Set(pares.map(p=>String(p.val||'').trim()))].filter(Boolean);
@@ -182,7 +176,7 @@ function addRow(row){
   tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsHA,{dedupe:false}); return td;})());
   tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCred,{dedupe:false}); return td;})());
   tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCampo,{dedupe:false}); return td;})());
-  /* CICLO: si todos iguales, se compacta; si no, columna completa */
+  /* CICLO: compáctese si todos iguales */
   tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCiclo,{dedupe:true}); return td;})());
   tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsOrden,{dedupe:false}); return td;})());
   tr.appendChild(simple(row.ESTUDIANTES));
@@ -227,7 +221,7 @@ function buildMallaAggregate(rows){
 
   for(const r of rows){
     const estRaw = getEst(r);
-    if(estRaw!=="" && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue;
+    if(estRaw!=="" && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue; // 0 estudiantes → se elimina
 
     const materia=norm(getMat(r)); if(!materia) continue;
     const k=canonMateria(materia);
@@ -326,6 +320,7 @@ function buildRestriccionesIndex(rows){
     let d='';
     for(const k of likely){ if(k in r && /docente|profesor|nombre/i.test(k)){ d=norm(r[k]); break; } }
     const target = d ? (byDoc.get(d) || byDoc.set(d,{dias:new Set(),slots:new Set(),pairs:new Set()}).get(d)) : global;
+
     const dia  = norm(r['DIA']||r['DÍA']||'');
     const hora = norm(r['HORA']||r['HORARIO']||'');
     if(dia && !hora){ extractDays(dia).forEach(x=>target.dias.add(x)); }
@@ -334,6 +329,7 @@ function buildRestriccionesIndex(rows){
       const days=extractDays(dia); const slots=extractSlots(hora);
       days.forEach(dd=>slots.forEach(ss=>target.pairs.add(`${dd}|${upper(ss)}`)));
     }
+    // texto libre
     for(const k of likely){
       if(r[k]){
         const days=extractDays(r[k]); const slots=extractSlots(r[k]);
@@ -346,54 +342,87 @@ function buildRestriccionesIndex(rows){
   return {byDoc,global};
 }
 
-/* ===== Matching y ensamblado (paralelos si >28) ===== */
-function matchDocentesForMateria(canonKey, tokenSet, docentesIdx){
-  if(docentesIdx.byCanon.has(canonKey)) return docentesIdx.byCanon.get(canonKey);
-  let best=[],score=0; for(const it of docentesIdx.all){const s=jaccard(tokenSet,it.TOKENS); if(s>score){score=s; best=[it];} else if(s===score && s>0){best.push(it);} }
-  return score>=0.60 ? best : [];
-}
-function dedupeByDocente(candidates, targetTokens){
-  const keyDoc=n=>rmDiac(upper(n));
-  const bestByDoc=new Map();
-  for(const it of candidates){
-    const score=jaccard(targetTokens,it.TOKENS);
-    const k=keyDoc(it.DOCENTE);
-    if(!bestByDoc.has(k) || score>bestByDoc.get(k).score){ bestByDoc.set(k,{item:it,score}); }
+/* ===== Matching con fallback inteligente ===== */
+function matchDocentesProgressive(canonKey, tokenSet, docentesIdx){
+  const exact = docentesIdx.byCanon.get(canonKey) || [];
+  if(exact.length) return exact;
+  // alta similitud
+  let high=[], hscore=0;
+  for(const it of docentesIdx.all){
+    const s=jaccard(tokenSet,it.TOKENS);
+    if(s>hscore){hscore=s; high=[it];}
+    else if(s===hscore && s>0){high.push(it);}
   }
-  return Array.from(bestByDoc.values()).map(x=>x.item);
+  if(hscore>=0.60) return high;
+  // media similitud
+  if(hscore>=0.45) return high;
+  return []; // se decidirá con fallback global
 }
-function buildMallaRowPacks(info,carreras){
-  return {
-    carreras: carreras.map(c=>({car:c,val:abrevCarrera(c)})),
-    malla:    carreras.map(c=>({car:c,val:info.mallaByCar.get(c)??''})),
-    prereq:   perCarFill(info.prereqs, carreras),
-    codigo:   perCarFill(info.codigos, carreras),
-    anth:     perCarFill(info.anth, carreras),
-    ht:       perCarFill(info.hteor, carreras),
-    hp:       perCarFill(info.hprac, carreras),
-    ha:       perCarFill(info.hauton, carreras),
-    cred:     perCarFill(info.creditos, carreras),
-    campo:    perCarFill(info.campo, carreras),
-    ciclo:    perCarFill(info.ciclo, carreras),
-    orden:    perCarFill(info.norden, carreras)
-  };
+
+/* Fallback: elige docente con mayor disponibilidad (tras restricciones) y menor carga */
+function computePairsForDoc(doc, restIdx){
+  const rd=restIdx.byDoc.get(doc.DOCENTE||'')||{dias:new Set(),slots:new Set(),pairs:new Set()};
+  let dias=DIAS.filter(d=>!restIdx.global.dias.has(d)&&!rd.dias.has(d));
+  if(doc.DIAS?.length) dias=dias.filter(d=>doc.DIAS.includes(d));
+  let slots=SLOTS.filter(s=>!restIdx.global.slots.has(upper(s))&&!rd.slots.has(upper(s)));
+  if(doc.SLOTS?.length) slots=slots.filter(s=>doc.SLOTS.includes(s));
+  const pairs=[];
+  for(const d of dias){for(const s of slots){
+    const pair=`${d}|${upper(s)}`; if(restIdx.global.pairs.has(pair)||rd.pairs.has(pair)) continue;
+    pairs.push({d,s});
+  }}
+  return pairs;
 }
-function assembleRows(aggMalla, idxDoc){
+
+/* ===== Ensamble + asignación de docente (con fallback) ===== */
+function assembleRows(aggMalla, idxDoc, restIdx){
   const filas=[];
+  const docenteLoad=new Map(); // carga provisional (clases asignadas)
+  const bumpLoad = d => docenteLoad.set(d,(docenteLoad.get(d)||0)+1);
+
   for(const [k,info] of aggMalla.entries()){
     const totalEst=sumEstudiantes(info.estudiantes);
-    let cand=matchDocentesForMateria(k, tokens(info.materiaOrig), idxDoc);
-    cand=dedupeByDocente(cand, tokens(info.materiaOrig));
-    const requeridos=(totalEst>28)?2:1;
-    if(cand.length===0){
-      cand=Array.from({length:requeridos},()=>({DOCENTE:'',TITULO:'',DEDIC:'',MODALIDAD:'',DIAS:DIAS.slice(),SLOTS:SLOTS.slice()}));
-    }else{
-      if(cand.length>requeridos) cand=cand.slice(0,requeridos);
-      while(cand.length<requeridos) cand.push(cand[0]);
+    let cand=matchDocentesProgressive(k, tokens(info.materiaOrig), idxDoc);
+
+    // si no hay buenos candidatos, evaluar TODOS por disponibilidad real y carga
+    if(!cand.length){
+      const scored=idxDoc.all.map(d=>{
+        const pairs=computePairsForDoc(d,restIdx);
+        const carga=docenteLoad.get(d.DOCENTE)||0;
+        return {doc:d, pairsCount:pairs.length, carga};
+      }).filter(x=>x.pairsCount>0)
+        .sort((a,b)=> (b.pairsCount-a.pairsCount) || (a.carga-b.carga));
+      if(scored.length) cand=[scored[0].doc];
     }
+
+    // si aún nada, asignar placeholder (se programará para no perder hueco)
+    if(!cand.length){
+      cand=[{DOCENTE:'',TITULO:'',DEDIC:'',MODALIDAD:'',DIAS:DIAS.slice(),SLOTS:SLOTS.slice()}];
+    }
+
+    // paralelos si >28
+    const requeridos=(totalEst>28)?2:1;
+    if(cand.length>requeridos) cand=cand.slice(0,requeridos);
+    while(cand.length<requeridos) cand.push(cand[0]);
+
     const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
-    const packs=buildMallaRowPacks(info,carreras);
+    const packs={
+      carreras: carreras.map(c=>({car:c,val:abrevCarrera(c)})),
+      malla:    carreras.map(c=>({car:c,val:info.mallaByCar.get(c)??''})),
+      prereq:   perCarFill(info.prereqs, carreras),
+      codigo:   perCarFill(info.codigos, carreras),
+      anth:     perCarFill(info.anth, carreras),
+      ht:       perCarFill(info.hteor, carreras),
+      hp:       perCarFill(info.hprac, carreras),
+      ha:       perCarFill(info.hauton, carreras),
+      cred:     perCarFill(info.creditos, carreras),
+      campo:    perCarFill(info.campo, carreras),
+      ciclo:    perCarFill(info.ciclo, carreras),
+      orden:    perCarFill(info.norden, carreras)
+    };
+
     cand.forEach((d,j)=>{
+      if(d.DOCENTE) bumpLoad(d.DOCENTE);
       filas.push({
         DOCENTE:d.DOCENTE||'',TITULO_ACADEMICO:d.TITULO||'',DEDICACION:d.DEDIC||'',
         MATERIA:info.materiaOrig,CODIGO_ANTHOLOGY:packs.anth.map(p=>p.val).filter(Boolean).join(' / '),
@@ -410,7 +439,7 @@ function assembleRows(aggMalla, idxDoc){
   return {filas};
 }
 
-/* ===== Asignación inteligente y estricta ===== */
+/* ===== Asignación inteligente y estricta de día/hora ===== */
 function assignSchedulesSmart(filas, restIdx){
   const {byDoc,global}=restIdx;
 
@@ -438,14 +467,14 @@ function assignSchedulesSmart(filas, restIdx){
     return a.MATERIA.localeCompare(b.MATERIA,'es');
   });
 
-  // Ocupaciones/controles
+  // Ocupaciones
   const useDay=Object.fromEntries(DIAS.map(d=>[d,0]));
   const useSlot=Object.fromEntries(SLOTS.map(s=>[s,0]));
   const useDaySlot=new Map();
   const occDoc=new Map();
-  const occCarSlot=new Map();   // carrera|dia|slot -> Set(ciclos)
-  const occCarDay=new Map();    // carrera|dia      -> Set(ciclos)
-  const occMateriaDay=new Set();// materiaKey|dia   (paralelos: días distintos)
+  const occCarSlot=new Map();
+  const occCarDay=new Map();
+  const occMateriaDay=new Set();
   const keyCarSl=(car,dia,slot)=>`${car}|${dia}|${slot}`;
   const keyCarDay=(car,dia)=>`${car}|${dia}`;
   const keyMatDay=(row,dia)=>`${row._key}|${dia}`;
@@ -472,7 +501,6 @@ function assignSchedulesSmart(filas, restIdx){
     const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
     rec.count++; rec.slots.add(slot); occDoc.get(d)[dia]=rec;
-
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
       const kd=keyCarDay(car,dia), ks=keyCarSl(car,dia,slot);
@@ -481,16 +509,13 @@ function assignSchedulesSmart(filas, restIdx){
       occCarDay.get(kd).add(idx);  occCarSlot.get(ks).add(idx);
     }
     occMateriaDay.add(keyMatDay(row,dia));
-
     useDay[dia]++; useSlot[slot]++;
     const k=`${dia}|${slot}`; useDaySlot.set(k,(useDaySlot.get(k)||0)+1);
     row.DIA=dia; row.HORA=slot;
   }
 
-  // Multi-semilla + balanceo
   const seeds=[1,7,11,29,71,97,131,199];
   let best=null, bestSin=Infinity;
-
   for(const seed of seeds){
     Object.keys(useDay).forEach(k=>useDay[k]=0);
     Object.keys(useSlot).forEach(k=>useSlot[k]=0);
@@ -555,7 +580,7 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const idxDoc=buildDocentesIndex(docentes);
   const idxRest=buildRestriccionesIndex(rest);
 
-  const {filas}=assembleRows(aggMalla, idxDoc);
+  const {filas}=assembleRows(aggMalla, idxDoc, idxRest);
   const {filas:asignadas,conteo}=assignSchedulesSmart(filas, idxRest);
 
   asignadas.forEach(addRow);
