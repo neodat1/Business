@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (asignación inteligente, L–V 07–22, restricciones estrictas)</title>
+<title>Matriz Académica – UIDE (columnas, asignación con restricciones)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520;--bg:#f6f7fb;--ink:#111}
@@ -32,20 +32,25 @@ button:hover{opacity:.92}
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 thead th{
   position:sticky;top:0;background:#fff;border-bottom:2px solid var(--celeste);
-  padding:10px 8px;text-align:left;color:#06114a;z-index:1;user-select:none;
-  vertical-align:middle;
+  padding:10px 8px;text-align:left;color:#06114a;z-index:1;user-select:none;vertical-align:middle
 }
 thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:middle}
 tbody tr:nth-child(odd){background:#fbfdff}
 
-/* Centrados: todos los numéricos/códigos centrados horizontal y vertical */
+/* Centrados: numéricos/códigos centrados h/v */
 #matriz th:nth-child(n+5),#matriz td:nth-child(n+5){text-align:center}
 #matriz th:nth-child(-n+4),#matriz td:nth-child(-n+4){text-align:left}
 
-/* Chips coloreadas solo con valores (sin títulos) */
-.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
-.chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px;min-height:22px}
+/* Chips: ahora EN COLUMNA */
+.chips{
+  display:flex;flex-direction:column; /* <— columna */
+  gap:6px;justify-content:center;align-items:center
+}
+.chip{
+  display:inline-flex;align-items:center;justify-content:center;border-radius:999px;
+  padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px;min-height:22px
+}
 </style>
 </head>
 <body>
@@ -114,7 +119,7 @@ const STOP=new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','
 const PALETA=['#04136C','#DE912E','#862B39','#9CBEE3','#8A9520'];
 const carreraColor=new Map();
 
-/* Abreviaturas carreras */
+/* Abreviaturas */
 function abrevCarrera(name){
   const s=rmDiac(upper(name));
   if(/ADMINISTR/.test(s)) return 'ADM';
@@ -147,7 +152,7 @@ function sheetToJSONAuto(wb, prefer=[""]){
 }
 function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
 
-/* Chips con deduplicación opcional (si todos los valores son iguales, muestra uno solo) */
+/* Chips */
 function chipsHTML(pares,{dedupe=true}={}){
   const esc=s=>String(s).replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
   const vals=[...new Set(pares.map(p=>String(p.val||'').trim()))].filter(Boolean);
@@ -168,17 +173,18 @@ function addRow(row){
   tr.appendChild(simple(row.DEDICACION));
   tr.appendChild(simple(row.MATERIA));
   tr.appendChild(simple(row.CODIGO_ANTHOLOGY));
-  const tdCarr=document.createElement('td'); tdCarr.innerHTML = chipsHTML(row._chipsCarreras,{dedupe:false}); tr.appendChild(tdCarr);
-  const tdMalla=document.createElement('td'); tdMalla.innerHTML = chipsHTML(row._chipsMalla); tr.appendChild(tdMalla);
-  const tdPre=document.createElement('td'); tdPre.innerHTML   = chipsHTML(row._chipsPrereq); tr.appendChild(tdPre);
-  const tdCod=document.createElement('td'); tdCod.innerHTML   = chipsHTML(row._chipsCodigo); tr.appendChild(tdCod);
-  const tdHT=document.createElement('td'); tdHT.innerHTML     = chipsHTML(row._chipsHT); tr.appendChild(tdHT);
-  const tdHP=document.createElement('td'); tdHP.innerHTML     = chipsHTML(row._chipsHP); tr.appendChild(tdHP);
-  const tdHA=document.createElement('td'); tdHA.innerHTML     = chipsHTML(row._chipsHA); tr.appendChild(tdHA);
-  const tdCR=document.createElement('td'); tdCR.innerHTML     = chipsHTML(row._chipsCred); tr.appendChild(tdCR);
-  const tdCF=document.createElement('td'); tdCF.innerHTML     = chipsHTML(row._chipsCampo); tr.appendChild(tdCF);
-  const tdCiclo=document.createElement('td'); tdCiclo.innerHTML = chipsHTML(row._chipsCiclo); tr.appendChild(tdCiclo);
-  const tdOrd=document.createElement('td'); tdOrd.innerHTML     = chipsHTML(row._chipsOrden); tr.appendChild(tdOrd);
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCarreras,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsMalla,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsPrereq,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCodigo,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsHT,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsHP,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsHA,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCred,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCampo,{dedupe:false}); return td;})());
+  /* CICLO: si todos iguales, se compacta; si no, columna completa */
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCiclo,{dedupe:true}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsOrden,{dedupe:false}); return td;})());
   tr.appendChild(simple(row.ESTUDIANTES));
   tr.appendChild(simple(row.PARALELO));
   tr.appendChild(simple(row.DIA));
@@ -221,7 +227,7 @@ function buildMallaAggregate(rows){
 
   for(const r of rows){
     const estRaw = getEst(r);
-    if(estRaw!=="" && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue; // eliminar materias con 0 estudiantes
+    if(estRaw!=="" && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue;
 
     const materia=norm(getMat(r)); if(!materia) continue;
     const k=canonMateria(materia);
@@ -283,14 +289,13 @@ function buildDocentesIndex(rows){
   return {byCanon:idx,all};
 }
 
-/* ===== Restricciones: lectura robusta de texto libre (días/horas) ===== */
+/* ===== Restricciones (Excel) ===== */
 function extractDays(text){
   if(!text) return [];
   const t=upper(text);
   const days=DIAS.map(d=>upper(d));
   const out=new Set();
   days.forEach((d,i)=>{ if(t.includes(d)) out.add(DIAS[i]); });
-  // rangos "LUNES A JUEVES"
   const m=/\b(LUNES|MARTES|MI[ÉE]RCOLES|JUEVES|VIERNES)\s*A\s*(LUNES|MARTES|MI[ÉE]RCOLES|JUEVES|VIERNES)\b/.exec(t);
   if(m){const start=days.indexOf(m[1]);const end=days.indexOf(m[2]); if(start>=0 && end>=start){for(let i=start;i<=end;i++) out.add(DIAS[i]);}}
   return [...out];
@@ -316,25 +321,20 @@ function extractSlots(text){
 }
 function buildRestriccionesIndex(rows){
   const byDoc=new Map(); const global={dias:new Set(),slots:new Set(),pairs:new Set()};
-  const likelyCols=['DOCENTE','Profesor','Nombre','Día','DIA','DÍA','HORA','HORARIO','NO DISPONIBLE','RESTRICCION','RESTRICCIÓN','BLOQUEO','DETALLE','OBSERVACIONES'];
+  const likely=['DOCENTE','Profesor','Nombre','Día','DIA','DÍA','HORA','HORARIO','NO DISPONIBLE','RESTRICCION','RESTRICCIÓN','BLOQUEO','DETALLE','OBSERVACIONES'];
   for(const r of rows){
-    // detecte nombre docente si hay
     let d='';
-    for(const k of likelyCols){ if(k in r && /docente|profesor|nombre/i.test(k)){ d=norm(r[k]); break; } }
+    for(const k of likely){ if(k in r && /docente|profesor|nombre/i.test(k)){ d=norm(r[k]); break; } }
     const target = d ? (byDoc.get(d) || byDoc.set(d,{dias:new Set(),slots:new Set(),pairs:new Set()}).get(d)) : global;
-
-    // por columnas estándar:
-    const dia = norm(r['DIA']||r['DÍA']||'');
-    const hora= norm(r['HORA']||r['HORARIO']||'');
+    const dia  = norm(r['DIA']||r['DÍA']||'');
+    const hora = norm(r['HORA']||r['HORARIO']||'');
     if(dia && !hora){ extractDays(dia).forEach(x=>target.dias.add(x)); }
     if(hora && !dia){ extractSlots(hora).forEach(x=>target.slots.add(upper(x))); }
     if(dia && hora){
       const days=extractDays(dia); const slots=extractSlots(hora);
       days.forEach(dd=>slots.forEach(ss=>target.pairs.add(`${dd}|${upper(ss)}`)));
     }
-
-    // texto libre en otras columnas
-    for(const k of likelyCols){
+    for(const k of likely){
       if(r[k]){
         const days=extractDays(r[k]); const slots=extractSlots(r[k]);
         if(days.length && !slots.length){ days.forEach(dd=>target.dias.add(dd)); }
@@ -346,7 +346,7 @@ function buildRestriccionesIndex(rows){
   return {byDoc,global};
 }
 
-/* ===== Matching ===== */
+/* ===== Matching y ensamblado (paralelos si >28) ===== */
 function matchDocentesForMateria(canonKey, tokenSet, docentesIdx){
   if(docentesIdx.byCanon.has(canonKey)) return docentesIdx.byCanon.get(canonKey);
   let best=[],score=0; for(const it of docentesIdx.all){const s=jaccard(tokenSet,it.TOKENS); if(s>score){score=s; best=[it];} else if(s===score && s>0){best.push(it);} }
@@ -362,8 +362,22 @@ function dedupeByDocente(candidates, targetTokens){
   }
   return Array.from(bestByDoc.values()).map(x=>x.item);
 }
-
-/* ===== Ensamble + paralelos por >28 ===== */
+function buildMallaRowPacks(info,carreras){
+  return {
+    carreras: carreras.map(c=>({car:c,val:abrevCarrera(c)})),
+    malla:    carreras.map(c=>({car:c,val:info.mallaByCar.get(c)??''})),
+    prereq:   perCarFill(info.prereqs, carreras),
+    codigo:   perCarFill(info.codigos, carreras),
+    anth:     perCarFill(info.anth, carreras),
+    ht:       perCarFill(info.hteor, carreras),
+    hp:       perCarFill(info.hprac, carreras),
+    ha:       perCarFill(info.hauton, carreras),
+    cred:     perCarFill(info.creditos, carreras),
+    campo:    perCarFill(info.campo, carreras),
+    ciclo:    perCarFill(info.ciclo, carreras),
+    orden:    perCarFill(info.norden, carreras)
+  };
+}
 function assembleRows(aggMalla, idxDoc){
   const filas=[];
   for(const [k,info] of aggMalla.entries()){
@@ -378,36 +392,18 @@ function assembleRows(aggMalla, idxDoc){
       while(cand.length<requeridos) cand.push(cand[0]);
     }
     const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
-    const base={
-      KEY:info.key,MATERIA:info.materiaOrig,
-      _per:{
-        carreras: carreras.map(c=>({car:c,val:abrevCarrera(c)})),
-        malla:    carreras.map(c=>({car:c,val:info.mallaByCar.get(c)??''})),
-        prereq:   perCarFill(info.prereqs, carreras),
-        codigo:   perCarFill(info.codigos, carreras),
-        anth:     perCarFill(info.anth, carreras),
-        ht:       perCarFill(info.hteor, carreras),
-        hp:       perCarFill(info.hprac, carreras),
-        ha:       perCarFill(info.hauton, carreras),
-        cred:     perCarFill(info.creditos, carreras),
-        campo:    perCarFill(info.campo, carreras),
-        ciclo:    perCarFill(info.ciclo, carreras),
-        orden:    perCarFill(info.norden, carreras)
-      },
-      ESTUDIANTES:String(totalEst),
-      _carreras:carreras,_ciclos:carreras.map(c=>info.ciclo.get(c)??'')
-    };
+    const packs=buildMallaRowPacks(info,carreras);
     cand.forEach((d,j)=>{
       filas.push({
         DOCENTE:d.DOCENTE||'',TITULO_ACADEMICO:d.TITULO||'',DEDICACION:d.DEDIC||'',
-        MATERIA:base.MATERIA,CODIGO_ANTHOLOGY: base._per.anth.map(p=>p.val).filter(Boolean).join(' / '),
+        MATERIA:info.materiaOrig,CODIGO_ANTHOLOGY:packs.anth.map(p=>p.val).filter(Boolean).join(' / '),
         CARRERAS_COMPARTEN:'',MALLA:'',PRE_REQUISITO:'',CODIGO:'',HORAS_TEORICAS:'',HORAS_PRACTICAS:'',HORAS_AUTONOMAS:'',CREDITOS:'',
         CAMPO_DE_FORMACION:'',CICLO_MALLA:'',N_ORDEN_MALLA:'',
-        ESTUDIANTES:base.ESTUDIANTES,PARALELO:ABC[j]??`P${j+1}`,DIA:'',HORA:'',MODALIDAD:d.MODALIDAD||'',NRO_HORAS:'',
-        _dias:d.DIAS,_slots:d.SLOTS,_carreras:base._carreras,_ciclos:base._ciclos,_key:base.KEY,
-        _chipsCarreras: base._per.carreras,_chipsMalla:base._per.malla,_chipsPrereq:base._per.prereq,_chipsCodigo:base._per.codigo,
-        _chipsHT:base._per.ht,_chipsHP:base._per.hp,_chipsHA:base._per.ha,_chipsCred:base._per.cred,_chipsCampo:base._per.campo,
-        _chipsCiclo:base._per.ciclo,_chipsOrden:base._per.orden
+        ESTUDIANTES:String(totalEst),PARALELO:ABC[j]??`P${j+1}`,DIA:'',HORA:'',MODALIDAD:d.MODALIDAD||'',NRO_HORAS:'',
+        _dias:d.DIAS,_slots:d.SLOTS,_carreras:carreras,_ciclos:carreras.map(c=>info.ciclo.get(c)??''),_key:info.key,
+        _chipsCarreras:packs.carreras,_chipsMalla:packs.malla,_chipsPrereq:packs.prereq,_chipsCodigo:packs.codigo,
+        _chipsHT:packs.ht,_chipsHP:packs.hp,_chipsHA:packs.ha,_chipsCred:packs.cred,_chipsCampo:packs.campo,
+        _chipsCiclo:packs.ciclo,_chipsOrden:packs.orden
       });
     });
   }
@@ -418,7 +414,6 @@ function assembleRows(aggMalla, idxDoc){
 function assignSchedulesSmart(filas, restIdx){
   const {byDoc,global}=restIdx;
 
-  // Precalcular pares permitidos por fila (tras restricciones estrictas)
   function allowedPairsFor(row){
     const rd=byDoc.get(row.DOCENTE||'')||{dias:new Set(),slots:new Set(),pairs:new Set()};
     let dias=DIAS.filter(d=>!global.dias.has(d)&&!rd.dias.has(d));
@@ -443,14 +438,14 @@ function assignSchedulesSmart(filas, restIdx){
     return a.MATERIA.localeCompare(b.MATERIA,'es');
   });
 
-  // Ocupaciones
+  // Ocupaciones/controles
   const useDay=Object.fromEntries(DIAS.map(d=>[d,0]));
   const useSlot=Object.fromEntries(SLOTS.map(s=>[s,0]));
   const useDaySlot=new Map();
   const occDoc=new Map();
   const occCarSlot=new Map();   // carrera|dia|slot -> Set(ciclos)
   const occCarDay=new Map();    // carrera|dia      -> Set(ciclos)
-  const occMateriaDay=new Set();// materiaKey|dia   (paralelos en días distintos)
+  const occMateriaDay=new Set();// materiaKey|dia   (paralelos: días distintos)
   const keyCarSl=(car,dia,slot)=>`${car}|${dia}|${slot}`;
   const keyCarDay=(car,dia)=>`${car}|${dia}`;
   const keyMatDay=(row,dia)=>`${row._key}|${dia}`;
@@ -462,14 +457,14 @@ function assignSchedulesSmart(filas, restIdx){
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
     if(rec.count>=2) return false;
     if(rec.slots.has(slot)) return false;
-    if(occMateriaDay.has(keyMatDay(row,dia))) return false; // paralelos en días distintos
+    if(occMateriaDay.has(keyMatDay(row,dia))) return false;
 
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
       const kd=keyCarDay(car,dia), ks=keyCarSl(car,dia,slot);
       const setD=occCarDay.get(kd), setS=occCarSlot.get(ks);
-      if(setD){ for(const u of setD){ if(Math.abs(u-idx)===1) return false; } } // NO mismo día para contiguos
-      if(setS){ for(const u of setS){ if(Math.abs(u-idx)===1) return false; } } // ni misma franja
+      if(setD){ for(const u of setD){ if(Math.abs(u-idx)===1) return false; } }
+      if(setS){ for(const u of setS){ if(Math.abs(u-idx)===1) return false; } }
     }
     return true;
   }
@@ -492,56 +487,27 @@ function assignSchedulesSmart(filas, restIdx){
     row.DIA=dia; row.HORA=slot;
   }
 
-  // Multi-semilla + micro-mejora
+  // Multi-semilla + balanceo
   const seeds=[1,7,11,29,71,97,131,199];
   let best=null, bestSin=Infinity;
 
   for(const seed of seeds){
-    // reset
     Object.keys(useDay).forEach(k=>useDay[k]=0);
     Object.keys(useSlot).forEach(k=>useSlot[k]=0);
     useDaySlot.clear(); occDoc.clear(); occCarSlot.clear(); occCarDay.clear(); occMateriaDay.clear();
     filas.forEach(r=>{r.DIA=''; r.HORA='';});
 
-    // asignación primaria
     const rot=(arr,k)=>arr.length?arr.slice(k%arr.length).concat(arr.slice(0,k%arr.length)):arr;
     for(const r of filas){
       const ordered=rot([...r._pairs].sort((a,b)=>pairCost(a.d,a.s)-pairCost(b.d,b.s)), seed);
       let ok=false; for(const p of ordered){ if(canPlace(r,p.d,p.s)){apply(r,p.d,p.s); ok=true; break;} }
-      if(!ok){} // queda sin horario por ahora
     }
-
-    // micro-mejora: si existe sin horario, intente mover vecinos a huecos menos usados
-    if(filas.some(x=>!x.DIA)){
-      for(const r of filas.filter(x=>x.DIA)){
-        const cur=pairCost(r.DIA,r.HORA);
-        const better=r._pairs.filter(p=>!(p.d===r.DIA&&p.s===r.HORA)).sort((a,b)=>pairCost(a.d,a.s)-pairCost(b.d,b.s));
-        for(const p of better){
-          if(pairCost(p.d,p.s)+1<cur){
-            // liberar
-            const d=rowDoc(r), oldD=r.DIA, oldS=r.HORA;
-            const rec=occDoc.get(d)[oldD]; rec.count--; rec.slots.delete(oldS);
-            for(let i=0;i<r._carreras.length;i++){
-              const car=r._carreras[i], idx=cicloIdx(r._ciclos[i]);
-              occCarDay.get(`${car}|${oldD}`)?.delete(idx);
-              occCarSlot.get(`${car}|${oldD}|${oldS}`)?.delete(idx);
-            }
-            occMateriaDay.delete(`${r._key}|${oldD}`);
-            useDay[oldD]--; useSlot[oldS]--; const k=`${oldD}|${oldS}`; useDaySlot.set(k,(useDaySlot.get(k)||1)-1);
-
-            if(canPlace(r,p.d,p.s)){ apply(r,p.d,p.s); break; } else { apply(r,oldD,oldS); }
-          }
-        }
-      }
-    }
-
     const sin=filas.filter(x=>!x.DIA).length;
     if(sin<bestSin){ bestSin=sin; best=filas.map(f=>({d:f.DIA,h:f.HORA})); }
     if(bestSin===0) break;
   }
   if(best){ for(let i=0;i<filas.length;i++){ filas[i].DIA=best[i].d; filas[i].HORA=best[i].h; } }
 
-  function rowDoc(r){return r.DOCENTE||`__SIN_DOCENTE__${r.MATERIA}`;}
   return {filas,conteo:{sin_horario:bestSin}};
 }
 
@@ -569,7 +535,7 @@ function assignSchedulesSmart(filas, restIdx){
   });
 })();
 
-/* ===== Flujo principal ===== */
+/* ===== Flujo ===== */
 document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const fM=document.getElementById('fileMalla').files[0];
   const fD=document.getElementById('fileDocentes').files[0];
@@ -580,9 +546,9 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   document.getElementById('resumen').style.display='none';
 
   const wbM=await readWB(fM), wbD=await readWB(fD), wbR=await readWB(fR);
-  const malla=sheetToJSONAuto(wbM, ['malla','plan']);
-  const docentes=sheetToJSONAuto(wbD, ['docente']);
-  const rest=sheetToJSONAuto(wbR, ['restric','dispon','bloqueo']);
+  const malla=sheetToJSONAuto(wbM,['malla','plan']);
+  const docentes=sheetToJSONAuto(wbD,['docentes','docente']);
+  const rest=sheetToJSONAuto(wbR,['restric','dispon','bloqueo','restricciones']);
   if(!malla.length||!docentes.length){alert('No se pudo leer Malla o Docentes.');return;}
 
   const aggMalla=buildMallaAggregate(malla);
