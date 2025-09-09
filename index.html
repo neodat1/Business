@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (restricciones estrictas + adyacencias por horario)</title>
+<title>Matriz Académica – UIDE (asignación inteligente L–V, 07–22)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520;--bg:#f6f7fb;--ink:#111}
@@ -38,7 +38,7 @@ tbody tr:nth-child(odd){background:#fbfdff}
 <body>
 <header>
   <img src="UIDE-Ecuador.png" alt="UIDE Ecuador">
-  <h1>Matriz de planificación académica</h1>
+  <h1>Matriz de planificación académmica</h1>
 </header>
 
 <div class="wrapper">
@@ -95,7 +95,7 @@ tbody tr:nth-child(odd){background:#fbfdff}
 <script>
 /* ===== Parámetros ===== */
 const DIAS=['LUNES','MARTES','MIÉRCOLES','MIERCOLES','JUEVES','VIERNES'];
-const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
+const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00']; // 07–22
 const CYCLE_INDEX={'PRIMERO':1,'SEGUNDO':2,'TERCERO':3,'CUARTO':4,'QUINTO':5,'SEXTO':6,'SÉPTIMO':7,'SEPTIMO':7,'OCTAVO':8,'NOVENO':9,'DÉCIMO':10,'DECIMO':10};
 const ABC="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const STOP=new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','AL','A','II','III','IV','VI','VII','VIII','IX','X']);
@@ -213,7 +213,6 @@ function buildMallaAggregate(rows){
   for(const r of rows){
     const estRaw = getEst(r);
     if(estRaw!=="" && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue;
-
     const materia=norm(getMat(r)); if(!materia) continue;
     const k=canonMateria(materia);
     if(!agg.has(k)){
@@ -273,12 +272,7 @@ function buildDocentesIndex(rows){
   return {byCanon:idx,all};
 }
 
-/* ===== Restricciones (estrictas)
-   - DOCENTE vacío => restricción GLOBAL (aplica a todos)
-   - DIA sin HORA => bloquea el día completo
-   - HORA sin DIA => bloquea esa franja todos los días
-   - DIA + HORA   => bloquea esa combinación exacta
-*/
+/* ===== Restricciones (estrictas) ===== */
 function buildRestriccionesIndex(rows){
   const byDoc=new Map();
   const global={dias:new Set(),slots:new Set(),pairs:new Set()};
@@ -365,32 +359,39 @@ function assembleRows(aggMalla, idxDoc){
   return {filas};
 }
 
-/* ===== Asignación
-   - Respeta de forma ESTRICTA Restricciones.xlsx (globales y por docente)
-   - Máx 2 asignaturas por día por docente y sin repetir franja el mismo día
-   - Paralelos de una misma materia no comparten día+franja
-   - *** Regla solicitada: ciclos CONTIGUOS (1-2, 2-3, ..., 7-8) no pueden compartir el MISMO HORARIO (día+franja) en una misma carrera ***
-*/
+/* ===== Asignación inteligente (L–V, 07–22, balanceando uso; restricciones estrictas; adyacencias 1–2,2–3,...,7–8) ===== */
 function assignSchedules100(filas, restIdx){
   const {byDoc,global} = restIdx;
 
-  const occDoc=new Map();           // por docente -> { [dia]: {count, slots:Set} }
-  const occParallel=new Set();      // clave materia|dia|slot
-  const occCarSlot=new Map();       // clave carrera|dia|slot -> Set(ciclos) para prohibir adyacencias
+  // Métricas globales para balancear uso de días y franjas
+  const useDay = Object.fromEntries(DIAS.map(d=>[d,0]));
+  const useSlot = Object.fromEntries(SLOTS.map(s=>[s,0]));
+  const useDaySlot = new Map(); // "DIA|SLOT" -> count
+
+  const occDoc=new Map();      // por docente -> { [dia]: {count, slots:Set} }
+  const occParallel=new Set(); // materia|dia|slot
+  const occCarSlot=new Map();  // carrera|dia|slot -> Set(ciclos) (evita adyacentes mismo horario)
 
   const keyPar   = (row,dia,slot)=>`${row._key}|${dia}|${slot}`;
   const keyCarSl = (car,dia,slot)=>`${car}|${dia}|${slot}`;
+  const keyDS    = (d,s)=>`${d}|${s}`;
 
-  function canPlace(row,dia,slot,{maxPerDay=2}){
+  // hash simple para girar orden y distribuir
+  const h32 = str => {
+    let h=2166136261>>>0;
+    for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=(h*16777619)>>>0;}
+    return h>>>0;
+  };
+
+  function canPlace(row,dia,slot){
     const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
     if(!occDoc.has(d)) occDoc.set(d,{});
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
-    if(rec.count>=maxPerDay) return false;
-    if(rec.slots.has(slot))  return false;
-
+    if(rec.count>=2) return false;              // máx 2 por día
+    if(rec.slots.has(slot))  return false;      // no repetir franja el mismo día
     if(occParallel.has(keyPar(row,dia,slot))) return false;
 
-    // Adyacencias por HORARIO exacto (día+slot) dentro de cada carrera
+    // adyacencias por horario exacto día+slot
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
       const k=keyCarSl(car,dia,slot);
@@ -412,32 +413,66 @@ function assignSchedules100(filas, restIdx){
       occCarSlot.get(k).add(idx);
     }
     occParallel.add(keyPar(row,dia,slot));
+
+    // métricas de balanceo
+    useDay[dia]++; useSlot[slot]++;
+    const k=keyDS(dia,slot); useDaySlot.set(k,(useDaySlot.get(k)||0)+1);
+
     row.DIA=dia; row.HORA=slot;
   }
 
-  // orden por ciclo mínimo (ayuda a espaciar)
-  filas.sort((a,b)=>Math.min(...a._ciclos.map(c=>cicloIdx(c)))-Math.min(...b._ciclos.map(c=>cicloIdx(c))));
+  // ordenar por ciclo (prioridad a ciclos bajos) + hash para romper empates
+  filas.sort((a,b)=>{
+    const ma=Math.min(...a._ciclos.map(c=>cicloIdx(c)));
+    const mb=Math.min(...b._ciclos.map(c=>cicloIdx(c)));
+    if(ma!==mb) return ma-mb;
+    return (h32(a.MATERIA)-h32(b.MATERIA));
+  });
+
   const conteo={asignadas:0,sin_horario:0};
 
   for(const r of filas){
     const rd = byDoc.get(r.DOCENTE||'') || {dias:new Set(),slots:new Set(),pairs:new Set()};
 
-    // candidatos de días y franjas respetando SIEMPRE restricciones globales y por docente
-    const dias = DIAS.filter(d=>!global.dias.has(d) && !rd.dias.has(d))
-                     .filter(d=>!r._dias.length || r._dias.includes(d)); // disponibilidad del docente si la hay
-    const slots = SLOTS.filter(s=>!global.slots.has(upper(s)) && !rd.slots.has(upper(s)))
-                       .filter(s=>!r._slots.length || r._slots.includes(s));
+    // disponibilidad del docente (si hay) ∩ días no restringidos (global y por docente)
+    let dias = DIAS.filter(d=>!global.dias.has(d) && !rd.dias.has(d));
+    if(r._dias.length) dias = dias.filter(d=>r._dias.includes(d));
+
+    let slots = SLOTS.filter(s=>!global.slots.has(upper(s)) && !rd.slots.has(upper(s)));
+    if(r._slots.length) slots = slots.filter(s=>r._slots.includes(s));
+
+    // si después de cruzar se quedan sin opciones, no forzar
+    if(!dias.length || !slots.length){ conteo.sin_horario++; continue; }
+
+    // ordenar por "costo" para usar todos los días y franjas (balance global)
+    // costo = (uso del día, uso de la franja, uso del par día+franja)
+    const orderDias = [...dias].sort((a,b)=>useDay[a]-useDay[b] || a.localeCompare(b,'es'));
+    const orderSlots = [...slots].sort((a,b)=>useSlot[a]-useSlot[b] || SLOTS.indexOf(a)-SLOTS.indexOf(b));
+
+    // rotación por hash para no sesgar siempre al mismo día/franja
+    const rotD = h32(r.MATERIA)%orderDias.length;
+    const rotS = h32(r.MATERIA+'#')%orderSlots.length;
+    const rotArr = (arr,k)=>arr.slice(k).concat(arr.slice(0,k));
+    const diasTry = rotArr(orderDias,rotD);
+    const slotsTry = rotArr(orderSlots,rotS);
+
+    // probar en orden por menor costo combinado
+    const pairs = [];
+    for(const d of diasTry){
+      for(const s of slotsTry){
+        const pair=`${d}|${upper(s)}`;
+        if(global.pairs.has(pair) || rd.pairs.has(pair)) continue;
+        const cost = (useDay[d]||0)*100 + (useSlot[s]||0)*10 + (useDaySlot.get(`${d}|${s}`)||0);
+        pairs.push({d,s,cost});
+      }
+    }
+    pairs.sort((x,y)=>x.cost-y.cost);
 
     let placed=false;
-    for(const d of dias){
-      for(const s of slots){
-        const pair=`${d}|${upper(s)}`;
-        if(global.pairs.has(pair) || rd.pairs.has(pair)) continue; // estrictas
-        if(canPlace(r,d,s,{maxPerDay:2})){ apply(r,d,s); conteo.asignadas++; placed=true; break; }
-      }
-      if(placed) break;
+    for(const p of pairs){
+      if(canPlace(r,p.d,p.s)){ apply(r,p.d,p.s); conteo.asignadas++; placed=true; break; }
     }
-    if(!placed){ conteo.sin_horario++; } // no se fuerza
+    if(!placed){ conteo.sin_horario++; }
   }
   return {filas,conteo};
 }
@@ -492,8 +527,7 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   asignadas.forEach(addRow);
 
   const badge=document.getElementById('resumen');
-  const total=asignadas.length;
-  badge.textContent=`TOTAL: ${total} | Sin horario (por restricciones/conflictos): ${conteo.sin_horario}`;
+  badge.textContent=`TOTAL: ${asignadas.length} | Sin horario (por restricciones/conflictos): ${conteo.sin_horario}`;
   badge.style.display='inline-block';
 
   document.getElementById('btnXLSX').disabled=false;
