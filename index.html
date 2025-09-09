@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (asignación inteligente L–V, 07–22)</title>
+<title>Matriz Académica – UIDE (asignación inteligente, L–V 07–22, restricciones estrictas)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520;--bg:#f6f7fb;--ink:#111}
@@ -23,14 +23,13 @@ button:hover{opacity:.92}
 .primary{background:var(--azul);color:#fff}
 .accent{background:var(--mostaza);color:#1b1200}
 .muted{background:#fff;color:var(--azul);border:2px solid var(--azul)}
-.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#fff3f3;color:#7a0d18;border:1px solid #f2c9cf;font-size:12px}
+.badge{display:inline-block;padding:6px 12px;border-radius:999px;background:#fff7f7;color:#7a0d18;border:1px solid #ebb; font-size:13px}
 .scroll{overflow:auto;max-height:70vh;border:1px solid #e2e5ef;border-radius:14px}
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
 thead th{position:sticky;top:0;background:#fff;border-bottom:2px solid var(--celeste);padding:10px 8px;text-align:left;color:#06114a;z-index:1;cursor:pointer;user-select:none}
 thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
 tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:top}
 tbody tr:nth-child(odd){background:#fbfdff}
-/* chips coloreadas (solo valor) */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{display:inline-flex;align-items:center;border-radius:999px;padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px}
 </style>
@@ -38,7 +37,7 @@ tbody tr:nth-child(odd){background:#fbfdff}
 <body>
 <header>
   <img src="UIDE-Ecuador.png" alt="UIDE Ecuador">
-  <h1>Matriz de planificación académmica</h1>
+  <h1>Matriz de planificación académica</h1>
 </header>
 
 <div class="wrapper">
@@ -51,7 +50,6 @@ tbody tr:nth-child(odd){background:#fbfdff}
     <div class="actions">
       <button id="btnProcesar" class="primary">Procesar</button>
       <button id="btnXLSX" class="accent" disabled>Descargar XLSX</button>
-      <button id="btnCSV"  class="accent" disabled>Descargar CSV</button>
       <button id="btnLimpiar" class="muted">Limpiar</button>
       <span id="resumen" class="badge" style="display:none"></span>
     </div>
@@ -102,7 +100,7 @@ const STOP=new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','
 const PALETA=['#04136C','#DE912E','#862B39','#9CBEE3','#8A9520'];
 const carreraColor=new Map();
 
-/* Abreviaturas de carreras */
+/* Abreviaturas carreras */
 function abrevCarrera(name){
   const s=rmDiac(upper(name));
   if(/ADMINISTR/.test(s)) return 'ADM';
@@ -141,7 +139,7 @@ function sheetToJSONAuto(wb, prefer=[""]){
 }
 function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
 
-/* chips por carrera (solo valor) */
+/* chips de valor */
 function chipsHTML(pares){
   const esc = s => String(s).replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
   return `<div class="chips">` + pares.map(p=>{
@@ -213,6 +211,7 @@ function buildMallaAggregate(rows){
   for(const r of rows){
     const estRaw = getEst(r);
     if(estRaw!=="" && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue;
+
     const materia=norm(getMat(r)); if(!materia) continue;
     const k=canonMateria(materia);
     if(!agg.has(k)){
@@ -222,7 +221,7 @@ function buildMallaAggregate(rows){
     }
     const a=agg.get(k), car=norm(getCar(r));
     a.carreras.add(car);
-    const put=(mp,val)=>{if(val!==''&&val!==undefined&&val!==null) mp.set(car,norm(val));};
+    const put=(mp,val)=>{if(val!=='') mp.set(car,norm(val));};
     const vMalla=norm(getMalla(r)); if(vMalla){ a.mallas.add(vMalla); a.mallaByCar.set(car,vMalla); }
     put(a.prereqs, getPre(r));  put(a.codigos, getCod(r)); put(a.anth, getAnth(r));
     put(a.hteor, getHT(r));     put(a.hprac, getHP(r));    put(a.hauton, getHA(r));
@@ -359,26 +358,24 @@ function assembleRows(aggMalla, idxDoc){
   return {filas};
 }
 
-/* ===== Asignación inteligente (L–V, 07–22, balanceando uso; restricciones estrictas; adyacencias 1–2,2–3,...,7–8) ===== */
-function assignSchedules100(filas, restIdx){
+/* ===== Asignación inteligente con búsqueda multi-semilla ===== */
+function assignSchedulesPass(filas, restIdx, seed){
   const {byDoc,global} = restIdx;
 
-  // Métricas globales para balancear uso de días y franjas
   const useDay = Object.fromEntries(DIAS.map(d=>[d,0]));
   const useSlot = Object.fromEntries(SLOTS.map(s=>[s,0]));
-  const useDaySlot = new Map(); // "DIA|SLOT" -> count
+  const useDaySlot = new Map();
 
-  const occDoc=new Map();      // por docente -> { [dia]: {count, slots:Set} }
-  const occParallel=new Set(); // materia|dia|slot
-  const occCarSlot=new Map();  // carrera|dia|slot -> Set(ciclos) (evita adyacentes mismo horario)
+  const occDoc=new Map();
+  const occParallel=new Set();
+  const occCarSlot=new Map();
 
   const keyPar   = (row,dia,slot)=>`${row._key}|${dia}|${slot}`;
   const keyCarSl = (car,dia,slot)=>`${car}|${dia}|${slot}`;
   const keyDS    = (d,s)=>`${d}|${s}`;
 
-  // hash simple para girar orden y distribuir
-  const h32 = str => {
-    let h=2166136261>>>0;
+  const h32 = (str) => {
+    let h=(2166136261 ^ seed)>>>0;
     for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=(h*16777619)>>>0;}
     return h>>>0;
   };
@@ -387,11 +384,10 @@ function assignSchedules100(filas, restIdx){
     const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
     if(!occDoc.has(d)) occDoc.set(d,{});
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
-    if(rec.count>=2) return false;              // máx 2 por día
-    if(rec.slots.has(slot))  return false;      // no repetir franja el mismo día
+    if(rec.count>=2) return false;
+    if(rec.slots.has(slot))  return false;
     if(occParallel.has(keyPar(row,dia,slot))) return false;
 
-    // adyacencias por horario exacto día+slot
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
       const k=keyCarSl(car,dia,slot);
@@ -400,12 +396,10 @@ function assignSchedules100(filas, restIdx){
     }
     return true;
   }
-
   function apply(row,dia,slot){
     const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
     rec.count++; rec.slots.add(slot); occDoc.get(d)[dia]=rec;
-
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
       const k=keyCarSl(car,dia,slot);
@@ -413,56 +407,39 @@ function assignSchedules100(filas, restIdx){
       occCarSlot.get(k).add(idx);
     }
     occParallel.add(keyPar(row,dia,slot));
-
-    // métricas de balanceo
     useDay[dia]++; useSlot[slot]++;
     const k=keyDS(dia,slot); useDaySlot.set(k,(useDaySlot.get(k)||0)+1);
-
     row.DIA=dia; row.HORA=slot;
   }
 
-  // ordenar por ciclo (prioridad a ciclos bajos) + hash para romper empates
-  filas.sort((a,b)=>{
+  // ordenar (ciclo bajo primero), rotando por semilla
+  const rot = (arr,k)=>arr.slice(k).concat(arr.slice(0,k));
+  const rows = [...filas].sort((a,b)=>{
     const ma=Math.min(...a._ciclos.map(c=>cicloIdx(c)));
     const mb=Math.min(...b._ciclos.map(c=>cicloIdx(c)));
     if(ma!==mb) return ma-mb;
     return (h32(a.MATERIA)-h32(b.MATERIA));
   });
 
-  const conteo={asignadas:0,sin_horario:0};
-
-  for(const r of filas){
+  let sin=0, ok=0;
+  for(const r of rows){
     const rd = byDoc.get(r.DOCENTE||'') || {dias:new Set(),slots:new Set(),pairs:new Set()};
-
-    // disponibilidad del docente (si hay) ∩ días no restringidos (global y por docente)
     let dias = DIAS.filter(d=>!global.dias.has(d) && !rd.dias.has(d));
     if(r._dias.length) dias = dias.filter(d=>r._dias.includes(d));
-
     let slots = SLOTS.filter(s=>!global.slots.has(upper(s)) && !rd.slots.has(upper(s)));
     if(r._slots.length) slots = slots.filter(s=>r._slots.includes(s));
+    if(!dias.length || !slots.length){ sin++; continue; }
 
-    // si después de cruzar se quedan sin opciones, no forzar
-    if(!dias.length || !slots.length){ conteo.sin_horario++; continue; }
+    // balanceo + rotación por semilla
+    const orderDias = rot([...dias].sort((a,b)=>useDay[a]-useDay[b]||a.localeCompare(b,'es')), seed % dias.length);
+    const orderSlots = rot([...slots].sort((a,b)=>useSlot[a]-useSlot[b]||SLOTS.indexOf(a)-SLOTS.indexOf(b)), seed % slots.length);
 
-    // ordenar por "costo" para usar todos los días y franjas (balance global)
-    // costo = (uso del día, uso de la franja, uso del par día+franja)
-    const orderDias = [...dias].sort((a,b)=>useDay[a]-useDay[b] || a.localeCompare(b,'es'));
-    const orderSlots = [...slots].sort((a,b)=>useSlot[a]-useSlot[b] || SLOTS.indexOf(a)-SLOTS.indexOf(b));
-
-    // rotación por hash para no sesgar siempre al mismo día/franja
-    const rotD = h32(r.MATERIA)%orderDias.length;
-    const rotS = h32(r.MATERIA+'#')%orderSlots.length;
-    const rotArr = (arr,k)=>arr.slice(k).concat(arr.slice(0,k));
-    const diasTry = rotArr(orderDias,rotD);
-    const slotsTry = rotArr(orderSlots,rotS);
-
-    // probar en orden por menor costo combinado
-    const pairs = [];
-    for(const d of diasTry){
-      for(const s of slotsTry){
+    const pairs=[];
+    for(const d of orderDias){
+      for(const s of orderSlots){
         const pair=`${d}|${upper(s)}`;
         if(global.pairs.has(pair) || rd.pairs.has(pair)) continue;
-        const cost = (useDay[d]||0)*100 + (useSlot[s]||0)*10 + (useDaySlot.get(`${d}|${s}`)||0);
+        const cost=(useDay[d]||0)*100+(useSlot[s]||0)*10+(useDaySlot.get(`${d}|${s}`)||0);
         pairs.push({d,s,cost});
       }
     }
@@ -470,11 +447,30 @@ function assignSchedules100(filas, restIdx){
 
     let placed=false;
     for(const p of pairs){
-      if(canPlace(r,p.d,p.s)){ apply(r,p.d,p.s); conteo.asignadas++; placed=true; break; }
+      if(canPlace(r,p.d,p.s)){ apply(r,p.d,p.s); ok++; placed=true; break; }
     }
-    if(!placed){ conteo.sin_horario++; }
+    if(!placed) sin++;
   }
-  return {filas,conteo};
+  return {ok,sin};
+}
+
+function assignSchedulesSmart(filas, restIdx){
+  // ejecutar varias pasadas determinísticas con semillas diferentes y conservar la mejor
+  const seeds=[1,7,13,29,71,97,131,199];
+  let best={sin:Infinity, snapshot:null};
+
+  for(const seed of seeds){
+    // limpiar asignaciones anteriores
+    filas.forEach(f=>{f.DIA='';f.HORA='';});
+    const res=assignSchedulesPass(filas, restIdx, seed);
+    if(res.sin<best.sin){ best={sin:res.sin, snapshot:filas.map(f=>({ref:f, dia:f.DIA, hora:f.HORA}))}; }
+    if(best.sin===0) break; // óptimo
+  }
+  // restaurar mejor resultado
+  if(best.snapshot){
+    best.snapshot.forEach(s=>{ s.ref.DIA=s.dia; s.ref.HORA=s.hora; });
+  }
+  return {filas,conteo:{sin_horario:best.sin}};
 }
 
 /* ===== Ordenación por encabezado ===== */
@@ -522,7 +518,7 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const idxRest=buildRestriccionesIndex(rest);
 
   const {filas}=assembleRows(aggMalla, idxDoc);
-  const {filas:asignadas,conteo}=assignSchedules100(filas, idxRest);
+  const {filas:asignadas,conteo}=assignSchedulesSmart(filas, idxRest);
 
   asignadas.forEach(addRow);
 
@@ -531,7 +527,6 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   badge.style.display='inline-block';
 
   document.getElementById('btnXLSX').disabled=false;
-  document.getElementById('btnCSV').disabled=false;
 });
 
 /* Exportar y limpiar */
@@ -544,15 +539,10 @@ document.getElementById('btnXLSX').addEventListener('click',()=>{
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, tableToSheet(), 'Matriz');
   XLSX.writeFile(wb,'Planificacion_UIDE.xlsx');
 });
-document.getElementById('btnCSV').addEventListener('click',()=>{
-  const csv=XLSX.utils.sheet_to_csv(tableToSheet());
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download='Planificacion_UIDE.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-});
 document.getElementById('btnLimpiar').addEventListener('click',()=>{
   document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value=''; document.getElementById('fileRest').value='';
   clearTable(); carreraColor.clear();
-  document.getElementById('btnXLSX').disabled=true; document.getElementById('btnCSV').disabled=true;
+  document.getElementById('btnXLSX').disabled=true;
   document.getElementById('resumen').style.display='none';
 });
 </script>
