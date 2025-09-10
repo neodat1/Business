@@ -417,8 +417,11 @@ function assembleRows(aggMalla, idxDoc, restIdx){
 }
 const abrevia=(name)=>{ const s=rmDiac(upper(name)); if(/ADMINISTR/.test(s))return 'ADM'; if(/MARKETING/.test(s))return 'MKT'; if(/NEGOCIOS\s*INTERNACIONALES/.test(s))return 'NNII'; return s; };
 
-/* ===== Asignación día/hora balanceada con reubicación ===== */
-function assignSchedulesSmart(filas, restIdx){
+// ======== Versión parametrizable del asignador (usa los mismos constraints) ========
+function assignSchedulesWithWeights(filas, restIdx, weights){
+  // clon superficial de filas para no mutar el original en cada corrida
+  const rows = filas.map(r => Object.assign({}, r));
+
   const {byDoc,global}=restIdx;
 
   function allowedPairsFor(row){
@@ -435,54 +438,56 @@ function assignSchedulesSmart(filas, restIdx){
     return pairs;
   }
 
-  // Precalcular pares y limpiar DIA/HORA
-  filas.forEach(r=>{ r._pairs=allowedPairsFor(r); r.DIA=''; r.HORA=''; });
+  rows.forEach(r=>{ r._pairs=allowedPairsFor(r); r.DIA=''; r.HORA=''; });
 
-  // Orden: primero los más difíciles; a igual dificultad, primero ciclos bajos
-  filas.sort((a,b)=>{
+  // Aleatorizar el orden base (para diversidad de Montecarlo)
+  const rnd = (Math.random()*1e9)|0;
+  rows.sort((a,b)=>{
     if(a._pairs.length!==b._pairs.length) return a._pairs.length-b._pairs.length;
     const ma=Math.min(...a._ciclos.map(c=>cicloIdx(c)));
     const mb=Math.min(...b._ciclos.map(c=>cicloIdx(c)));
     if(ma!==mb) return ma-mb;
-    return a.MATERIA.localeCompare(b.MATERIA,'es');
+    // desempate aleatorio estable por clave
+    const ka=(a._key+':'+a.PARALELO+':'+rnd).length, kb=(b._key+':'+b.PARALELO+':'+rnd).length;
+    return ka-kb;
   });
 
-  // Estructuras de ocupación
   const useDay=Object.fromEntries(DIAS.map(d=>[d,0]));
   const useSlot=Object.fromEntries(SLOTS.map(s=>[s,0]));
-  const useDaySlot=new Map(); // "DIA|SLOT" -> count
-  const occDoc=new Map();     // docente -> { [dia]: {count, slots:Set} }
-  const occCarSlot=new Map(); // "car|dia|slot" -> Set(ciclos)
-  const occCarDay=new Map();  // "car|dia" -> Set(ciclos)
-  const occMateriaDay=new Set(); // "key|dia" para paralelos en días distintos
+  const useDaySlot=new Map();
+  const occDoc=new Map();
+  const occCarSlot=new Map();
+  const occCarDay=new Map();
+  const occMateriaDay=new Set();
   const keyCarSl=(car,dia,slot)=>`${car}|${dia}|${slot}`;
   const keyCarDay=(car,dia)=>`${car}|${dia}`;
   const keyMatDay=(row,dia)=>`${row._key}|${dia}`;
 
-  // Balance: costo alto donde ya hay muchas asignaciones
-  const pairCost=(d,s)=>(useDay[d]||0)*120+(useSlot[s]||0)*40+(useDaySlot.get(`${d}|${s}`)||0);
+  const wDay = weights.wDay, wSlot = weights.wSlot, wCell = weights.wCell;
+
+  const pairCost=(d,s)=>(useDay[d]||0)*wDay+(useSlot[s]||0)*wSlot+(useDaySlot.get(`${d}|${s}`)||0)*wCell;
 
   function canPlace(row,dia,slot){
     const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
     if(!occDoc.has(d)) occDoc.set(d,{});
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
-    if(rec.count>=2) return false;           // máx 2 bloques/día por docente
-    if(rec.slots.has(slot)) return false;    // no repetir franja el mismo día
-    if(occMateriaDay.has(keyMatDay(row,dia))) return false; // paralelos en días distintos
+    if(rec.count>=2) return false;
+    if(rec.slots.has(slot)) return false;
+    if(occMateriaDay.has(keyMatDay(row,dia))) return false;
 
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
       const kd=keyCarDay(car,dia), ks=keyCarSl(car,dia,slot);
       const setD=occCarDay.get(kd), setS=occCarSlot.get(ks);
-      if(setD){ for(const u of setD){ if(Math.abs(u-idx)===1) return false; } } // contiguos no comparten día
-      if(setS){ for(const u of setS){ if(Math.abs(u-idx)===1) return false; } } // ni franja
+      if(setD){ for(const u of setD){ if(Math.abs(u-idx)===1) return false; } }
+      if(setS){ for(const u of setS){ if(Math.abs(u-idx)===1) return false; } }
     }
     return true;
   }
   function apply(row,dia,slot){
     const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
-    const r=occDoc.get(d)[dia]??{count:0,slots:new Set()};
-    r.count++; r.slots.add(slot); occDoc.get(d)[dia]=r;
+    const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
+    rec.count++; rec.slots.add(slot); occDoc.get(d)[dia]=rec;
 
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
@@ -496,66 +501,104 @@ function assignSchedulesSmart(filas, restIdx){
     const k=`${dia}|${slot}`; useDaySlot.set(k,(useDaySlot.get(k)||0)+1);
     row.DIA=dia; row.HORA=slot;
   }
-  function release(row){
-    if(!row.DIA||!row.HORA) return;
-    const dia=row.DIA, slot=row.HORA;
-    const d=row.DOCENTE||`__SIN_DOCENTE__${row.MATERIA}`;
-    const rec=occDoc.get(d)?.[dia]; if(rec){ rec.count--; rec.slots.delete(slot); }
-    for(let i=0;i<row._carreras.length;i++){
-      const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
-      occCarDay.get(`${car}|${dia}`)?.delete(idx);
-      occCarSlot.get(`${car}|${dia}|${slot}`)?.delete(idx);
-    }
-    occMateriaDay.delete(`${row._key}|${dia}`);
-    useDay[dia]--; useSlot[slot]--;
-    const k=`${dia}|${slot}`; useDaySlot.set(k,(useDaySlot.get(k)||1)-1);
-    row.DIA=''; row.HORA='';
-  }
 
-  // Asignación primaria greedy + balanceo
-  for(const r of filas){
+  // Asignación greedy balanceada
+  for(const r of rows){
     const ordered=[...r._pairs].sort((a,b)=>pairCost(a.d,a.s)-pairCost(b.d,b.s));
-    let ok=false; for(const p of ordered){ if(canPlace(r,p.d,p.s)){apply(r,p.d,p.s); ok=true; break;} }
-    if(!ok){ r.DIA=''; r.HORA=''; }
+    for(const p of ordered){ if(canPlace(r,p.d,p.s)){apply(r,p.d,p.s); break;} }
   }
 
-  // Reintentos: si quedan sin horario, intenta swaps de bajo costo
-  const sinFila=()=>filas.filter(x=>!x.DIA);
-  let pend=sinFila(), guard=0;
-  while(pend.length && guard<200){
-    guard++;
-    for(const miss of pend){
-      const ordered=[...miss._pairs].sort((a,b)=>pairCost(a.d,a.s)-pairCost(b.d,b.s));
-      let placed=false;
-      for(const p of ordered){
-        if(canPlace(miss,p.d,p.s)){ apply(miss,p.d,p.s); placed=true; break; }
-        // probar swap con alguna ya asignada en ese día/franja si mejora el balance y respeta reglas
-        const victima=filas.find(f=>f!==miss && f.DIA===p.d && f.HORA===p.s);
-        if(victima){
-          // buscar otro hueco para la víctima
-          const candV=[...victima._pairs]
-            .filter(q=>!(q.d===victima.DIA && q.s===victima.HORA))
-            .sort((a,b)=>pairCost(a.d,a.s)-pairCost(b.d,b.s));
-          for(const pv of candV){
-            if(canPlace(victima,pv.d,pv.s)){
-              // ejecutar swap
-              release(victima); apply(victima,pv.d,pv.s);
-              if(canPlace(miss,p.d,p.s)){ apply(miss,p.d,p.s); placed=true; }
-              if(!placed){ // revertir si falló
-                release(victima); apply(victima,p.d,p.s);
-              }
-              break;
-            }
+  // Reintentos cortos (micro-mejora aleatoria)
+  const retry = rows.filter(x=>!x.DIA);
+  if(retry.length){
+    for(const miss of retry){
+      const pref=[...miss._pairs].sort((a,b)=>pairCost(a.d,a.s)-pairCost(b.d,b.s));
+      for(const p of pref){
+        if(canPlace(miss,p.d,p.s)){ apply(miss,p.d,p.s); break; }
+        const victim = rows.find(v=>v.DIA===p.d && v.HORA===p.s);
+        if(!victim) continue;
+        const cand=[...victim._pairs].filter(q=>!(q.d===victim.DIA&&q.s===victim.HORA))
+          .sort((a,b)=>pairCost(a.d,a.s)-pairCost(b.d,b.s));
+        // liberación y prueba de recolocación simple (sin estructuras extra)
+        for(const pv of cand){
+          // liberar víctima
+          const oldD=victim.DIA, oldS=victim.HORA;
+          // "release" inline:
+          const d=victim.DOCENTE||`__SIN_DOCENTE__${victim.MATERIA}`;
+          const rec=occDoc.get(d)?.[oldD]; if(rec){ rec.count--; rec.slots.delete(oldS); }
+          for(let i=0;i<victim._carreras.length;i++){
+            const car=victim._carreras[i], idx=cicloIdx(victim._ciclos[i]);
+            occCarDay.get(`${car}|${oldD}`)?.delete(idx);
+            occCarSlot.get(`${car}|${oldD}|${oldS}`)?.delete(idx);
           }
-          if(placed) break;
+          occMateriaDay.delete(`${victim._key}|${oldD}`);
+          useDay[oldD]--; useSlot[oldS]--;
+          const k=`${oldD}|${oldS}`; useDaySlot.set(k,(useDaySlot.get(k)||1)-1);
+          victim.DIA=''; victim.HORA='';
+
+          if(canPlace(victim,pv.d,pv.s) && canPlace(miss,p.d,p.s)){
+            apply(victim,pv.d,pv.s); apply(miss,p.d,p.s); break;
+          }else{
+            // revertir a la víctima si no funcionó
+            if(canPlace(victim,oldD,oldS)){ apply(victim,oldD,oldS); }
+          }
         }
+        if(miss.DIA) break;
       }
     }
-    pend=sinFila();
   }
 
-  return {filas,conteo:{sin_horario:pend.length}};
+  return rows;
 }
+
+// ======== Función objetivo (menor es mejor) ========
+function scoreSchedule(rows){
+  const sin = rows.filter(r=>!r.DIA).length;
+
+  // distribución por día y por franja
+  const dayCnt=Object.fromEntries(DIAS.map(d=>[d,0]));
+  const slotCnt=Object.fromEntries(SLOTS.map(s=>[s,0]));
+  rows.forEach(r=>{ if(r.DIA) dayCnt[r.DIA]++; if(r.HORA) slotCnt[r.HORA]++; });
+
+  const variance = arr => {
+    const a = Object.values(arr);
+    const n=a.length; if(!n) return 0;
+    const m=a.reduce((s,x)=>s+x,0)/n;
+    return a.reduce((s,x)=>s+(x-m)*(x-m),0)/n;
+  };
+
+  const vDay = variance(dayCnt);
+  const vSlot = variance(slotCnt);
+
+  // penalización por no-asignados es dominante
+  return sin*1e6 + vDay*300 + vSlot*90;
+}
+
+// ======== Motor Montecarlo ========
+async function monteCarloOptimize(filas, restIdx, iterations=300){
+  let best=null, bestRows=null;
+
+  // pequeñas pausas para no bloquear la UI si las iteraciones son altas
+  const SLEEP_EVERY = 50;
+
+  for(let i=1;i<=iterations;i++){
+    // pesos aleatorios para balancear criterios en cada corrida
+    const weights={
+      wDay: 80 + Math.random()*120,   // peso balance por día
+      wSlot: 20 + Math.random()*60,   // peso balance por franja
+      wCell: 1 + Math.random()*10     // celda día-franja
+    };
+
+    const rows = assignSchedulesWithWeights(filas, restIdx, weights);
+    const s = scoreSchedule(rows);
+
+    if(best===null || s<best){ best=s; bestRows=rows; }
+
+    if(i%SLEEP_EVERY===0){ await new Promise(r=>setTimeout(r,0)); }
+  }
+  return {rows:bestRows, score:best};
+}
+
 
 /* ===== Tabla ordenable ===== */
 (function enableSortableMatrix(){
@@ -580,20 +623,20 @@ function assignSchedulesSmart(filas, restIdx){
     });
   });
 })();
-
-/* ===== Flujo ===== */
+  
 document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const fM=document.getElementById('fileMalla').files[0];
   const fD=document.getElementById('fileDocentes').files[0];
   const fR=document.getElementById('fileRest').files[0];
   if(!fM||!fD||!fR){alert('Cargue los tres archivos: Malla, Docentes y Restricciones.');return;}
 
-  // limpiar
+  // limpiar UI
   document.querySelector('#matriz tbody').innerHTML='';
   carreraColor.clear();
-  document.getElementById('resumen').style.display='none';
+  const badge=document.getElementById('resumen');
+  badge.style.display='none';
 
-  // leer
+  // leer Excels en paralelo
   const [wbM,wbD,wbR]=await Promise.all([readWB(fM),readWB(fD),readWB(fR)]);
   const malla=sheetToJSONAuto(wbM,['malla','plan']);
   const docentes=sheetToJSONAuto(wbD,['docentes','docente']);
@@ -605,17 +648,23 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const idxDoc=buildDocentesIndex(docentes);
   const idxRest=buildRestriccionesIndex(rest);
 
-  // construir y asignar
+  // ensamblar filas (docentes + paralelos)
   const {filas}=assembleRows(aggMalla, idxDoc, idxRest);
-  const {filas:asignadas,conteo}=assignSchedulesSmart(filas, idxRest);
 
-  // pintar
-  asignadas.forEach(addRow);
-
-  const badge=document.getElementById('resumen');
-  badge.textContent=`TOTAL: ${asignadas.length} | Sin horario (por restricciones/conflictos): ${conteo.sin_horario}`;
+  // ===== MONTECARLO =====
+  // Puedes subir/bajar iteraciones. 400–800 suele dar muy buenos resultados.
+  const ITER = 500;
+  badge.textContent='Optimizando (Montecarlo)…';
   badge.style.display='inline-block';
 
+  const {rows:bestRows, score} = await monteCarloOptimize(filas, idxRest, ITER);
+
+  // pintar el mejor
+  bestRows.forEach(addRow);
+
+  // resumen final
+  const sin = bestRows.filter(r=>!r.DIA).length;
+  badge.textContent=`TOTAL: ${bestRows.length} | Sin horario: ${sin} | Score: ${Math.round(score)}`;
   document.getElementById('btnXLSX').disabled=false;
 });
 
