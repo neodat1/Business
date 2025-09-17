@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz Académica – UIDE (matching estricto + restricciones por semestre)</title>
+<title>Matriz Académica – UIDE (todos los días, sin archivo de restricciones)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520;--bg:#f6f7fb;--ink:#111}
@@ -15,7 +15,7 @@ header h1{margin:0;font-size:20px;font-weight:700}
 .wrapper{max-width:1250px;margin:24px auto;padding:0 16px}
 .card{background:#fff;border:1px solid #e2e5ef;border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px}
 
-.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 label{font-size:13px;font-weight:700;color:#04136C;display:block;margin-bottom:6px}
 input[type="file"], select, input[type="text"]{width:100%;padding:10px;border:1px solid #ccd2e3;border-radius:12px;background:#fafbff}
 .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
@@ -39,10 +39,14 @@ tbody tr:nth-child(odd){background:#fbfdff}
 .chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px;min-height:22px}
 
 .small{font-size:12px;opacity:.8}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;padding:2px 6px}
 .tag{display:inline-flex;align-items:center;gap:6px;background:#f7f7ff;border:1px solid #dfe3ff;color:#14206b;border-radius:999px;padding:2px 10px;margin:3px 6px 0 0}
 .tag button{all:unset;cursor:pointer;font-weight:900}
+
+/* Celdas editables */
+.editable{outline:2px dashed transparent; border-radius:6px}
+.editable:focus{outline-color:#9CBEE3; background:#f5f9ff}
 </style>
 </head>
 <body>
@@ -56,7 +60,6 @@ tbody tr:nth-child(odd){background:#fbfdff}
     <div class="row">
       <div><label>0. Mallas.xlsx</label><input id="fileMalla" type="file" accept=".xlsx,.xls" /></div>
       <div><label>1. Docentes.xlsx</label><input id="fileDocentes" type="file" accept=".xlsx,.xls" /></div>
-      <div><label>2. Restricciones.xlsx</label><input id="fileRest" type="file" accept=".xlsx,.xls" /></div>
     </div>
     <div class="actions">
       <button id="btnProcesar" class="primary">Procesar</button>
@@ -66,22 +69,25 @@ tbody tr:nth-child(odd){background:#fbfdff}
     </div>
   </div>
 
-  <!-- === NUEVO: Panel de restricciones manuales por semestre === -->
+  <!-- Panel de restricciones manuales por semestre / GLOBAL -->
   <div class="card" id="panelManual" style="display:none">
-    <h3 style="margin:0 0 10px 0">Restricciones por semestre</h3>
-    <div class="row" style="grid-template-columns:2fr 2fr 1fr;">
+    <h3 style="margin:0 0 10px 0">Restricciones manuales por semestre</h3>
+    <div class="row" style="grid-template-columns:2fr 2fr;">
       <div>
         <label>Semestre (o <span class="kbd">GLOBAL</span>)</label>
-        <input id="inpSemManual" list="dlSemestres" placeholder="Escribe PRIMERO, TERCERO, DÉCIMO… o GLOBAL" />
+        <input id="inpSemManual" list="dlSemestres" placeholder="Escriba PRIMERO, TERCERO, DÉCIMO… o GLOBAL" />
         <datalist id="dlSemestres"></datalist>
-        <div class="small">Sugerencias detectadas desde la malla (CICLO MALLA) + opción GLOBAL.</div>
+        <div class="small">Sugerencias desde la malla (CICLO MALLA) + GLOBAL.</div>
       </div>
+      <div class="small" style="align-self:end">Si marca días y franjas, se bloquean las combinaciones día–franja.</div>
+    </div>
+    <div class="row" style="grid-template-columns:1fr 1fr;">
       <div>
-        <label>Días (marca uno o varios)</label>
+        <label>Días (L–D)</label>
         <div class="grid" id="gridDias"></div>
       </div>
       <div>
-        <label>Franjas (marca una o varias)</label>
+        <label>Franjas (07–22)</label>
         <div class="grid" id="gridSlots"></div>
       </div>
     </div>
@@ -90,7 +96,6 @@ tbody tr:nth-child(odd){background:#fbfdff}
       <button id="btnApplyReprog" class="accent">Aplicar y re-programar</button>
     </div>
     <div id="listaManual" style="margin-top:6px"></div>
-    <div class="small" style="margin-top:6px">Si marcas <b>días</b> y <b>franjas</b> a la vez, se bloquean las <b>combinaciones día-franja</b> (pares). Si marcas solo días o solo franjas, se bloquean <i>todos</i> esos días o <i>todas</i> esas franjas.</div>
   </div>
 
   <div class="card">
@@ -130,18 +135,23 @@ tbody tr:nth-child(odd){background:#fbfdff}
 
 <script>
 /* ===== Parámetros ===== */
-const DIAS=['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES'];
+/* DÍAS: ahora Lunes a Domingo */
+const DIAS=['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
+/* Franjas del rango 07–22 (todas las horas cubiertas en 5 bloques) */
 const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
+
 const CYCLE_INDEX={'PRIMERO':1,'SEGUNDO':2,'TERCERO':3,'CUARTO':4,'QUINTO':5,'SEXTO':6,'SÉPTIMO':7,'SEPTIMO':7,'OCTAVO':8,'NOVENO':9,'DÉCIMO':10,'DECIMO':10};
 const ABC="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const STOP=new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','AL','A','II','III','IV','VI','VII','VIII','IX','X']);
 const PALETA=['#04136C','#DE912E','#862B39','#9CBEE3','#8A9520'];
 
 /* ======= Estado Global ======= */
-let gAgg=null,gIdxDoc=null,gIdxRest=null,gFilasBase=null,gAsignadas=null;
-let gSemestresDetectados=[];                 // sugerencias UI
-let gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};   // GLOBAL
-let gManualSem=new Map();                    // Map(SEMESTRE -> {dias:Set, slots:Set, pairs:Set})
+let gAgg=null,gIdxDoc=null,gFilasBase=null,gAsignadas=null;
+let gSemestresDetectados=[];
+let gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};
+let gManualSem=new Map();
+/* índice de restricciones de archivo eliminado; usamos uno vacío */
+const EMPTY_REST_IDX={byDoc:new Map(), global:{dias:new Set(),slots:new Set(),pairs:new Set()}};
 
 /* ===== Utilidades ===== */
 const nz=v=>(v===undefined||v===null)?'':v;
@@ -170,7 +180,7 @@ function sheetToJSONAuto(wb, prefer=[""]){
 }
 function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
 
-/* ===== UI pequeñas ===== */
+/* UI: chips y celdas editables */
 function chipsHTML(pares,{dedupe=true}={}){
   const esc=s=>String(s).replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
   const vals=[...new Set(pares.map(p=>String(p.val||'').trim()))].filter(Boolean);
@@ -182,9 +192,21 @@ function chipsHTML(pares,{dedupe=true}={}){
     return `<span class="chip" style="${style}">${esc(val)}</span>`;
   }).join('')+`</div>`;
 }
+function makeEditable(td, allowedList){
+  td.contentEditable = "true";
+  td.classList.add('editable');
+  td.addEventListener('blur', ()=>{
+    let val = td.textContent.trim().toUpperCase();
+    if(allowedList===SLOTS){ val = val.replace(/-/g,'–'); }
+    td.textContent = val;
+  });
+  td.addEventListener('keydown', e=>{ if(e.key==='Escape'){ td.blur(); }});
+  return td;
+}
 function addRow(row){
   const tb=document.querySelector('#matriz tbody'); const tr=document.createElement('tr');
   const simple=v=>{const td=document.createElement('td'); td.textContent=nz(v); return td;};
+
   tr.appendChild(simple(row.DOCENTE));
   tr.appendChild(simple(row.TITULO_ACADEMICO));
   tr.appendChild(simple(row.DEDICACION));
@@ -203,8 +225,10 @@ function addRow(row){
   tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsOrden,{dedupe:false}); return td;})());
   tr.appendChild(simple(row.ESTUDIANTES));
   tr.appendChild(simple(row.PARALELO));
-  tr.appendChild(simple(row.DIA));
-  tr.appendChild(simple(row.HORA));
+
+  const tdDia = document.createElement('td'); tdDia.textContent = row.DIA || ''; makeEditable(tdDia, DIAS); tr.appendChild(tdDia);
+  const tdHora= document.createElement('td'); tdHora.textContent= row.HORA||''; makeEditable(tdHora,SLOTS); tr.appendChild(tdHora);
+
   tr.appendChild(simple(row.MODALIDAD));
   tr.appendChild(simple(row.NRO_HORAS));
   tb.appendChild(tr);
@@ -301,65 +325,26 @@ function strictMatchDocentes(mallaInfo, docentesIdx){
   return filtered.length?filtered:cand;
 }
 
-/* ===== Restricciones (archivo) ===== */
-function extractDays(text){
-  if(!text) return [];
-  const t=upper(text); const out=new Set();
-  DIAS.forEach(d=>{ if(t.includes(upper(d))) out.add(d); });
-  const m=/\b(LUNES|MARTES|MI[ÉE]RCOLES|JUEVES|VIERNES)\s*A\s*(LUNES|MARTES|MI[ÉE]RCOLES|JUEVES|VIERNES)\b/.exec(t);
-  if(m){ const idx=a=>DIAS.findIndex(x=>upper(x)===upper(a)); const ia=idx(m[1]), ib=idx(m[2]); if(ia>=0&&ib>=ia){for(let i=ia;i<=ib;i++) out.add(DIAS[i]);}}
-  return [...out];
-}
-function extractSlots(text){
-  if(!text) return [];
-  let t=upper(text).replace(/–/g,'-').replace(/\s+/g,'');
-  const e=[...t.matchAll(/(\d{1,2}:\d{2})\s*[-A]\s*(\d{1,2}:\d{2})/g)];
-  if(!e.length) return [];
-  const toMin=hhmm=>{const [h,m]=hhmm.split(':').map(x=>+x); return h*60+m;}
-  const wanted=[]; for(const m of e){ const a=toMin(m[1]), b=toMin(m[2]);
-    if(a<b){ SLOTS.forEach(s=>{const [sa,sb]=s.replace('–','-').split('-');const am=toMin(sa), bm=toMin(sb); if(am>=a && bm<=b) wanted.push(s);});}}
-  return [...new Set(wanted)];
-}
-function buildRestriccionesIndex(rows){
-  const byDoc=new Map(); const global={dias:new Set(),slots:new Set(),pairs:new Set()};
-  const likely=['DOCENTE','Profesor','Nombre','Día','DIA','DÍA','HORA','HORARIO','NO DISPONIBLE','RESTRICCION','RESTRICCIÓN','BLOQUEO','DETALLE','OBSERVACIONES'];
-  for(const r of rows){
-    let d=''; for(const k of likely){ if(k in r && /docente|profesor|nombre/i.test(k)){ d=norm(r[k]); break; } }
-    const target = d ? (byDoc.get(d) || byDoc.set(d,{dias:new Set(),slots:new Set(),pairs:new Set()}).get(d)) : global;
-    const dia  = norm(r['DIA']||r['DÍA']||''); const hora = norm(r['HORA']||r['HORARIO']||'');
-    if(dia && !hora){ extractDays(dia).forEach(x=>target.dias.add(x)); }
-    if(hora && !dia){ extractSlots(hora).forEach(x=>target.slots.add(upper(x))); }
-    if(dia && hora){ const days=extractDays(dia); const slots=extractSlots(hora); days.forEach(dd=>slots.forEach(ss=>target.pairs.add(`${dd}|${upper(ss)}`))); }
-    for(const k of likely){
-      if(r[k]){ const days=extractDays(r[k]); const slots=extractSlots(r[k]);
-        if(days.length && !slots.length){ days.forEach(dd=>target.dias.add(dd)); }
-        if(slots.length && !days.length){ slots.forEach(ss=>target.slots.add(upper(ss))); }
-        if(days.length && slots.length){ days.forEach(dd=>slots.forEach(ss=>target.pairs.add(`${dd}|${upper(ss)}`))); }
-      }
-    }
-  }
-  return {byDoc,global};
-}
+/* ===== Ensamble con docente fijo por materia ===== */
+const gDocentePorMateria = new Map(); // key materia (canon) -> docente elegido
 
-/* ===== Ensamble y asignación ===== */
-function abrevCarrera(name){
-  const s=rmDiac(upper(name));
-  if(/ADMINISTR/.test(s)) return 'ADM';
-  if(/MARKETING/.test(s)) return 'MKT';
-  if(/NEGOCIOS\s*INTERNACIONALES/.test(s)) return 'NNII';
-  return s;
-}
 function assembleRowsStrict(aggMalla, idxDoc){
   const filas=[]; let faltanDoc=0; const semSet=new Set();
   for(const [k,info] of aggMalla.entries()){
     const totalEst=sumEstudiantes(info.estudiantes);
     const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
     const cand = strictMatchDocentes(info, idxDoc);
-    if(!cand.length) faltanDoc++;
-    const req=(totalEst>28)?2:1; const sel=cand.slice(0,req);
-    while(sel.length<req) sel.push({DOCENTE:'',TITULO:'',DEDIC:'',MODALIDAD:''});
 
-    // recolectar semestres para el panel
+    if(!cand.length){ faltanDoc++; }
+
+    const req=(totalEst>28)?2:1;
+
+    let docenteBase = gDocentePorMateria.get(k);
+    if(!docenteBase && cand.length){ docenteBase = cand[0]; gDocentePorMateria.set(k, docenteBase); }
+
+    const sel = docenteBase ? Array.from({length:req}, ()=>docenteBase)
+                            : Array.from({length:req}, ()=>({DOCENTE:'',TITULO:'',DEDIC:'',MODALIDAD:''}));
+
     carreras.forEach(c=>{ const cyc=info.ciclo.get(c)??''; if(cyc) semSet.add(upper(cyc)); });
 
     const packs={
@@ -393,11 +378,9 @@ function assembleRowsStrict(aggMalla, idxDoc){
   return {filas, faltanDoc};
 }
 
-/* ========= Restricciones MANUALES por SEMESTRE ========= */
-/* (Se guardan en gManualSem: Map(sem->{dias,slots,pairs}); y GLOBAL en gManualGlobal) */
-
+/* ===== Restricciones manuales (UI) ===== */
 function renderManualUI(){
-  // Días
+  // Días L–D
   const gd=document.getElementById('gridDias'); gd.innerHTML='';
   DIAS.forEach(d=>{
     const id='d_'+d; const div=document.createElement('label'); div.style.display='flex'; div.style.gap='6px'; div.style.alignItems='center';
@@ -409,7 +392,7 @@ function renderManualUI(){
     const id='s_'+s; const div=document.createElement('label'); div.style.display='flex'; div.style.gap='6px'; div.style.alignItems='center';
     div.innerHTML=`<input type="checkbox" value="${s}" id="${id}"><span>${s}</span>`; gs.appendChild(div);
   });
-  // Datalist semestres
+  // Semestres sugeridos
   const dl=document.getElementById('dlSemestres'); dl.innerHTML='<option value="GLOBAL"></option>';
   gSemestresDetectados.forEach(n=>{ const opt=document.createElement('option'); opt.value=n; dl.appendChild(opt); });
   document.getElementById('panelManual').style.display='block';
@@ -443,7 +426,7 @@ function addManual(){
   const who = upper(norm(document.getElementById('inpSemManual').value||'GLOBAL'));
   const dias=[...document.querySelectorAll('#gridDias input:checked')].map(i=>i.value);
   const slots=[...document.querySelectorAll('#gridSlots input:checked')].map(i=>i.value);
-  if(!dias.length && !slots.length){ alert('Marca al menos un día o una franja.'); return; }
+  if(!dias.length && !slots.length){ alert('Marque al menos un día o una franja.'); return; }
   if(who==='GLOBAL'){
     if(dias.length && slots.length){ dias.forEach(d=>slots.forEach(s=>gManualGlobal.pairs.add(`${d}|${upper(s)}`))); }
     else if(dias.length){ dias.forEach(d=>gManualGlobal.dias.add(d)); }
@@ -458,10 +441,7 @@ function addManual(){
   document.querySelectorAll('#gridSlots input:checked').forEach(i=>i.checked=false);
   drawManualList();
 }
-
-/* ========= Integración de restricciones en asignación ========= */
 function getSemesterBlocksForRow(row){
-  // Agrega restricciones de todos los semestres de la fila
   const acc={dias:new Set(),slots:new Set(),pairs:new Set()};
   row._ciclos.forEach(c=>{
     const sem=upper(c||''); if(!sem) return;
@@ -473,19 +453,25 @@ function getSemesterBlocksForRow(row){
   return acc;
 }
 
-function assignSchedulesSmart(filas, restIdx){
-  const {byDoc,global}=restIdx;
+/* ===== Asignación (sin archivo de restricciones) ===== */
+function abrevCarrera(name){
+  const s=rmDiac(upper(name));
+  if(/ADMINISTR/.test(s)) return 'ADM';
+  if(/MARKETING/.test(s)) return 'MKT';
+  if(/NEGOCIOS\s*INTERNACIONALES/.test(s)) return 'NNII';
+  return s;
+}
+function assignSchedulesSmart(filas, restIdx=EMPTY_REST_IDX){
+  const {byDoc,global}=restIdx; // byDoc/global estarán vacíos
 
   function allowedPairsFor(row){
     if(!row.DOCENTE) return [];
     const rd=byDoc.get(row.DOCENTE||'')||{dias:new Set(),slots:new Set(),pairs:new Set()};
 
-    // Global (archivo) + GLOBAL (manual)
     const gDias=new Set([...global.dias, ...gManualGlobal.dias]);
     const gSlots=new Set([...global.slots, ...gManualGlobal.slots]);
     const gPairs=new Set([...global.pairs, ...gManualGlobal.pairs]);
 
-    // Por semestre (manual)
     const semBlk=getSemesterBlocksForRow(row);
 
     let dias=DIAS.filter(d=>!gDias.has(d) && !rd.dias.has(d) && !semBlk.dias.has(d));
@@ -505,15 +491,14 @@ function assignSchedulesSmart(filas, restIdx){
 
   filas.forEach(r=>{ r._pairs=allowedPairsFor(r); r.DIA=''; r.HORA=''; });
 
-  // Orden por dificultad + semestre (más bajos primero)
   filas.sort((a,b)=>{
     const hasA=a._pairs.length>0, hasB=b._pairs.length>0; if(hasA!==hasB) return hasB-hasA;
     if(a._pairs.length!==b._pairs.length) return a._pairs.length-b._pairs.length;
-    const ma=Math.min(...a._ciclos.map(c=>cicloIdx(c))), mb=Math.min(...b._ciclos.map(c=>cicloIdx(c)));
+    const ma=Math.min(...rA(a._ciclos)), mb=Math.min(...rA(b._ciclos));
     if(ma!==mb) return ma-mb; return a.MATERIA.localeCompare(b.MATERIA,'es');
   });
+  function rA(arr){ return arr.map(c=>cicloIdx(c)); }
 
-  // Ocupaciones y reglas
   const useDay=Object.fromEntries(DIAS.map(d=>[d,0]));
   const useSlot=Object.fromEntries(SLOTS.map(s=>[s,0]));
   const useDaySlot=new Map();
@@ -521,17 +506,25 @@ function assignSchedulesSmart(filas, restIdx){
   const keyCarSl=(car,dia,slot)=>`${car}|${dia}|${slot}`, keyCarDay=(car,dia)=>`${car}|${dia}`, keyMatDay=(row,dia)=>`${row._key}|${dia}`;
   const pairCost=(d,s)=>(useDay[d]||0)*100+(useSlot[s]||0)*10+(useDaySlot.get(`${d}|${s}`)||0);
 
+  function isProhibitedGap(a,b){
+    const diff=Math.abs(a-b);
+    return diff===1 || diff===2; // no coinciden n/n±1/n±2
+  }
+
   function canPlace(row,dia,slot){
     const d=row.DOCENTE; if(!d) return false;
     if(!occDoc.has(d)) occDoc.set(d,{});
     const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
-    if(rec.count>=2) return false; if(rec.slots.has(slot)) return false; if(occMateriaDay.has(keyMatDay(row,dia))) return false;
+    if(rec.count>=2) return false;           // máx. 2 asignaturas por día
+    if(rec.slots.has(slot)) return false;    // no repetir misma franja ese día
+    if(occMateriaDay.has(keyMatDay(row,dia))) return false; // misma materia no repite el mismo día
+
     for(let i=0;i<row._carreras.length;i++){
       const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
       const kd=keyCarDay(car,dia), ks=keyCarSl(car,dia,slot);
       const setD=occCarDay.get(kd), setS=occCarSlot.get(ks);
-      if(setD){ for(const u of setD){ if(Math.abs(u-idx)===1) return false; } }
-      if(setS){ for(const u of setS){ if(Math.abs(u-idx)===1) return false; } }
+      if(setD){ for(const u of setD){ if(isProhibitedGap(u,idx)) return false; } }
+      if(setS){ for(const u of setS){ if(isProhibitedGap(u,idx)) return false; } }
     }
     return true;
   }
@@ -591,49 +584,48 @@ function assignSchedulesSmart(filas, restIdx){
 document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const fM=document.getElementById('fileMalla').files[0];
   const fD=document.getElementById('fileDocentes').files[0];
-  const fR=document.getElementById('fileRest').files[0];
-  if(!fM||!fD||!fR){alert('Cargue los tres archivos: Malla, Docentes y Restricciones.');return;}
+  if(!fM||!fD){alert('Cargue los dos archivos: Malla y Docentes.');return;}
 
   clearTable(); window.__colors=new Map();
   gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};
   gManualSem=new Map();
   const badge=document.getElementById('resumen'); badge.style.display='none';
+  gDocentePorMateria.clear?.();
 
-  const [wbM,wbD,wbR]=await Promise.all([readWB(fM),readWB(fD),readWB(fR)]);
+  const [wbM,wbD]=await Promise.all([readWB(fM),readWB(fD)]);
   const malla=sheetToJSONAuto(wbM,['malla','plan']);
   const docentes=sheetToJSONAuto(wbD,['docentes','docente']);
-  const rest=sheetToJSONAuto(wbR,['restric','dispon','bloqueo','restricciones']);
   if(!malla.length||!docentes.length){alert('No se pudo leer Malla o Docentes.');return;}
 
   gAgg=buildMallaAggregate(malla);
   gIdxDoc=buildDocentesIndexStrict(docentes);
-  gIdxRest=buildRestriccionesIndex(rest);
 
   const {filas,faltanDoc}=assembleRowsStrict(gAgg, gIdxDoc);
   gFilasBase=filas.map(x=>({...x}));
 
-  const {filas:asignadas,conteo}=assignSchedulesSmart(filas, gIdxRest);
+  const {filas:asignadas}=assignSchedulesSmart(filas, EMPTY_REST_IDX);
   gAsignadas=asignadas;
   gAsignadas.forEach(addRow);
 
   const sin = gAsignadas.filter(r=>r.DOCENTE && !r.DIA).length;
-  badge.textContent=`TOTAL: ${gAsignadas.length} | Sin horario (restricciones): ${sin} | Faltan docente(s): ${faltanDoc}`;
+  badge.textContent=`TOTAL: ${gAsignadas.length} | Sin horario (restricciones manuales): ${sin} | Faltan docente(s): ${faltanDoc}`;
   badge.style.display='inline-block';
 
-  // activar panel manual (semestres)
   renderManualUI();
+  document.getElementById('btnXLSX').disabled=false;
 });
 
 document.getElementById('btnAddRestriccion').addEventListener('click', addManual);
 document.getElementById('btnApplyReprog').addEventListener('click', ()=>{
-  if(!gFilasBase || !gIdxRest){ alert('Primero pulsa Procesar.'); return; }
+  if(!gFilasBase){ alert('Primero pulse Procesar.'); return; }
   clearTable();
-  const {filas:asignadas,conteo}=assignSchedulesSmart(gFilasBase.map(x=>({...x})), gIdxRest);
+  const {filas:asignadas}=assignSchedulesSmart(gFilasBase.map(x=>({...x})), EMPTY_REST_IDX);
   gAsignadas=asignadas;
   gAsignadas.forEach(addRow);
   const badge=document.getElementById('resumen'); const sin = gAsignadas.filter(r=>r.DOCENTE && !r.DIA).length;
-  badge.textContent=`TOTAL: ${gAsignadas.length} | Sin horario (restricciones): ${sin}`;
+  badge.textContent=`TOTAL: ${gAsignadas.length} | Sin horario (restricciones manuales): ${sin}`;
   badge.style.display='inline-block';
+  document.getElementById('btnXLSX').disabled=false;
 });
 
 /* Exportar y limpiar */
@@ -647,10 +639,11 @@ document.getElementById('btnXLSX').addEventListener('click',()=>{
   XLSX.writeFile(wb,'Planificacion_UIDE.xlsx');
 });
 document.getElementById('btnLimpiar').addEventListener('click',()=>{
-  document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value=''; document.getElementById('fileRest').value='';
-  clearTable(); window.__colors=new Map(); gAgg=gIdxDoc=gIdxRest=gFilasBase=gAsignadas=null;
+  document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value='';
+  clearTable(); window.__colors=new Map(); gAgg=gIdxDoc=gFilasBase=gAsignadas=null;
   gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};
   gManualSem=new Map(); gSemestresDetectados=[];
+  gDocentePorMateria?.clear?.();
   document.getElementById('btnXLSX').disabled=true;
   document.getElementById('resumen').style.display='none';
   document.getElementById('panelManual').style.display='none';
