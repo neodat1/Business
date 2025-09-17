@@ -4,61 +4,61 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Matriz UIDE</title>
-
+<script>
+/* Carga robusta de XLSX (fallback entre 3 CDNs) */
+(function(){
+  const CDNS=[
+    "https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.2/xlsx.full.min.js",
+    "https://unpkg.com/xlsx@0.20.2/dist/xlsx.full.min.js"
+  ];
+  function loadSeq(i=0){
+    return new Promise((resolve,reject)=>{
+      if(i>=CDNS.length) return reject(new Error("No se pudo cargar XLSX"));
+      const s=document.createElement('script'); s.src=CDNS[i]; s.async=true;
+      s.onload=()=>resolve(); s.onerror=()=>loadSeq(i+1).then(resolve).catch(reject);
+      document.head.appendChild(s);
+    });
+  }
+  window.ensureXLSX=()=> window.XLSX ? Promise.resolve() : loadSeq();
+})();
+</script>
 <style>
-:root{
-  /* Paleta institucional exacta */
-  --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
-}
-*{box-sizing:border-box}
-body{margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:#F4F6FA; color:#1D2340}
-header{display:flex; align-items:center; gap:14px; padding:14px 18px; background:var(--azul); border-bottom:6px solid var(--mostaza)}
-.logo{background:#fff; border-radius:12px; padding:6px 10px; box-shadow:0 2px 10px rgba(0,0,0,.18)}
-.logo img{height:46px; display:block}
-.h1{color:#fff; font-weight:800; letter-spacing:.2px}
-
+:root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#F4F6FA;color:#1D2340}
+header{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--azul);border-bottom:6px solid var(--mostaza)}
+.logo{background:#fff;border-radius:12px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.logo img{height:46px;display:block} .h1{color:#fff;font-weight:800;letter-spacing:.2px}
 .container{padding:16px}
-.card{background:#fff; border:1px solid #E6E9F2; border-radius:16px; box-shadow:0 10px 24px rgba(0,0,0,.06); padding:14px; margin-bottom:14px}
-
-.row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-input[type=file]{padding:10px; border:2px dashed var(--celeste); border-radius:12px; background:#F8FBFF}
-.btn{border:0; border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer}
-.btn-prim{background:var(--vino); color:#fff}
-.btn-sec{background:var(--verde); color:#fff}
-.badge{display:inline-block; padding:4px 10px; border-radius:999px; font-weight:800; font-size:.8rem}
-.b-ok{background:#EAF6EF; color:#145A32}
-.b-warn{background:#FFF2D6; color:#7A4E00}
-.b-err{background:#FCE3E1; color:#7C1D1A}
-.b-info{background:#EAF2FF; color:var(--azul)}
-
-table{width:100%; border-collapse:separate; border-spacing:0}
-thead th{position:sticky; top:0; background:var(--azul); color:#fff; padding:10px; font-size:.92rem}
-thead th:first-child{border-top-left-radius:12px}
-thead th:last-child{border-top-right-radius:12px}
-tbody td{padding:9px 10px; border-bottom:1px solid #EEF1F6; background:#fff; font-size:.95rem}
+.card{background:#fff;border:1px solid #E6E9F2;border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.06);padding:14px;margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input[type=file]{padding:10px;border:2px dashed var(--celeste);border-radius:12px;background:#F8FBFF}
+.btn{border:0;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}
+.btn-prim{background:var(--vino);color:#fff} .btn-sec{background:var(--verde);color:#fff}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:800;font-size:.8rem}
+.b-ok{background:#EAF6EF;color:#145A32}.b-warn{background:#FFF2D6;color:#7A4E00}
+.b-err{background:#FCE3E1;color:#7C1D1A}.b-info{background:#EAF2FF;color:var(--azul)}
+table{width:100%;border-collapse:separate;border-spacing:0}
+thead th{position:sticky;top:0;background:var(--azul);color:#fff;padding:10px;font-size:.92rem}
+thead th:first-child{border-top-left-radius:12px} thead th:last-child{border-top-right-radius:12px}
+tbody td{padding:9px 10px;border-bottom:1px solid #EEF1F6;background:#fff;font-size:.95rem}
 tbody tr:nth-child(even) td{background:#FBFCFF}
 tbody tr.assigned td{border-left:4px solid var(--verde)}
-tbody tr.conflict td{border-left:4px solid var(--vino); background:#FFF6F6}
-
-.footer{padding:10px 2px; color:#6B7896; font-size:.85rem; text-align:center}
-
-/* Toast */
-.toast{position:fixed; right:16px; bottom:16px; min-width:280px; max-width:360px; border-radius:12px; color:#fff; padding:12px 14px; box-shadow:0 14px 28px rgba(0,0,0,.25); display:none}
-.toast.show{display:block; animation:fade .18s ease-out}
-.toast.ok{background:var(--verde)} .toast.warn{background:var(--mostaza)} .toast.err{background:var(--vino)}
-.toast .t{font-weight:900; margin-bottom:2px}
-@keyframes fade{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)}}
+tbody tr.conflict td{border-left:4px solid var(--vino);background:#FFF6F6}
+.footer{padding:10px 2px;color:#6B7896;font-size:.85rem;text-align:center}
+.toast{position:fixed;right:16px;bottom:16px;min-width:260px;max-width:360px;border-radius:12px;color:#fff;padding:10px 12px;box-shadow:0 14px 28px rgba(0,0,0,.25);display:none}
+.toast.show{display:block;animation:fade .18s ease-out}
+.toast.ok{background:var(--verde)}.toast.warn{background:var(--mostaza)}.toast.err{background:var(--vino)}
+.toast .t{font-weight:900;margin-bottom:2px}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo"><img src="UIDE-Ecuador.png" alt="UIDE"></div>
   <div class="h1">Planificador de Horarios – UIDE</div>
 </header>
 
 <div class="container">
-
   <div class="card">
     <div class="row">
       <input id="fileInput" type="file" accept=".xlsx,.xls" multiple />
@@ -75,12 +75,7 @@ tbody tr.conflict td{border-left:4px solid var(--vino); background:#FFF6F6}
     <div class="badge b-info" style="margin-bottom:8px">DOCENTE · MATERIA · ESTUDIANTES · PARALELO · DÍA · HORA</div>
     <div style="overflow:auto">
       <table id="tabla">
-        <thead>
-          <tr>
-            <th>DOCENTE</th><th>MATERIA</th><th>ESTUDIANTES</th>
-            <th>PARALELO</th><th>DÍA</th><th>HORA</th>
-          </tr>
-        </thead>
+        <thead><tr><th>DOCENTE</th><th>MATERIA</th><th>ESTUDIANTES</th><th>PARALELO</th><th>DÍA</th><th>HORA</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -91,107 +86,92 @@ tbody tr.conflict td{border-left:4px solid var(--vino); background:#FFF6F6}
 
 <div id="toast" class="toast"><div class="t"></div><div class="m"></div></div>
 
-<!-- Cargador robusto de XLSX con fallback -->
 <script>
-(function(){
-  const CDNS=[
-    "https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js",
-    "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.2/xlsx.full.min.js",
-    "https://unpkg.com/xlsx@0.20.2/dist/xlsx.full.min.js"
-  ];
-  function loadSeq(i=0){
-    return new Promise((resolve,reject)=>{
-      if(i>=CDNS.length) return reject(new Error("No se pudo cargar XLSX"));
-      const s=document.createElement('script');
-      s.src=CDNS[i]; s.async=true;
-      s.onload=()=>resolve();
-      s.onerror=()=>loadSeq(i+1).then(resolve).catch(reject);
-      document.head.appendChild(s);
-    });
-  }
-  window.ensureXLSX=()=> window.XLSX ? Promise.resolve() : loadSeq();
-})();
-</script>
-
-<script>
-/* ===== UI ===== */
+/* ---- UI ---- */
 const toast=(type,t,m)=>{const x=document.getElementById('toast');x.className=`toast ${type} show`;x.querySelector('.t').textContent=t||'';x.querySelector('.m').textContent=m||'';setTimeout(()=>x.classList.remove('show'),3500);};
 const setCounters=(ok,par,err)=>{document.getElementById('kOk').textContent=`OK: ${ok}`;document.getElementById('kPar').textContent=`Paralelos: ${par}`;document.getElementById('kErr').textContent=`Conflictos: ${err}`;};
-
-/* ===== Normalización ===== */
+/* ---- Utils ---- */
 const N = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
 const I = v => {const n=parseInt(String(v).replace(/[^\d]/g,''),10); return Number.isFinite(n)?n:null;};
-
-/* ===== Dominio ===== */
 const DAYS=["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"];
 const SLOTS=["07:00-10:00","10:00-13:00","13:00-16:00","16:00-19:00","19:00-22:00"];
+const slotsFrom=raw=>{ if(!raw) return []; const txt=N(String(raw).replace(/[–—]/g,'-')).replace(/\s*A\s*/g,'-');
+  const one=txt.match(/^(\d{2}:\d{2})$/); if(one){const t=one[1]; return SLOTS.filter(s=>{const[a,b]=s.split('-');return t>=a&&t<=b;});}
+  const m=txt.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/); if(!m) return []; const[a,b]=[m[1],m[2]];
+  const out=[]; for(const s of SLOTS){const[x,y]=s.split('-'); if(x>=a&&y<=b) out.push(s);} return out.length?out:[...SLOTS]; };
+const expandDays=txt=>{ const t=N(txt); if(!t) return [];
+  if(t.includes("A VIERNES")){const m=t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/); const s=m?DAYS.indexOf(m[1]):0; return DAYS.slice(s);}
+  if(t.includes("A ")){const m=t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)\s*A\s*(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/);
+    if(m){const a=DAYS.indexOf(m[1]), b=DAYS.indexOf(m[2]); if(a>=0&&b>=a) return DAYS.slice(a,b+1);} }
+  const list=t.split(/[,/]| Y /g).map(s=>s.trim()).filter(Boolean); const out=[]; for(const d of list){ if(DAYS.includes(d)) out.push(d);} return out.length?out:DAYS; };
+const restrDays=txt=>{ if(!txt) return new Set(); const t=N(txt), s=new Set(); for(const d of DAYS){ if(t.includes(d)) s.add(d);} return s; };
 
-function slotsFrom(raw){
-  if(!raw) return [];
-  const txt=N(String(raw).replace(/[–—]/g,'-')).replace(/\s*A\s*/g,'-');
-  const one=txt.match(/^(\d{2}:\d{2})$/);
-  if(one){
-    const t=one[1];
-    return SLOTS.filter(s=>{const[a,b]=s.split('-');return t>=a&&t<=b;});
-  }
-  const m=txt.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
-  if(!m) return [];
-  const[a,b]=[m[1],m[2]];
-  const out=[]; for(const s of SLOTS){const[x,y]=s.split('-'); if(x>=a && y<=b) out.push(s);}
-  return out.length?out:[...SLOTS];
-}
-function expandDays(txt){
-  const t=N(txt); if(!t) return [];
-  if(t.includes("A VIERNES")){
-    const m=t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/); const s=m?DAYS.indexOf(m[1]):0; return DAYS.slice(s);
-  }
-  if(t.includes("A ")){
-    const m=t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)\s*A\s*(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/);
-    if(m){const a=DAYS.indexOf(m[1]), b=DAYS.indexOf(m[2]); if(a>=0&&b>=a) return DAYS.slice(a,b+1);}
-  }
-  const list=t.split(/[,/]| Y /g).map(s=>s.trim()).filter(Boolean);
-  const out=[]; for(const d of list){ if(DAYS.includes(d)) out.push(d); }
-  return out.length?out:DAYS;
-}
-function restrDays(txt){ if(!txt) return new Set(); const t=N(txt), s=new Set(); for(const d of DAYS){ if(t.includes(d)) s.add(d);} return s; }
-
-/* ===== Lectura Excel ===== */
+/* ---- Lector Excel con detección de encabezado ---- */
 async function readAll(files){
   await ensureXLSX();
-  const all=[];
+  const out=[];
   for(const f of files){
-    try{
-      const buf=await f.arrayBuffer();
-      const wb=XLSX.read(buf,{type:'array'});
-      for(const name of wb.SheetNames){
-        const ws=wb.Sheets[name];
-        // Normaliza BOM y nombres raros de cabeceras
-        const json=XLSX.utils.sheet_to_json(ws,{defval:""});
-        all.push(...json);
+    const buf=await f.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+
+    for(const sh of wb.SheetNames){
+      const ws=wb.Sheets[sh];
+      // Tomamos toda la hoja como matriz para detectar el encabezado en cualquier fila
+      const A=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:""});
+      if(!A || !A.length) continue;
+
+      const wanted = ["DOCENTE","MATERIA","DIA DISPONIBLE","DIAS DISPONIBLES","DIA","HORA DISPONIBLE","HORARIO DISPONIBLE","HORA","ESTUDIANTES","N ESTUDIANTES","NUM ESTUDIANTES"];
+      let headerRowIndex = -1, headerNorm = [];
+
+      for(let i=0;i<A.length;i++){
+        const row=A[i].map(c=>N(String(c).replace(/^\uFEFF/,'')));
+        // ¿contiene al menos DOCENTE y MATERIA y alguna de DIA/HORA/ESTUDIANTES?
+        const hasDoc=row.includes("DOCENTE"), hasMat=row.includes("MATERIA");
+        const hasDia = row.includes("DIA DISPONIBLE")||row.includes("DIAS DISPONIBLES")||row.includes("DIA");
+        const hasHora = row.includes("HORA DISPONIBLE")||row.includes("HORARIO DISPONIBLE")||row.includes("HORA");
+        const hasEst = row.includes("ESTUDIANTES")||row.includes("N ESTUDIANTES")||row.includes("NUM ESTUDIANTES");
+        if(hasDoc && hasMat && (hasDia||hasHora) && hasEst){
+          headerRowIndex = i; headerNorm = row; break;
+        }
       }
-    }catch(e){
-      console.error('Error leyendo', f.name, e);
-      throw new Error(`No se pudo leer: ${f.name}`);
+      if(headerRowIndex===-1){
+        // si no hallamos encabezado, intentamos el modo por defecto (fila 0) por si viene perfecto
+        const jsonTry=XLSX.utils.sheet_to_json(ws,{defval:""});
+        if(jsonTry && jsonTry.length) out.push(...jsonTry);
+        continue;
+      }
+
+      // Construir objetos desde la fila siguiente al encabezado detectado
+      for(let r=headerRowIndex+1; r<A.length; r++){
+        const row=A[r]; if(!row || row.every(c=>String(c).trim()==="")) continue;
+        const obj={};
+        for(let c=0;c<headerNorm.length;c++){
+          const h = headerNorm[c] || `COL_${c}`;
+          obj[h]=row[c]??"";
+        }
+        out.push(obj);
+      }
     }
   }
-  return all;
+  return out;
 }
 
-/* ===== Normalización de filas ===== */
-function mapRow(r){
-  const d={}; for(const [k,v] of Object.entries(r)) d[N(k.replace(/^\uFEFF/,''))]=v; // quita BOM
+/* ---- Normalización de fila a campos requeridos ---- */
+function mapRow(o){
+  const d={}; for(const [k,v] of Object.entries(o)) d[N(k)]=v;
   const get=(...ks)=>{for(const k of ks){const kk=N(k); if(kk in d) return d[kk];} return "";};
-  const docente=String(get('DOCENTE')).trim();
-  const materia=String(get('MATERIA')).trim();
-  const diaDisp=String(get('DIA DISPONIBLE','DIAS DISPONIBLES','DIA')).trim();
-  const horaDisp=String(get('HORA DISPONIBLE','HORARIO DISPONIBLE','HORA')).trim();
-  const est=I(get('ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES')) ?? 0;
-  const restr=get('RESTRICCIONES','DIAS RESTRINGIDOS','DIA RESTRICCION');
-  const cicloA=get('CICLO DEL ESTUDIANTE','CICLO ESTUDIANTE','CICLO');
-  const cicloM=get('CICLO DE LA MATERIA EN LA MALLA','CICLO MATERIA');
+  const docente = String(get('DOCENTE')).trim();
+  const materia = String(get('MATERIA')).trim();
+  const diaDisp = String(get('DIA DISPONIBLE','DIAS DISPONIBLES','DIA')).trim();
+  const horaDisp = String(get('HORA DISPONIBLE','HORARIO DISPONIBLE','HORA')).trim();
+  const est = I(get('ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES')) ?? 0;
+  const restr = get('RESTRICCIONES','DIAS RESTRINGIDOS','DIA RESTRICCION');
+  const cicloA = get('CICLO DEL ESTUDIANTE','CICLO ESTUDIANTE','CICLO');
+  const cicloM = get('CICLO DE LA MATERIA EN LA MALLA','CICLO MATERIA');
 
   return {
-    docente, materia, estudiantes: est,
+    docente, materia,
+    estudiantes: est,
     diasDisponibles: expandDays(diaDisp),
     slotsDisponibles: slotsFrom(horaDisp),
     restrDias: restrDays(restr),
@@ -199,29 +179,22 @@ function mapRow(r){
   };
 }
 
-/* ===== Asignación ===== */
+/* ---- Asignador ---- */
 function planificar(items){
-  const usoDoc=new Map();          // docente -> (dia -> count)
-  const usoDocSlot=new Set();      // "docente|dia|slot"
-  const usoMateriaSlot=new Set();  // "materia|dia|slot"
-  const ciclosEnSlot=new Map();    // "dia|slot" -> Set(ciclos)
-
+  const usoDoc=new Map(), usoDocSlot=new Set(), usoMateriaSlot=new Set(), ciclosSlot=new Map();
   const out=[]; let ok=0, par=0, err=0;
 
   const puede=(doc,matKey,dia,slot,ciclo)=>{
     const m=usoDoc.get(doc)||new Map(); if((m.get(dia)||0)>=2) return false;
     if(usoDocSlot.has(`${doc}|${dia}|${slot}`)) return false;
     if(usoMateriaSlot.has(`${matKey}|${dia}|${slot}`)) return false;
-    if(ciclo!=null){
-      const s=ciclosEnSlot.get(`${dia}|${slot}`)||new Set();
-      for(const c of s){ if(Math.abs(c-ciclo)===1) return false; }
-    }
+    if(ciclo!=null){ const s=ciclosSlot.get(`${dia}|${slot}`)||new Set(); for(const c of s){ if(Math.abs(c-ciclo)===1) return false; } }
     return true;
   };
   const colocar=(doc,matKey,dia,slot,ciclo)=>{
     const m=usoDoc.get(doc)||new Map(); m.set(dia,(m.get(dia)||0)+1); usoDoc.set(doc,m);
     usoDocSlot.add(`${doc}|${dia}|${slot}`); usoMateriaSlot.add(`${matKey}|${dia}|${slot}`);
-    if(ciclo!=null){ const k=`${dia}|${slot}`, s=ciclosEnSlot.get(k)||new Set(); s.add(ciclo); ciclosEnSlot.set(k,s); }
+    if(ciclo!=null){ const k=`${dia}|${slot}`, s=ciclosSlot.get(k)||new Set(); s.add(ciclo); ciclosSlot.set(k,s); }
   };
 
   items.sort((a,b)=>{
@@ -248,24 +221,21 @@ function planificar(items){
         for(const s of slots){
           if(puede(it.docente,matKey,d,s,it.ciclo)){
             colocar(it.docente,matKey,d,s,it.ciclo);
-            out.push({docente:it.docente,materia:it.materia,estudiantes:sizes[p]||it.estudiantes||0,
-                      paralelo:String(p+1).padStart(2,'0'),dia:d,hora:s,assigned:true});
+            out.push({docente:it.docente,materia:it.materia,estudiantes:sizes[p]||it.estudiantes||0,paralelo:String(p+1).padStart(2,'0'),dia:d,hora:s,assigned:true});
             ok++; asignado=true; break outer;
           }
         }
       }
       if(!asignado){
-        out.push({docente:it.docente,materia:it.materia,estudiantes:sizes[p]||it.estudiantes||0,
-                  paralelo:String(p+1).padStart(2,'0'),dia:"SIN ESPACIO",hora:"—",assigned:false});
+        out.push({docente:it.docente,materia:it.materia,estudiantes:sizes[p]||it.estudiantes||0,paralelo:String(p+1).padStart(2,'0'),dia:"SIN ESPACIO",hora:"—",assigned:false});
         err++;
       }
     }
   }
-  setCounters(ok,par,err);
-  return out;
+  setCounters(ok,par,err); return out;
 }
 
-/* ===== Render ===== */
+/* ---- Render & Export ---- */
 function render(rows){
   const tb=document.querySelector('#tabla tbody'); tb.innerHTML='';
   rows.forEach(r=>{
@@ -276,51 +246,35 @@ function render(rows){
   document.getElementById('metaFilas').textContent=`${rows.length} filas`;
   document.getElementById('btnExportar').disabled = rows.length===0;
 }
-
-/* ===== Exportar ===== */
 function exportXLSX(){
   const rows=[]; document.querySelectorAll('#tabla tbody tr').forEach(tr=>{
     const c=i=>tr.children[i].textContent;
     rows.push({DOCENTE:c(0),MATERIA:c(1),ESTUDIANTES:+c(2)||0,PARALELO:c(3),DIA:c(4),HORA:c(5)});
   });
-  if(!rows.length){ toast('warn','Sin datos',''); return; }
   const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Matriz'); XLSX.writeFile(wb,'Matriz_UIDE.xlsx');
 }
 
-/* ===== Flujo ===== */
+/* ---- Flujo ---- */
 document.getElementById('btnAsignar').addEventListener('click', async ()=>{
-  const fi=document.getElementById('fileInput');
-  if(!fi.files.length){ toast('warn','Seleccione un Excel',''); return; }
-
+  const fi=document.getElementById('fileInput'); if(!fi.files.length){ toast('warn','Seleccione un Excel',''); return; }
   let raw=[];
-  try{
-    raw=await readAll(fi.files);
-  }catch(e){
-    toast('err','Error de lectura',e.message||'');
-    return;
-  }
+  try{ raw=await readAll(fi.files); }catch(e){ toast('err','Error de lectura',e.message||''); return; }
   if(!raw.length){ toast('err','Sin filas',''); return; }
 
-  const allKeys=new Set(); raw.forEach(r=>Object.keys(r).forEach(k=>allKeys.add(N(k.replace(/^\uFEFF/,'')))));
-  const need=[
-    ['DOCENTE'],
-    ['MATERIA'],
-    ['DIA DISPONIBLE','DIAS DISPONIBLES','DIA'],
-    ['HORA DISPONIBLE','HORARIO DISPONIBLE','HORA'],
-    ['ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES']
-  ];
-  const okCols = need.every(group => group.some(k => allKeys.has(N(k))));
-  if(!okCols){ toast('err','Encabezados inválidos',''); return; }
+  // Validación sobre los encabezados detectados
+  const keys=new Set(); raw.forEach(r=>Object.keys(r).forEach(k=>keys.add(N(k))));
+  const okCols = (["DOCENTE","MATERIA"].every(k=>keys.has(k)) &&
+                 (keys.has("DIA DISPONIBLE")||keys.has("DIAS DISPONIBLES")||keys.has("DIA")) &&
+                 (keys.has("HORA DISPONIBLE")||keys.has("HORARIO DISPONIBLE")||keys.has("HORA")) &&
+                 (keys.has("ESTUDIANTES")||keys.has("N ESTUDIANTES")||keys.has("NUM ESTUDIANTES")));
+  if(!okCols){ toast('err','Encabezados no detectados','Revise la hoja.'); return; }
 
   try{
     const items=raw.map(mapRow).filter(r=>r.docente&&r.materia);
-    const out=planificar(items);
-    render(out);
-    toast('ok','Listo','');
+    const out=planificar(items); render(out); toast('ok','Listo','');
   }catch(e){ console.error(e); toast('err','Error de proceso',''); }
 });
-
-document.getElementById('btnExportar').addEventListener('click', exportXLSX);
+document.getElementById('btnExportar').addEventListener('click', ()=>exportXLSX());
 </script>
 </body>
 </html>
