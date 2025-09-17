@@ -5,22 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Matriz de Asignación – UIDE</title>
 
-<!-- SheetJS (XLSX) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.2/xlsx.full.min.js" integrity="sha512-+qvRDSa6cS8zXqK2a5q8bQqXW/8o8ZtQ4n3n+8Cq8m0l5c6mHkQXQbqGv1lQkG5F3QWaqn3b2T0s3k8n4vX0gA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- XLSX: corregido (sin SRI que bloqueaba la carga) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
 
 <style>
   :root{
     --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
   }
+  *{box-sizing:border-box}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; margin:0; background:#f7f8fb; color:#222}
   header{
-    background:linear-gradient(135deg,var(--azul),#0a257a 60%);
+    background:linear-gradient(135deg,var(--azul),#0b2b8e 65%);
     color:#fff; padding:14px 20px; display:flex; align-items:center; gap:14px;
     border-bottom:6px solid var(--mostaza);
   }
-  header img{height:54px; width:auto}
+  /* Marco blanco para que el logo siempre se vea */
+  .logo-wrap{
+    background:#fff; border-radius:12px; padding:6px 10px; box-shadow:0 4px 12px rgba(0,0,0,.15);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .logo-wrap img{height:48px; width:auto; display:block}
   header h1{font-size:1.35rem; margin:0; line-height:1.2}
-  header small{display:block; opacity:.9; font-weight:500}
+  header small{display:block; opacity:.95; font-weight:500}
 
   .panel{
     background:#fff; margin:16px; padding:16px; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.08);
@@ -44,22 +50,24 @@
   table{width:100%; border-collapse:separate; border-spacing:0; margin-top:10px}
   thead th{
     position:sticky; top:0; background:var(--azul); color:#fff; padding:10px; text-align:left; font-size:.92rem;
-    border-top-left-radius:10px; border-top-right-radius:10px;
   }
+  thead th:first-child{border-top-left-radius:10px}
+  thead th:last-child{border-top-right-radius:10px}
   tbody td{background:#fff; padding:9px 10px; border-bottom:1px solid #eef1f6; font-size:.94rem}
   tbody tr:nth-child(even) td{background:#fbfcff}
   tbody tr.assigned td{border-left:4px solid var(--verde)}
   tbody tr.conflict td{border-left:4px solid var(--vino); background:#fff5f5}
-  .count{font-weight:700; color:var(--azul)}
+  .chip{display:inline-block; padding:3px 8px; border-radius:999px; background:#eef4ff; color:#0a257a; font-weight:600; font-size:.8rem; margin-left:6px}
 
   .footer{margin:10px 16px 40px; color:#53607b; font-size:.9rem}
   .notice{background:#fff3cd; border:1px solid #ffe58f; padding:8px 10px; border-radius:10px; margin-top:10px; color:#664d03}
-  .chip{display:inline-block; padding:3px 8px; border-radius:999px; background:#eef4ff; color:#0a257a; font-weight:600; font-size:.8rem; margin-left:6px}
 </style>
 </head>
 <body>
   <header>
-    <img src="UIDE-Ecuador.png" alt="UIDE" />
+    <div class="logo-wrap">
+      <img src="UIDE-Ecuador.png" alt="UIDE">
+    </div>
     <div>
       <h1>Planificador de Horarios – Facultad de Negocios <small>Generación automática de la matriz (sin cruces)</small></h1>
     </div>
@@ -76,7 +84,7 @@
 
     <div class="legend">
       <span class="tag t-azul">Encabezado institucional</span>
-      <span class="tag t-mostaza">Accento</span>
+      <span class="tag t-mostaza">Acento</span>
       <span class="tag t-vino">Conflictos</span>
       <span class="tag t-celeste">Información</span>
       <span class="tag t-verde">Asignado</span>
@@ -112,10 +120,14 @@
   </div>
 
 <script>
-/* ================== Utilidades de texto ================== */
+if(typeof XLSX === "undefined"){
+  alert("No se pudo cargar la librería XLSX. Verifique su conexión o el bloqueador de scripts.");
+}
+
+/* ========== Utilidades ========== */
 const normalize = (s='') =>
   (s||'').toString()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // sin acentos
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/\s+/g,' ').trim().toUpperCase();
 
 const parseIntSafe = v => {
@@ -123,20 +135,16 @@ const parseIntSafe = v => {
   return Number.isFinite(n) ? n : null;
 };
 
-/* ================== Constantes de planificación ================== */
+/* ========== Parámetros ========== */
 const DAYS = ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"];
 const TIME_SLOTS = [
-  "07:00-10:00",
-  "10:00-13:00",
-  "13:00-16:00",
-  "16:00-19:00",
-  "19:00-22:00"
+  "07:00-10:00","10:00-13:00","13:00-16:00","16:00-19:00","19:00-22:00"
 ];
 
-// convierte "07:00 A 22:00" o "07:00-22:00" a lista de slots contenidos
+/* ========== Parseos ========== */
 function slotsFromRange(rango){
   if(!rango) return [];
-  const rx = normalize(rango).replace(/\s*A\s*/g,'-'); // "A" -> "-"
+  const rx = normalize(rango).replace(/\s*A\s*/g,'-');
   const m = rx.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
   if(!m) return [];
   const [_,a,b] = m;
@@ -145,48 +153,36 @@ function slotsFromRange(rango){
     const [s,e]=slot.split('-');
     if(s>=a && e<=b) slots.push(slot);
   }
-  // si ninguna franja se incluyó (p.ej. 07:00-22:00 mal formateado), retornar todas
   return slots.length ? slots : [...TIME_SLOTS];
 }
-
-// "LUNES A VIERNES" / "MARTES Y MIERCOLES" / "VIERNES"
 function expandDays(txt){
   const t = normalize(txt);
   if(!t) return [];
   if(t.includes("A VIERNES")){
-    // desde el primer día mencionado hasta viernes
     const m = t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/);
     const start = m ? DAYS.indexOf(m[1]) : 0;
     return DAYS.slice(start);
   }
-  if(t.includes("A ")){ // "LUNES A JUEVES"
+  if(t.includes("A ")){
     const m = t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)\s*A\s*(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/);
     if(m){
       const a=DAYS.indexOf(m[1]), b=DAYS.indexOf(m[2]);
       if(a>=0 && b>=a) return DAYS.slice(a,b+1);
     }
   }
-  // separadores "Y", comas
   const list = t.split(/[,/]| Y /g).map(s=>s.trim()).filter(Boolean);
   const out=[];
-  for(const d of list){
-    if(DAYS.includes(d)) out.push(d);
-  }
-  return out.length? out : DAYS; // por defecto todos
+  for(const d of list){ if(DAYS.includes(d)) out.push(d); }
+  return out.length? out : DAYS;
 }
-
-// lee "RESTRICCIONES" y devuelve set de días prohibidos
 function daysRestrictions(txt){
   if(!txt) return new Set();
-  const t = normalize(txt);
-  const set = new Set();
-  for(const d of DAYS){
-    if(t.includes(d)) set.add(d);
-  }
+  const t = normalize(txt), set=new Set();
+  for(const d of DAYS){ if(t.includes(d)) set.add(d); }
   return set;
 }
 
-/* ================== Lectura de Excel ================== */
+/* ========== Lectura XLSX ========== */
 async function readAllFiles(files){
   const rows=[];
   for(const file of files){
@@ -199,35 +195,22 @@ async function readAllFiles(files){
   return rows;
 }
 
-/* ================== Normalización de columnas ================== */
+/* ========== Normalización filas ========== */
 function mapRow(r){
-  // construir diccionario clave normalizada -> valor
-  const dict={};
-  for(const [k,v] of Object.entries(r)){
-    dict[normalize(k)] = v;
-  }
-  // alias tolerantes
-  const get = (...keys) => {
-    for(const k of keys){
-      const kn = normalize(k);
-      if(kn in dict) return dict[kn];
-    }
-    return "";
-  };
+  const dict={}; for(const [k,v] of Object.entries(r)){ dict[normalize(k)] = v; }
+  const get = (...keys) => { for(const k of keys){ const kn=normalize(k); if(kn in dict) return dict[kn]; } return ""; };
+
   const docente = String(get('DOCENTE')).trim();
   const materia = String(get('MATERIA')).trim();
   const diaDisp = String(get('DIA DISPONIBLE','DIAS DISPONIBLES','DIA')).trim();
   const horaDisp = String(get('HORA DISPONIBLE','HORARIO DISPONIBLE','HORA')).trim();
-  const modalidad = String(get('MODALIDAD')).trim();
-  let est = get('ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES');
-  est = parseIntSafe(est) ?? 0;
-
+  const est = parseIntSafe(get('ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES')) ?? 0;
   const restr = get('RESTRICCIONES','DIAS RESTRINGIDOS','DIA RESTRICCION');
   const cicloA = get('CICLO DEL ESTUDIANTE','CICLO ESTUDIANTE','CICLO');
   const cicloM = get('CICLO DE LA MATERIA EN LA MALLA','CICLO MATERIA');
 
   return {
-    docente, materia, modalidad,
+    docente, materia,
     estudiantes: est,
     diasDisponibles: expandDays(diaDisp),
     slotsDisponibles: slotsFromRange(horaDisp),
@@ -239,159 +222,109 @@ function mapRow(r){
   };
 }
 
-/* ================== Motor de asignación (greedy) ================== */
+/* ========== Motor de asignación ========== */
 function planificar(items){
-  // Estado para restricciones
-  const usoDocente = new Map(); // docente -> dia -> count (máx 2)
-  const ocupacion = new Set(); // clave "docente|dia|slot"
-  const ocupacionGlobal = new Set(); // clave "dia|slot" para paralelos de misma materia
-  const porCiclo = new Map(); // clave "dia|slot" -> set de ciclos presentes
+  const usoDocente = new Map(); // docente -> dia -> count
+  const ocupacion = new Set(); // "docente|dia|slot"
+  const ocupacionGlobal = new Set(); // "materia|dia|slot"
+  const porCiclo = new Map(); // "dia|slot" -> Set(ciclos)
 
   const resultados=[];
 
-  function puedeColocar(docente, materiaClave, dia, slot, ciclo){
-    // máx 2 por día por docente
+  const puede = (docente, materiaClave, dia, slot, ciclo) => {
     const mapDia = usoDocente.get(docente) || new Map();
-    const ctd = mapDia.get(dia) || 0;
-    if(ctd >= 2) return false;
-
-    // sin cruce del mismo docente
+    if((mapDia.get(dia)||0) >= 2) return false;
     if(ocupacion.has(`${docente}|${dia}|${slot}`)) return false;
-
-    // evitar que paralelos de la misma materia coincidan
     if(ocupacionGlobal.has(`${materiaClave}|${dia}|${slot}`)) return false;
-
-    // regla de ciclos adyacentes (si hay dato)
     if(ciclo!=null){
-      const key = `${dia}|${slot}`;
-      const set = porCiclo.get(key) || new Set();
-      for(const c of set){
-        if(Math.abs(c - ciclo) === 1) return false; // adyacentes no coinciden
-      }
+      const set = porCiclo.get(`${dia}|${slot}`) || new Set();
+      for(const c of set){ if(Math.abs(c - ciclo) === 1) return false; }
     }
     return true;
-  }
-
-  function colocar(docente, materiaClave, dia, slot, ciclo){
-    // actualizar estados
+  };
+  const colocar = (docente, materiaClave, dia, slot, ciclo) => {
     const mapDia = usoDocente.get(docente) || new Map();
-    mapDia.set(dia, (mapDia.get(dia)||0) + 1);
-    usoDocente.set(docente, mapDia);
-
+    mapDia.set(dia,(mapDia.get(dia)||0)+1); usoDocente.set(docente,mapDia);
     ocupacion.add(`${docente}|${dia}|${slot}`);
     ocupacionGlobal.add(`${materiaClave}|${dia}|${slot}`);
-
     if(ciclo!=null){
       const key = `${dia}|${slot}`;
-      const set = porCiclo.get(key) || new Set();
-      set.add(ciclo);
-      porCiclo.set(key,set);
+      const set = porCiclo.get(key) || new Set(); set.add(ciclo); porCiclo.set(key,set);
     }
-  }
+  };
 
-  // ordenar items: menos opciones primero (heurística)
+  // heurística: menos opciones primero
   items.sort((a,b)=>{
-    const asz = a.diasDisponibles.length * a.slotsDisponibles.length;
-    const bsz = b.diasDisponibles.length * b.slotsDisponibles.length;
+    const asz = (a.diasDisponibles.length||5)*(a.slotsDisponibles.length||5);
+    const bsz = (b.diasDisponibles.length||5)*(b.slotsDisponibles.length||5);
     return asz - bsz;
   });
 
   for(const it of items){
-    const materiaClave = normalize(it.materia || "(SIN MATERIA)");
-    // paralelos requeridos
-    const total = Math.max(1, Math.ceil((it.estudiantes||0) / 26));
+    const materiaClave = normalize(it.materia||"(SIN MATERIA)");
+
+    const totalParalelos = Math.max(1, Math.ceil((it.estudiantes||0)/26));
     const tamanios = [];
-    let restantes = it.estudiantes||0;
-    for(let p=0;p<total;p++){
-      const size = Math.min(26, Math.max(0, restantes));
+    let rest = it.estudiantes||0;
+    for(let p=0;p<totalParalelos;p++){
+      const size = Math.min(26, Math.max(0, rest));
       tamanios.push(size || (p===0?0:size));
-      restantes = Math.max(0, restantes - 26);
+      rest = Math.max(0, rest-26);
     }
 
-    // construir listas definitivas de días/slots válidos segun restricción de días
-    const diasValidos = it.diasDisponibles.filter(d => !it.restrDias.has(d));
-    const slotsValidos = it.slotsDisponibles.length? it.slotsDisponibles : [...TIME_SLOTS];
+    const diasValidos = (it.diasDisponibles||[]).filter(d => !it.restrDias.has(d));
+    const slotsValidos = (it.slotsDisponibles && it.slotsDisponibles.length) ? it.slotsDisponibles : [...TIME_SLOTS];
 
-    // para cada paralelo, buscar el primer hueco válido
-    for(let idx=0; idx<total; idx++){
-      let asignado = false;
+    for(let idx=0; idx<totalParalelos; idx++){
+      let asignado=false;
       outer:
-      for(const d of diasValidos){
+      for(const d of diasValidos.length?diasValidos:[...DAYS]){
         for(const s of slotsValidos){
-          if(puedeColocar(it.docente, materiaClave, d, s, it.ciclo)){
+          if(puede(it.docente, materiaClave, d, s, it.ciclo)){
             colocar(it.docente, materiaClave, d, s, it.ciclo);
-            resultados.push({
-              docente: it.docente,
-              materia: it.materia,
-              estudiantes: tamanios[idx] || it.estudiantes || 0,
-              paralelo: (idx+1).toString().padStart(2,'0'),
-              dia: d,
-              hora: s,
-              assigned: true
-            });
-            asignado = true;
-            break outer;
+            resultados.push({docente:it.docente, materia:it.materia, estudiantes:tamanios[idx]||it.estudiantes||0,
+              paralelo:(idx+1).toString().padStart(2,'0'), dia:d, hora:s, assigned:true});
+            asignado=true; break outer;
           }
         }
       }
       if(!asignado){
-        // si no hay hueco, registrar en conflicto
-        resultados.push({
-          docente: it.docente,
-          materia: it.materia,
-          estudiantes: tamanios[idx] || it.estudiantes || 0,
-          paralelo: (idx+1).toString().padStart(2,'0'),
-          dia: "SIN ESPACIO",
-          hora: "—",
-          assigned: false
-        });
+        resultados.push({docente:it.docente, materia:it.materia, estudiantes:tamanios[idx]||it.estudiantes||0,
+          paralelo:(idx+1).toString().padStart(2,'0'), dia:"SIN ESPACIO", hora:"—", assigned:false});
       }
     }
   }
-
   return resultados;
 }
 
-/* ================== Render ================== */
+/* ========== Render ========== */
 function renderTabla(rows){
-  const tbody = document.querySelector("#tabla tbody");
-  tbody.innerHTML = "";
+  const tbody = document.querySelector("#tabla tbody"); tbody.innerHTML="";
   let count=0;
   for(const r of rows){
-    const tr = document.createElement("tr");
-    tr.className = r.assigned ? "assigned" : "conflict";
-    const td = s => {
-      const x = document.createElement("td");
-      x.textContent = s;
-      return x;
-    };
-    tr.append(
-      td(r.docente||""), td(r.materia||""), td(r.estudiantes??0),
-      td(r.paralelo||""), td(r.dia||""), td(r.hora||"")
-    );
-    tbody.appendChild(tr);
-    count++;
+    const tr=document.createElement("tr"); tr.className = r.assigned ? "assigned" : "conflict";
+    const td = v => { const x=document.createElement("td"); x.textContent = v; return x; };
+    tr.append(td(r.docente||""), td(r.materia||""), td(r.estudiantes??0), td(r.paralelo||""), td(r.dia||""), td(r.hora||""));
+    tbody.appendChild(tr); count++;
   }
   document.getElementById("resumen").textContent = `${count} filas`;
 }
 
-/* ================== Flujo principal ================== */
+/* ========== Flujo ========== */
 document.getElementById("btnProcesar").addEventListener("click", async ()=>{
-  const input = document.getElementById("fileInput");
-  if(!input.files.length){
-    alert("Seleccione al menos un archivo Excel.");
-    return;
+  try{
+    const input = document.getElementById("fileInput");
+    if(!input.files.length){ alert("Seleccione al menos un archivo Excel."); return; }
+    const raw = await readAllFiles(input.files);
+    if(!raw.length){ alert("No se encontraron filas en los archivos."); return; }
+    const items = raw.map(mapRow).filter(r => r.docente && r.materia);
+    if(!items.length){ alert("Las columnas requeridas no se encontraron. Verifique encabezados."); return; }
+    const resultado = planificar(items);
+    renderTabla(resultado);
+  }catch(err){
+    console.error(err);
+    alert("Ocurrió un error al procesar el archivo. Revise la consola para más detalles.");
   }
-  // leer
-  const raw = await readAllFiles(input.files);
-  if(!raw.length){
-    alert("No se encontraron filas en los archivos.");
-    return;
-  }
-  // normalizar filas válidas
-  const items = raw.map(mapRow).filter(r => r.docente && r.materia);
-  const resultado = planificar(items);
-  renderTabla(resultado);
 });
 </script>
 </body>
