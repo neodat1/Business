@@ -3,404 +3,658 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>UIDE – Planificación Estudiante</title>
-
-<!-- SheetJS (XLSX) para leer archivos Excel externos -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
+<title>Matriz Académica – UIDE (matching estricto + restricciones por semestre)</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
-  :root{
-    --azul:#04136C; --mostaza:#DE912E; --vino:#862B39; --celeste:#9CBEE3; --verde:#8A9520;
-    --bg:#f7f8fb; --ink:#1b1f3a; --muted:#667085;
-  }
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
-  header{
-    background:#fff; border-bottom:4px solid var(--azul);
-    display:flex; align-items:center; gap:16px; padding:12px 18px;
-    position:sticky; top:0; z-index:5;
-  }
-  header img{height:44px; width:auto; object-fit:contain; image-rendering:-webkit-optimize-contrast}
-  header .title{
-    display:flex; flex-direction:column; line-height:1.1;
-  }
-  header .title h1{margin:0;font-size:18px;font-weight:800;color:var(--azul); letter-spacing:.2px}
-  header .title span{font-size:12px;color:var(--muted)}
-  .bar{
-    display:flex; gap:12px; flex-wrap:wrap; align-items:center; padding:14px 18px;
-  }
-  .card{
-    background:#fff; border:1px solid #e7e9f0; border-radius:14px; box-shadow:0 1px 3px rgba(4,19,108,.06);
-  }
-  .panel{padding:14px 16px}
-  .hint{font-size:12px;color:var(--muted)}
-  .btn{
-    appearance:none; border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer;
-    background:var(--azul); color:#fff;
-  }
-  .btn.alt{background:var(--mostaza); color:#1b1b1b}
-  .tag{display:inline-block; font-size:11px; padding:3px 8px; border-radius:999px; background:var(--celeste); color:#0d274f; font-weight:700}
-  .grid{
-    padding:16px 18px 24px;
-  }
-  table{width:100%; border-collapse:separate; border-spacing:0; font-size:14px}
-  thead th{
-    position:sticky; top:64px; z-index:2;
-    background:#fff; color:var(--azul); font-weight:800; text-transform:uppercase; letter-spacing:.3px;
-    border-bottom:2px solid var(--azul);
-    padding:10px 8px; text-align:left;
-  }
-  tbody td{padding:10px 8px; border-bottom:1px solid #edf0f6}
-  tbody tr:hover{background:#fafcff}
-  .pill{font-weight:700; padding:4px 8px; border-radius:999px; display:inline-block}
-  .p-azul{background:rgba(4,19,108,.08); color:var(--azul)}
-  .p-vino{background:rgba(134,43,57,.10); color:var(--vino)}
-  .p-mostaza{background:rgba(222,145,46,.18); color:#6a3f00}
-  .p-verde{background:rgba(138,149,32,.14); color:#3a4a00}
-  .p-celeste{background:rgba(156,190,227,.25); color:#0d274f}
-  .status{font-size:12px;color:var(--muted)}
-  .legend{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-  .legend .chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#2b2f44}
-  .legend .dot{width:10px; height:10px; border-radius:50%}
-  .dot.azul{background:var(--azul)}
-  .dot.mostaza{background:var(--mostaza)}
-  .dot.vino{background:var(--vino)}
-  .dot.celeste{background:var(--celeste)}
-  .dot.verde{background:var(--verde)}
-  .wrap{max-width:1240px; margin:0 auto}
-  .error{color:#b00020; font-weight:700}
-  .ok{color:#1a7f37; font-weight:700}
-  .scroll{overflow:auto}
-  @media (max-width:900px){
-    header .title h1{font-size:16px}
-    thead th{top:92px}
-  }
+:root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520;--bg:#f6f7fb;--ink:#111}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;align-items:center;gap:16px;padding:16px;background:#fff;color:#04136C;border-bottom:4px solid var(--mostaza);box-shadow:0 1px 6px rgba(0,0,0,.06)}
+header img{height:56px;width:auto}
+header h1{margin:0;font-size:20px;font-weight:700}
+.wrapper{max-width:1250px;margin:24px auto;padding:0 16px}
+.card{background:#fff;border:1px solid #e2e5ef;border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px}
+
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+label{font-size:13px;font-weight:700;color:#04136C;display:block;margin-bottom:6px}
+input[type="file"], select, input[type="text"]{width:100%;padding:10px;border:1px solid #ccd2e3;border-radius:12px;background:#fafbff}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+button{border:0;padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;transition:.2s}
+button:hover{opacity:.92}
+.primary{background:var(--azul);color:#fff}
+.accent{background:var(--mostaza);color:#1b1200}
+.muted{background:#fff;color:var(--azul);border:2px solid var(--azul)}
+.badge{display:inline-block;padding:6px 12px;border-radius:999px;background:#fff7f7;color:#7a0d18;border:1px solid #ebb;font-size:13px}
+
+.scroll{overflow:auto;max-height:70vh;border:1px solid #e2e5ef;border-radius:14px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+thead th{position:sticky;top:0;background:#fff;border-bottom:2px solid var(--celeste);padding:10px 8px;text-align:left;color:#06114a;z-index:1;user-select:none;vertical-align:middle}
+thead th .arrow{font-size:11px;opacity:.65;margin-left:6px}
+tbody td{border-bottom:1px solid #eef1f6;padding:8px;vertical-align:middle}
+tbody tr:nth-child(odd){background:#fbfdff}
+
+#matriz th:nth-child(n+5),#matriz td:nth-child(n+5){text-align:center}
+#matriz th:nth-child(-n+4),#matriz td:nth-child(-n+4){text-align:left}
+.chips{display:flex;flex-direction:column;gap:6px;justify-content:center;align-items:center}
+.chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 10px;border:1px solid rgba(0,0,0,.05);font-weight:700;font-size:12px;min-height:22px}
+
+.small{font-size:12px;opacity:.8}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;padding:2px 6px}
+.tag{display:inline-flex;align-items:center;gap:6px;background:#f7f7ff;border:1px solid #dfe3ff;color:#14206b;border-radius:999px;padding:2px 10px;margin:3px 6px 0 0}
+.tag button{all:unset;cursor:pointer;font-weight:900}
 </style>
 </head>
 <body>
-  <header class="card">
-    <img src="UIDE-Ecuador.png" alt="UIDE Ecuador" />
-    <div class="title">
-      <h1>Planificación Estudiante – Matriz de Asignación</h1>
-      <span>Carga su(s) Excel y genere la planificación sin cruces. Encabezado con fondo blanco.</span>
-    </div>
-  </header>
+<header>
+  <img src="UIDE-Ecuador.png" alt="UIDE Ecuador">
+  <h1>Matriz de planificación académica</h1>
+</header>
 
-  <div class="wrap">
-    <div class="bar card panel">
-      <input id="fileInput" type="file" accept=".xlsx,.xls" multiple />
-      <button id="btnProcesar" class="btn">Procesar Excel</button>
-      <span id="status" class="status">Listo para procesar.</span>
-      <div class="legend" style="margin-left:auto">
-        <span class="chip"><span class="dot azul"></span> Docente</span>
-        <span class="chip"><span class="dot mostaza"></span> Materia</span>
-        <span class="chip"><span class="dot vino"></span> Paralelo</span>
-        <span class="chip"><span class="dot verde"></span> Día</span>
-        <span class="chip"><span class="dot celeste"></span> Hora</span>
-      </div>
+<div class="wrapper">
+  <div class="card">
+    <div class="row">
+      <div><label>0. Mallas.xlsx</label><input id="fileMalla" type="file" accept=".xlsx,.xls" /></div>
+      <div><label>1. Docentes.xlsx</label><input id="fileDocentes" type="file" accept=".xlsx,.xls" /></div>
+      <div><label>2. Restricciones.xlsx</label><input id="fileRest" type="file" accept=".xlsx,.xls" /></div>
     </div>
-
-    <div class="grid card panel scroll">
-      <div class="hint" style="margin-bottom:8px">
-        Columnas esperadas (en el Excel): <b>DOCENTE, MATERIA, DIA DISPONIBLE, HORA DISPONIBLE, ESTUDIANTES</b>. Opcionales: <b>RESTRICCIONES</b> (por ej. <i>LUNES;MIÉRCOLES</i>), <b>CICLO</b>.
-      </div>
-      <table id="tabla">
-        <thead>
-          <tr>
-            <th>DOCENTE</th>
-            <th>MATERIA</th>
-            <th>ESTUDIANTES</th>
-            <th>PARALELO</th>
-            <th>DÍA</th>
-            <th>HORA</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-
-    <div class="panel" style="opacity:.9">
-      <span class="hint">Reglas: máximo 2 asignaturas/día por docente; evita cruces entre paralelos; si >26 estudiantes, se subdivide; respeta restricciones; bloques: 07–10, 10–13, 13–16, 16–19, 19–22.</span>
+    <div class="actions">
+      <button id="btnProcesar" class="primary">Procesar</button>
+      <button id="btnXLSX" class="accent" disabled>Descargar XLSX</button>
+      <button id="btnLimpiar" class="muted">Limpiar</button>
+      <span id="resumen" class="badge" style="display:none"></span>
     </div>
   </div>
 
+  <!-- === NUEVO: Panel de restricciones manuales por semestre === -->
+  <div class="card" id="panelManual" style="display:none">
+    <h3 style="margin:0 0 10px 0">Restricciones por semestre</h3>
+    <div class="row" style="grid-template-columns:2fr 2fr 1fr;">
+      <div>
+        <label>Semestre (o <span class="kbd">GLOBAL</span>)</label>
+        <input id="inpSemManual" list="dlSemestres" placeholder="Escribe PRIMERO, TERCERO, DÉCIMO… o GLOBAL" />
+        <datalist id="dlSemestres"></datalist>
+        <div class="small">Sugerencias detectadas desde la malla (CICLO MALLA) + opción GLOBAL.</div>
+      </div>
+      <div>
+        <label>Días (marca uno o varios)</label>
+        <div class="grid" id="gridDias"></div>
+      </div>
+      <div>
+        <label>Franjas (marca una o varias)</label>
+        <div class="grid" id="gridSlots"></div>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:12px">
+      <button id="btnAddRestriccion" class="muted">Agregar</button>
+      <button id="btnApplyReprog" class="accent">Aplicar y re-programar</button>
+    </div>
+    <div id="listaManual" style="margin-top:6px"></div>
+    <div class="small" style="margin-top:6px">Si marcas <b>días</b> y <b>franjas</b> a la vez, se bloquean las <b>combinaciones día-franja</b> (pares). Si marcas solo días o solo franjas, se bloquean <i>todos</i> esos días o <i>todas</i> esas franjas.</div>
+  </div>
+
+  <div class="card">
+    <div class="scroll">
+      <table id="matriz">
+        <thead>
+          <tr>
+            <th>DOCENTE <span class="arrow">↕</span></th>
+            <th>TITULO ACADÉMICO <span class="arrow">↕</span></th>
+            <th>DEDICACIÓN <span class="arrow">↕</span></th>
+            <th>MATERIA <span class="arrow">↕</span></th>
+            <th>CÓDIGO ANTHOLOGY <span class="arrow">↕</span></th>
+            <th>CARRERAS QUE COMPARTEN <span class="arrow">↕</span></th>
+            <th>MALLA <span class="arrow">↕</span></th>
+            <th>PRE-REQUISITO <span class="arrow">↕</span></th>
+            <th>CODIGO <span class="arrow">↕</span></th>
+            <th>HORAS TEÓRICAS <span class="arrow">↕</span></th>
+            <th>HORAS PRÁCTICAS <span class="arrow">↕</span></th>
+            <th>HORAS AUTÓNOMAS <span class="arrow">↕</span></th>
+            <th>CREDITOS <span class="arrow">↕</span></th>
+            <th>CAMPO DE FORMACIÓN <span class="arrow">↕</span></th>
+            <th>CICLO MALLA <span class="arrow">↕</span></th>
+            <th>Nº ORDEN EN LA MALLA <span class="arrow">↕</span></th>
+            <th>ESTUDIANTES <span class="arrow">↕</span></th>
+            <th>PARALELO <span class="arrow">↕</span></th>
+            <th>DIA <span class="arrow">↕</span></th>
+            <th>HORA <span class="arrow">↕</span></th>
+            <th>MODALIDAD <span class="arrow">↕</span></th>
+            <th>Nro. HORAS <span class="arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <script>
-(() => {
-  const SLOTS = [
-    {label:"07:00-10:00", start:7, end:10},
-    {label:"10:00-13:00", start:10, end:13},
-    {label:"13:00-16:00", start:13, end:16},
-    {label:"16:00-19:00", start:16, end:19},
-    {label:"19:00-22:00", start:19, end:22},
-  ];
-  const DAYS = ["LUNES","MARTES","MIÉRCOLES","JUEVES","VIERNES"];
+/* ===== Parámetros ===== */
+const DIAS=['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES'];
+const SLOTS=['07:00–10:00','10:00–13:00','13:00–16:00','16:00–19:00','19:00–22:00'];
+const CYCLE_INDEX={'PRIMERO':1,'SEGUNDO':2,'TERCERO':3,'CUARTO':4,'QUINTO':5,'SEXTO':6,'SÉPTIMO':7,'SEPTIMO':7,'OCTAVO':8,'NOVENO':9,'DÉCIMO':10,'DECIMO':10};
+const ABC="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const STOP=new Set(['DE','DEL','LA','LOS','LAS','EN','PARA','CON','Y','E','EL','AL','A','II','III','IV','VI','VII','VIII','IX','X']);
+const PALETA=['#04136C','#DE912E','#862B39','#9CBEE3','#8A9520'];
 
-  const $ = sel => document.querySelector(sel);
-  const status = msg => { const s=$("#status"); s.textContent=msg; };
+/* ======= Estado Global ======= */
+let gAgg=null,gIdxDoc=null,gIdxRest=null,gFilasBase=null,gAsignadas=null;
+let gSemestresDetectados=[];                 // sugerencias UI
+let gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};   // GLOBAL
+let gManualSem=new Map();                    // Map(SEMESTRE -> {dias:Set, slots:Set, pairs:Set})
 
-  function parseHourLabelToSlot(label){
-    if(!label) return null;
-    const t = label.toString().trim().toUpperCase();
-    // Formatos soportados:
-    // "07:00 A 22:00" | "10:00-13:00" | "13:00" | "07:00 a 10:00"
-    const mRange = t.match(/(\d{1,2}):?(\d{2})?\s*(?:A|-|–|—|A)\s*(\d{1,2}):?(\d{2})?/);
-    if(mRange){
-      const sh = parseInt(mRange[1],10);
-      const eh = parseInt(mRange[3],10);
-      // Si abarca todo el día, devolver todos los slots
-      if(sh<=7 && eh>=22) return SLOTS.map(s=>s.label);
-      // Si cruza varios, devolver los que caben en el rango
-      return SLOTS.filter(s => s.start>=sh && s.end<=eh).map(s=>s.label);
+/* ===== Utilidades ===== */
+const nz=v=>(v===undefined||v===null)?'':v;
+const norm=v=>nz(v).toString().replace(/\s+/g,' ').trim();
+const upper=v=>norm(v).toUpperCase();
+const rmDiac=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const cicloIdx=c=>CYCLE_INDEX[upper(c)]??99;
+
+function colorDe(key){const k=upper(key||'__'); if(!window.__colors) window.__colors=new Map();
+  if(!window.__colors.has(k)){const c=PALETA[window.__colors.size%PALETA.length];window.__colors.set(k,c);} return window.__colors.get(k);
+}
+function readWB(file){return file.arrayBuffer().then(buf=>XLSX.read(buf,{type:'array'}));}
+function sheetToJSONAuto(wb, prefer=[""]){
+  let target=null, lc=s=>s.toLowerCase();
+  for(const name of wb.SheetNames){const ln=lc(name); if(prefer.some(k=>ln.includes(lc(k)))){target=name;break;}}
+  if(!target){
+    let max=0;
+    for(const name of wb.SheetNames){
+      const ws=wb.Sheets[name]; const ref=ws['!ref']; if(!ref) continue;
+      const r=XLSX.utils.decode_range(ref); const rows=r.e.r-r.s.r+1;
+      if(rows>max){max=rows; target=name;}
     }
-    const mSingle = t.match(/(\d{1,2}):?(\d{2})?/);
-    if(mSingle){
-      const h = parseInt(mSingle[1],10);
-      const slot = SLOTS.find(s => h>=s.start && h<s.end);
-      return slot ? [slot.label] : null;
+  }
+  const ws=wb.Sheets[target];
+  return ws?XLSX.utils.sheet_to_json(ws,{defval:""}):[];
+}
+function clearTable(){document.querySelector('#matriz tbody').innerHTML='';}
+
+/* ===== UI pequeñas ===== */
+function chipsHTML(pares,{dedupe=true}={}){
+  const esc=s=>String(s).replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
+  const vals=[...new Set(pares.map(p=>String(p.val||'').trim()))].filter(Boolean);
+  let render=pares;
+  if(dedupe && vals.length===1){ render=[{car:pares[0]?.car||'__',val:vals[0]}]; }
+  return `<div class="chips">`+render.map(p=>{
+    const col=colorDe(p.car||'__'); const style=`background:${col}10;border:1px solid ${col}33;color:${col};`;
+    const val=(p.val&&String(p.val).trim()!=='')?p.val:'—';
+    return `<span class="chip" style="${style}">${esc(val)}</span>`;
+  }).join('')+`</div>`;
+}
+function addRow(row){
+  const tb=document.querySelector('#matriz tbody'); const tr=document.createElement('tr');
+  const simple=v=>{const td=document.createElement('td'); td.textContent=nz(v); return td;};
+  tr.appendChild(simple(row.DOCENTE));
+  tr.appendChild(simple(row.TITULO_ACADEMICO));
+  tr.appendChild(simple(row.DEDICACION));
+  tr.appendChild(simple(row.MATERIA));
+  tr.appendChild(simple(row.CODIGO_ANTHOLOGY));
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCarreras,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsMalla,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsPrereq,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCodigo,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsHT,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsHP,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsHA,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCred,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCampo,{dedupe:false}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsCiclo,{dedupe:true}); return td;})());
+  tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsOrden,{dedupe:false}); return td;})());
+  tr.appendChild(simple(row.ESTUDIANTES));
+  tr.appendChild(simple(row.PARALELO));
+  tr.appendChild(simple(row.DIA));
+  tr.appendChild(simple(row.HORA));
+  tr.appendChild(simple(row.MODALIDAD));
+  tr.appendChild(simple(row.NRO_HORAS));
+  tb.appendChild(tr);
+}
+
+/* Canon materia */
+function romanToInt(w){const m={I:1,V:5,X:10,L:50,C:100,D:500,M:1000};let s=w.toUpperCase();if(!/^[IVXLCDM]+$/.test(s))return null;let n=0;for(let i=0;i<s.length;i++){const v=m[s[i]],u=m[s[i+1]]||0;n+=v<u?-v:v;}return n;}
+function canonMateria(s){
+  let t=upper(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  t=t.replace(/&/g,' Y ').replace(/[_\-.,()]/g,' ').replace(/\s+/g,' ').trim();
+  t=t.replace(/\bMATEMATICAS?\b/g,'MATEMATICA');
+  t=t.split(' ').map(w=>{const n=romanToInt(w);return (n&&n<=20)?String(n):w;}).join(' ');
+  const toks=t.split(' ').filter(w=>w&&!STOP.has(w)); return toks.join(' ').trim();
+}
+
+/* ===== Malla ===== */
+function buildMallaAggregate(rows){
+  const agg=new Map();
+  const firstVal=(...keys)=>r=>{for(const k of keys){if(r[k]!==undefined&&r[k]!==null&&String(r[k]).trim()!=="")return String(r[k]);}return "";}
+  const getEst   = firstVal('ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES','NRO ESTUDIANTES','# ESTUDIANTES');
+  const getMat   = firstVal('MATERIA','ASIGNATURA');
+  const getCar   = firstVal('CARRERA');
+  const getMalla = firstVal('MALLA','PLAN','PLAN/MALLA','PLAN DE ESTUDIOS');
+  const getPre   = firstVal('PRERREQUISITO','PRE-REQUISITO','PRE REQUISITO','PRERREQUISITOS','PRE');
+  const getCod   = firstVal('CÓDIGO','CODIGO','COD','COD ASIG','CODIGO MATERIA');
+  const getAnth  = firstVal('CÓDIGO ANTHOLOGY','CODIGO ANTHOLOGY','ANTHOLOGY','COD ANTHOLOGY');
+  const getHT    = firstVal('HORAS TEÓRICAS','HORAS TEORICAS','HT','H.TEORICAS');
+  const getHP    = firstVal('HORAS PRÁCTICAS','HORAS PRACTICAS','HP','H.PRACTICAS');
+  const getHA    = firstVal('HORAS AUTÓNOMAS','HORAS AUTONOMAS','HA','H.AUTONOMAS');
+  const getCred  = firstVal('CRÉDITOS','CREDITOS','CR','CR.','CRÉDITO');
+  const getCampo = firstVal('CAMPO DE FORMACIÓN','CAMPO','CAMPO FORMACION');
+  const getCiclo = firstVal('CICLO','CICLO MALLA','NIVEL','SEMESTRE');
+  const getOrden = firstVal('Nº ORDEN EN LA MALLA','NUMERO DE ORDEN EN LA MALLA','N ORDEN EN LA MALLA','ORDEN','NRO ORDEN');
+
+  for(const r of rows){
+    const estRaw = getEst(r);
+    if(estRaw!=="" && !Number.isNaN(Number(estRaw)) && Number(estRaw)<=0) continue;
+    const materia=norm(getMat(r)); if(!materia) continue;
+    const k=canonMateria(materia);
+    if(!agg.has(k)){
+      agg.set(k,{key:k,materiaOrig:materia,carreras:new Set(),mallas:new Set(),mallaByCar:new Map(),
+        prereqs:new Map(),codigos:new Map(),anth:new Map(),hteor:new Map(),hprac:new Map(),hauton:new Map(),
+        creditos:new Map(),campo:new Map(),ciclo:new Map(),norden:new Map(),estudiantes:new Map()});
     }
-    // Palabras tipo "TODO" -> todos los slots
-    if(/TODO|COMPLETO|CUALQUIER/.test(t)) return SLOTS.map(s=>s.label);
-    return null;
+    const a=agg.get(k), car=norm(getCar(r));
+    a.carreras.add(car);
+    const put=(mp,val)=>{if(val!=='') mp.set(car,norm(val));};
+    const vMalla=norm(getMalla(r)); if(vMalla){ a.mallas.add(vMalla); a.mallaByCar.set(car,vMalla); }
+    put(a.prereqs, getPre(r));  put(a.codigos, getCod(r)); put(a.anth, getAnth(r));
+    put(a.hteor, getHT(r));     put(a.hprac, getHP(r));    put(a.hauton, getHA(r));
+    put(a.creditos,getCred(r)); put(a.campo, getCampo(r)); put(a.ciclo, getCiclo(r));
+    put(a.norden, getOrden(r)); put(a.estudiantes, estRaw);
   }
+  return agg;
+}
+function sumEstudiantes(mp){ let s=0; mp.forEach(v=>{const n=Number(v); if(!Number.isNaN(n)) s+=n;}); return s; }
+function firstNonEmptyFrom(mp){ for(const v of mp.values()){ if(String(v).trim()!=='') return String(v); } return ''; }
+function perCarFill(mp,carreras){ const def=firstNonEmptyFrom(mp); return carreras.map(c=>({car:c,val:(mp.get(c)??def)||''})); }
 
-  function parseDays(text){
-    if(!text) return [];
-    let t = text.toString().toUpperCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
-    // Soporta "LUNES A VIERNES", "MARTES Y JUEVES", "LUNES,MIERCOLES,VIERNES"
-    if(/LUNES\s*A\s*VIERNES/.test(t)) return [...DAYS];
-    t = t.replace(/Y/g,",").replace(/\s+/g,"");
-    const parts = t.split(/[;,]/).filter(Boolean);
-    const map = {"LUNES":"LUNES","MARTES":"MARTES","MIERCOLES":"MIÉRCOLES","MIERCOLES":"MIÉRCOLES","JUEVES":"JUEVES","VIERNES":"VIERNES"};
-    const out=[];
-    for(const p of parts){
-      const key = p.replace("MIERCOLES","MIÉRCOLES");
-      if(DAYS.includes(key)) out.push(key);
-      else if(map[p]) out.push(map[p]);
-    }
-    // Quitar duplicados manteniendo orden original DAYS
-    return DAYS.filter(d => out.includes(d));
+/* ===== Docentes (índice estricto) ===== */
+function buildDocentesIndexStrict(rows){
+  const byCode=new Map(); const byCanon=new Map(); const everyone=[];
+  for(const r of rows){
+    const docente=norm(r['DOCENTE']);
+    const materia=norm(r['MATERIA']||r['ASIGNATURA']);
+    if(!docente || !materia) continue;
+
+    const codigo=upper(norm(r['CÓDIGO']||r['CODIGO']||'')); const carrera=norm(r['CARRERA']||'');
+    const malla=norm(r['MALLA']||''); const modalidad=norm(r['Modalidad']||r['MODALIDAD']||'');
+    const titulo=norm(r['TÍTULO ACADÉMICO']||r['TITULO ACADÉMICO']||''); const dedic=norm(r['DEDICACIÓN']||r['DEDICACION']||'');
+    const canon=canonMateria(materia);
+    const item={ DOCENTE:docente, TITULO:titulo, DEDIC:dedic, MODALIDAD:modalidad,
+                 MATERIA_ORIG:materia, CANON:canon, CODIGO:codigo, CARRERA:carrera, MALLA:malla };
+    if(codigo){ if(!byCode.has(codigo)) byCode.set(codigo,[]); byCode.get(codigo).push(item); }
+    if(canon){ if(!byCanon.has(canon)) byCanon.set(canon,[]); byCanon.get(canon).push(item); }
+    everyone.push(item);
   }
+  return {byCode,byCanon,all:everyone};
+}
+function strictMatchDocentes(mallaInfo, docentesIdx){
+  const codigoGlobal = firstNonEmptyFrom(mallaInfo.codigos) || '';
+  let cand = [];
+  if(codigoGlobal){ cand = docentesIdx.byCode.get(upper(norm(codigoGlobal))) || []; }
+  if(cand.length===0){ cand = docentesIdx.byCanon.get(mallaInfo.key) || []; }
+  if(!cand.length) return [];
 
-  function parseRestrictions(text){
-    if(!text) return [];
-    // ejemplo "LUNES;MIÉRCOLES"
-    return parseDays(text);
-  }
+  const carreras=[...mallaInfo.carreras];
+  const filtered = cand.filter(d=>{
+    let ok=true;
+    if(d.CARRERA){ ok = carreras.some(c=>upper(c)===upper(d.CARRERA)); }
+    if(ok && d.MALLA){ const m=mallaInfo.mallaByCar.get(d.CARRERA); if(m) ok = upper(m)===upper(d.MALLA); }
+    return ok;
+  });
+  return filtered.length?filtered:cand;
+}
 
-  function splitParallels(students){
-    const n = parseInt(students||0,10);
-    if(isNaN(n) || n<=26) return 1;
-    return Math.ceil(n/26);
-  }
-
-  function neighborCyclesConflict(c1, c2){
-    // Si no hay ciclos, no aplica
-    if(!c1 || !c2) return false;
-    const a = parseInt(c1,10), b = parseInt(c2,10);
-    if(Number.isNaN(a) || Number.isNaN(b)) return false;
-    // Conflictos entre (1 con 2 y 3), (2 con 3 y 4), etc.
-    const neighbors = new Set([a+1,a+2,a-1,a-2]);
-    return neighbors.has(b);
-  }
-
-  function normalizeRow(r){
-    // Admite múltiples encabezados equivalentes
-    const get = (keys) => {
-      for(const k of keys){
-        if(r[k]!==undefined && r[k]!==null) return String(r[k]).trim();
-        // intentar sin acentos y mayúsculas
-        const found = Object.keys(r).find(h => h.toString().toUpperCase().normalize("NFD").replace(/\p{Diacritic}/gu,"") === k.toUpperCase().normalize("NFD").replace(/\p{Diacritic}/gu,""));
-        if(found) return String(r[found]).trim();
+/* ===== Restricciones (archivo) ===== */
+function extractDays(text){
+  if(!text) return [];
+  const t=upper(text); const out=new Set();
+  DIAS.forEach(d=>{ if(t.includes(upper(d))) out.add(d); });
+  const m=/\b(LUNES|MARTES|MI[ÉE]RCOLES|JUEVES|VIERNES)\s*A\s*(LUNES|MARTES|MI[ÉE]RCOLES|JUEVES|VIERNES)\b/.exec(t);
+  if(m){ const idx=a=>DIAS.findIndex(x=>upper(x)===upper(a)); const ia=idx(m[1]), ib=idx(m[2]); if(ia>=0&&ib>=ia){for(let i=ia;i<=ib;i++) out.add(DIAS[i]);}}
+  return [...out];
+}
+function extractSlots(text){
+  if(!text) return [];
+  let t=upper(text).replace(/–/g,'-').replace(/\s+/g,'');
+  const e=[...t.matchAll(/(\d{1,2}:\d{2})\s*[-A]\s*(\d{1,2}:\d{2})/g)];
+  if(!e.length) return [];
+  const toMin=hhmm=>{const [h,m]=hhmm.split(':').map(x=>+x); return h*60+m;}
+  const wanted=[]; for(const m of e){ const a=toMin(m[1]), b=toMin(m[2]);
+    if(a<b){ SLOTS.forEach(s=>{const [sa,sb]=s.replace('–','-').split('-');const am=toMin(sa), bm=toMin(sb); if(am>=a && bm<=b) wanted.push(s);});}}
+  return [...new Set(wanted)];
+}
+function buildRestriccionesIndex(rows){
+  const byDoc=new Map(); const global={dias:new Set(),slots:new Set(),pairs:new Set()};
+  const likely=['DOCENTE','Profesor','Nombre','Día','DIA','DÍA','HORA','HORARIO','NO DISPONIBLE','RESTRICCION','RESTRICCIÓN','BLOQUEO','DETALLE','OBSERVACIONES'];
+  for(const r of rows){
+    let d=''; for(const k of likely){ if(k in r && /docente|profesor|nombre/i.test(k)){ d=norm(r[k]); break; } }
+    const target = d ? (byDoc.get(d) || byDoc.set(d,{dias:new Set(),slots:new Set(),pairs:new Set()}).get(d)) : global;
+    const dia  = norm(r['DIA']||r['DÍA']||''); const hora = norm(r['HORA']||r['HORARIO']||'');
+    if(dia && !hora){ extractDays(dia).forEach(x=>target.dias.add(x)); }
+    if(hora && !dia){ extractSlots(hora).forEach(x=>target.slots.add(upper(x))); }
+    if(dia && hora){ const days=extractDays(dia); const slots=extractSlots(hora); days.forEach(dd=>slots.forEach(ss=>target.pairs.add(`${dd}|${upper(ss)}`))); }
+    for(const k of likely){
+      if(r[k]){ const days=extractDays(r[k]); const slots=extractSlots(r[k]);
+        if(days.length && !slots.length){ days.forEach(dd=>target.dias.add(dd)); }
+        if(slots.length && !days.length){ slots.forEach(ss=>target.slots.add(upper(ss))); }
+        if(days.length && slots.length){ days.forEach(dd=>slots.forEach(ss=>target.pairs.add(`${dd}|${upper(ss)}`))); }
       }
-      return "";
+    }
+  }
+  return {byDoc,global};
+}
+
+/* ===== Ensamble y asignación ===== */
+function abrevCarrera(name){
+  const s=rmDiac(upper(name));
+  if(/ADMINISTR/.test(s)) return 'ADM';
+  if(/MARKETING/.test(s)) return 'MKT';
+  if(/NEGOCIOS\s*INTERNACIONALES/.test(s)) return 'NNII';
+  return s;
+}
+function assembleRowsStrict(aggMalla, idxDoc){
+  const filas=[]; let faltanDoc=0; const semSet=new Set();
+  for(const [k,info] of aggMalla.entries()){
+    const totalEst=sumEstudiantes(info.estudiantes);
+    const carreras=[...info.carreras].sort((a,b)=>a.localeCompare(b,'es'));
+    const cand = strictMatchDocentes(info, idxDoc);
+    if(!cand.length) faltanDoc++;
+    const req=(totalEst>28)?2:1; const sel=cand.slice(0,req);
+    while(sel.length<req) sel.push({DOCENTE:'',TITULO:'',DEDIC:'',MODALIDAD:''});
+
+    // recolectar semestres para el panel
+    carreras.forEach(c=>{ const cyc=info.ciclo.get(c)??''; if(cyc) semSet.add(upper(cyc)); });
+
+    const packs={
+      carreras: carreras.map(c=>({car:c,val:abrevCarrera(c)})),
+      malla:    carreras.map(c=>({car:c,val:info.mallaByCar.get(c)??''})),
+      prereq:   perCarFill(info.prereqs, carreras),
+      codigo:   perCarFill(info.codigos, carreras),
+      anth:     perCarFill(info.anth, carreras),
+      ht:       perCarFill(info.hteor, carreras),
+      hp:       perCarFill(info.hprac, carreras),
+      ha:       perCarFill(info.hauton, carreras),
+      cred:     perCarFill(info.creditos, carreras),
+      campo:    perCarFill(info.campo, carreras),
+      ciclo:    perCarFill(info.ciclo, carreras),
+      orden:    perCarFill(info.norden, carreras)
     };
-    const docente = get(["DOCENTE"]);
-    const materia = get(["MATERIA"]);
-    const diaDisp = get(["DIA DISPONIBLE","DÍA DISPONIBLE","DIA","DISPONIBILIDAD DIA"]);
-    const horaDisp = get(["HORA DISPONIBLE","HORA","DISPONIBILIDAD HORA"]);
-    const estudiantes = get(["ESTUDIANTES","N° ESTUDIANTES","NUM ESTUDIANTES"]);
-    const restricciones = get(["RESTRICCIONES","DIAS NO DISPONIBLES","DÍAS NO DISPONIBLES"]);
-    const ciclo = get(["CICLO","NIVEL"]);
-    return {docente,materia,diaDisp,horaDisp,estudiantes,restricciones,ciclo};
-  }
-
-  function schedule(records){
-    const result = [];
-    const docenteDayCount = new Map(); // key: docente|día -> count
-    const taken = new Set(); // key: día|slot|docente  y día|slot|materia|paralelo
-
-    function canPlace(item, dia, slotLabel, paralelo){
-      const docenteKey = `${item.docente}|${dia}|${slotLabel}`;
-      const docenteDayKey = `${item.docente}|${dia}`;
-      if(taken.has(docenteKey)) return false;
-      const count = docenteDayCount.get(docenteDayKey)||0;
-      if(count>=2) return false;
-
-      const materiaKey = `${item.materia}|${dia}|${slotLabel}|${paralelo}`;
-      if(taken.has(materiaKey)) return false;
-
-      // Restricciones de días
-      const restr = parseRestrictions(item.restricciones);
-      if(restr.includes(dia)) return false;
-
-      return true;
-    }
-
-    function place(item, dia, slotLabel, paralelo){
-      taken.add(`${item.docente}|${dia}|${slotLabel}`);
-      taken.add(`${item.materia}|${dia}|${slotLabel}|${paralelo}`);
-      const k = `${item.docente}|${dia}`;
-      docenteDayCount.set(k, (docenteDayCount.get(k)||0)+1);
-      result.push({
-        DOCENTE:item.docente,
-        MATERIA:item.materia,
-        ESTUDIANTES:item.estudiantes||"",
-        PARALELO:`P${paralelo}`,
-        DIA:dia,
-        HORA:slotLabel
+    sel.forEach((d,j)=>{
+      filas.push({
+        DOCENTE:d.DOCENTE||'',TITULO_ACADEMICO:d.TITULO||'',DEDICACION:d.DEDIC||'',
+        MATERIA:info.materiaOrig,CODIGO_ANTHOLOGY:packs.anth.map(p=>p.val).filter(Boolean).join(' / '),
+        ESTUDIANTES:String(totalEst),PARALELO:ABC[j]??`P${j+1}`,DIA:'',HORA:'',MODALIDAD:d.MODALIDAD||'',NRO_HORAS:'',
+        _dias:d.DIAS||DIAS.slice(),_slots:d.SLOTS||SLOTS.slice(),
+        _carreras:carreras,_ciclos:carreras.map(c=>info.ciclo.get(c)??''),_key:info.key,
+        _chipsCarreras:packs.carreras,_chipsMalla:packs.malla,_chipsPrereq:packs.prereq,_chipsCodigo:packs.codigo,
+        _chipsHT:packs.ht,_chipsHP:packs.hp,_chipsHA:packs.ha,_chipsCred:packs.cred,_chipsCampo:packs.campo,
+        _chipsCiclo:packs.ciclo,_chipsOrden:packs.orden
       });
-    }
+    });
+  }
+  gSemestresDetectados=[...semSet].sort((a,b)=> (cicloIdx(a)-cicloIdx(b)) || a.localeCompare(b,'es'));
+  return {filas, faltanDoc};
+}
 
-    // Orden simple: materias con menos opciones primero para mejorar el ajuste
-    const tasks = [];
-    for(const rec of records){
-      const dias = parseDays(rec.diaDisp);
-      const horas = parseHourLabelToSlot(rec.horaDisp) || SLOTS.map(s=>s.label);
-      const options = dias.length*(horas.length||SLOTS.length);
-      const paralelos = splitParallels(rec.estudiantes);
-      tasks.push({rec, dias, horas, options, paralelos});
-    }
-    tasks.sort((a,b)=> a.options - b.options);
+/* ========= Restricciones MANUALES por SEMESTRE ========= */
+/* (Se guardan en gManualSem: Map(sem->{dias,slots,pairs}); y GLOBAL en gManualGlobal) */
 
-    for(const t of tasks){
-      const {rec, dias, horas, paralelos} = t;
-      // Si no hay días en el Excel, usar L-V
-      const days = (dias && dias.length)? dias : [...DAYS];
-      // Si no hay horas válidas, usar todos los slots
-      const slots = (horas && horas.length)? horas : SLOTS.map(s=>s.label);
+function renderManualUI(){
+  // Días
+  const gd=document.getElementById('gridDias'); gd.innerHTML='';
+  DIAS.forEach(d=>{
+    const id='d_'+d; const div=document.createElement('label'); div.style.display='flex'; div.style.gap='6px'; div.style.alignItems='center';
+    div.innerHTML=`<input type="checkbox" value="${d}" id="${id}"><span>${d}</span>`; gd.appendChild(div);
+  });
+  // Franjas
+  const gs=document.getElementById('gridSlots'); gs.innerHTML='';
+  SLOTS.forEach(s=>{
+    const id='s_'+s; const div=document.createElement('label'); div.style.display='flex'; div.style.gap='6px'; div.style.alignItems='center';
+    div.innerHTML=`<input type="checkbox" value="${s}" id="${id}"><span>${s}</span>`; gs.appendChild(div);
+  });
+  // Datalist semestres
+  const dl=document.getElementById('dlSemestres'); dl.innerHTML='<option value="GLOBAL"></option>';
+  gSemestresDetectados.forEach(n=>{ const opt=document.createElement('option'); opt.value=n; dl.appendChild(opt); });
+  document.getElementById('panelManual').style.display='block';
+  drawManualList();
+}
+function drawManualList(){
+  const wrap=document.getElementById('listaManual'); wrap.innerHTML='';
+  const tags=[];
+  gManualGlobal.dias.forEach(d=>tags.push({t:`GLOBAL: día ${d}`,k:`G|D|${d}`}));
+  gManualGlobal.slots.forEach(s=>tags.push({t:`GLOBAL: franja ${s}`,k:`G|S|${s}`}));
+  gManualGlobal.pairs.forEach(p=>tags.push({t:`GLOBAL: ${p.replace('|',' — ')}`,k:`G|P|${p}`}));
+  for(const [sem,sets] of gManualSem.entries()){
+    sets.dias.forEach(d=>tags.push({t:`${sem}: día ${d}`,k:`${sem}|D|${d}`}));
+    sets.slots.forEach(s=>tags.push({t:`${sem}: franja ${s}`,k:`${sem}|S|${s}`}));
+    sets.pairs.forEach(p=>tags.push({t:`${sem}: ${p.replace('|',' — ')}`,k:`${sem}|P|${p}`}));
+  }
+  if(!tags.length){ wrap.innerHTML='<span class="small">No hay restricciones manuales agregadas.</span>'; return; }
+  wrap.innerHTML=tags.map(x=>`<span class="tag">${x.t}<button onclick="removeManual('${x.k.replaceAll("'","\\'")}')">×</button></span>`).join('');
+}
+function removeManual(key){
+  const [sem,typ,val]=key.split('|');
+  const target = (sem==='G') ? gManualGlobal : (gManualSem.get(sem) || null);
+  if(!target) return;
+  if(typ==='D'){ target.dias.delete(val); }
+  if(typ==='S'){ target.slots.delete(val); }
+  if(typ==='P'){ target.pairs.delete(val); }
+  if(sem!=='G' && target.dias.size+target.slots.size+target.pairs.size===0){ gManualSem.delete(sem); }
+  drawManualList();
+}
+function addManual(){
+  const who = upper(norm(document.getElementById('inpSemManual').value||'GLOBAL'));
+  const dias=[...document.querySelectorAll('#gridDias input:checked')].map(i=>i.value);
+  const slots=[...document.querySelectorAll('#gridSlots input:checked')].map(i=>i.value);
+  if(!dias.length && !slots.length){ alert('Marca al menos un día o una franja.'); return; }
+  if(who==='GLOBAL'){
+    if(dias.length && slots.length){ dias.forEach(d=>slots.forEach(s=>gManualGlobal.pairs.add(`${d}|${upper(s)}`))); }
+    else if(dias.length){ dias.forEach(d=>gManualGlobal.dias.add(d)); }
+    else if(slots.length){ slots.forEach(s=>gManualGlobal.slots.add(upper(s))); }
+  }else{
+    const tgt=gManualSem.get(who) || gManualSem.set(who,{dias:new Set(),slots:new Set(),pairs:new Set()}).get(who);
+    if(dias.length && slots.length){ dias.forEach(d=>slots.forEach(s=>tgt.pairs.add(`${d}|${upper(s)}`))); }
+    else if(dias.length){ dias.forEach(d=>tgt.dias.add(d)); }
+    else if(slots.length){ slots.forEach(s=>tgt.slots.add(upper(s))); }
+  }
+  document.querySelectorAll('#gridDias input:checked').forEach(i=>i.checked=false);
+  document.querySelectorAll('#gridSlots input:checked').forEach(i=>i.checked=false);
+  drawManualList();
+}
 
-      // Intentar asignar cada paralelo
-      let placedAll = true;
-      for(let p=1; p<=paralelos; p++){
-        let placed = false;
-        // Heurística: rotar por días y slots para dispersar cargas
-        for(const d of days){
-          for(const sl of slots){
-            if(canPlace(rec, d, sl, p)){
-              place(rec, d, sl, p);
-              placed = true;
-              break;
-            }
-          }
-          if(placed) break;
-        }
-        if(!placed){
-          placedAll = false;
-          // marcar como sin espacio
-          result.push({
-            DOCENTE:rec.docente,
-            MATERIA:rec.materia,
-            ESTUDIANTES:rec.estudiantes||"",
-            PARALELO:`P${p}`,
-            DIA:"SIN ESPACIO",
-            HORA:"SIN ESPACIO"
-          });
-        }
-      }
-    }
-    return result;
+/* ========= Integración de restricciones en asignación ========= */
+function getSemesterBlocksForRow(row){
+  // Agrega restricciones de todos los semestres de la fila
+  const acc={dias:new Set(),slots:new Set(),pairs:new Set()};
+  row._ciclos.forEach(c=>{
+    const sem=upper(c||''); if(!sem) return;
+    const sets=gManualSem.get(sem); if(!sets) return;
+    sets.dias.forEach(d=>acc.dias.add(d));
+    sets.slots.forEach(s=>acc.slots.add(s));
+    sets.pairs.forEach(p=>acc.pairs.add(p));
+  });
+  return acc;
+}
+
+function assignSchedulesSmart(filas, restIdx){
+  const {byDoc,global}=restIdx;
+
+  function allowedPairsFor(row){
+    if(!row.DOCENTE) return [];
+    const rd=byDoc.get(row.DOCENTE||'')||{dias:new Set(),slots:new Set(),pairs:new Set()};
+
+    // Global (archivo) + GLOBAL (manual)
+    const gDias=new Set([...global.dias, ...gManualGlobal.dias]);
+    const gSlots=new Set([...global.slots, ...gManualGlobal.slots]);
+    const gPairs=new Set([...global.pairs, ...gManualGlobal.pairs]);
+
+    // Por semestre (manual)
+    const semBlk=getSemesterBlocksForRow(row);
+
+    let dias=DIAS.filter(d=>!gDias.has(d) && !rd.dias.has(d) && !semBlk.dias.has(d));
+    if(row._dias?.length) dias=dias.filter(d=>row._dias.includes(d));
+
+    let slots=SLOTS.filter(s=>!gSlots.has(upper(s)) && !rd.slots.has(upper(s)) && !semBlk.slots.has(upper(s)));
+    if(row._slots?.length) slots=slots.filter(s=>row._slots.includes(s));
+
+    const pairs=[];
+    for(const d of dias){ for(const s of slots){
+      const p=`${d}|${upper(s)}`;
+      if(gPairs.has(p) || rd.pairs.has(p) || semBlk.pairs.has(p)) continue;
+      pairs.push({d,s});
+    }}
+    return pairs;
   }
 
-  async function readFiles(files){
-    const rows = [];
-    for(const file of files){
-      const data = await file.arrayBuffer();
-      const wb = XLSX.read(data, {type:'array'});
-      for(const sheetName of wb.SheetNames){
-        const ws = wb.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(ws, {defval:""});
-        for(const r of json) rows.push(normalizeRow(r));
-      }
+  filas.forEach(r=>{ r._pairs=allowedPairsFor(r); r.DIA=''; r.HORA=''; });
+
+  // Orden por dificultad + semestre (más bajos primero)
+  filas.sort((a,b)=>{
+    const hasA=a._pairs.length>0, hasB=b._pairs.length>0; if(hasA!==hasB) return hasB-hasA;
+    if(a._pairs.length!==b._pairs.length) return a._pairs.length-b._pairs.length;
+    const ma=Math.min(...a._ciclos.map(c=>cicloIdx(c))), mb=Math.min(...b._ciclos.map(c=>cicloIdx(c)));
+    if(ma!==mb) return ma-mb; return a.MATERIA.localeCompare(b.MATERIA,'es');
+  });
+
+  // Ocupaciones y reglas
+  const useDay=Object.fromEntries(DIAS.map(d=>[d,0]));
+  const useSlot=Object.fromEntries(SLOTS.map(s=>[s,0]));
+  const useDaySlot=new Map();
+  const occDoc=new Map(), occCarSlot=new Map(), occCarDay=new Map(), occMateriaDay=new Set();
+  const keyCarSl=(car,dia,slot)=>`${car}|${dia}|${slot}`, keyCarDay=(car,dia)=>`${car}|${dia}`, keyMatDay=(row,dia)=>`${row._key}|${dia}`;
+  const pairCost=(d,s)=>(useDay[d]||0)*100+(useSlot[s]||0)*10+(useDaySlot.get(`${d}|${s}`)||0);
+
+  function canPlace(row,dia,slot){
+    const d=row.DOCENTE; if(!d) return false;
+    if(!occDoc.has(d)) occDoc.set(d,{});
+    const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
+    if(rec.count>=2) return false; if(rec.slots.has(slot)) return false; if(occMateriaDay.has(keyMatDay(row,dia))) return false;
+    for(let i=0;i<row._carreras.length;i++){
+      const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
+      const kd=keyCarDay(car,dia), ks=keyCarSl(car,dia,slot);
+      const setD=occCarDay.get(kd), setS=occCarSlot.get(ks);
+      if(setD){ for(const u of setD){ if(Math.abs(u-idx)===1) return false; } }
+      if(setS){ for(const u of setS){ if(Math.abs(u-idx)===1) return false; } }
     }
-    return rows.filter(r => r.docente && r.materia);
+    return true;
+  }
+  function apply(row,dia,slot){
+    const d=row.DOCENTE; const rec=occDoc.get(d)[dia]??{count:0,slots:new Set()};
+    rec.count++; rec.slots.add(slot); occDoc.get(d)[dia]=rec;
+    for(let i=0;i<row._carreras.length;i++){
+      const car=row._carreras[i], idx=cicloIdx(row._ciclos[i]);
+      const kd=keyCarDay(car,dia), ks=keyCarSl(car,dia,slot);
+      if(!occCarDay.has(kd))  occCarDay.set(kd,new Set());
+      if(!occCarSlot.has(ks)) occCarSlot.set(ks,new Set());
+      occCarDay.get(kd).add(idx);  occCarSlot.get(ks).add(idx);
+    }
+    occMateriaDay.add(keyMatDay(row,dia));
+    useDay[dia]++; useSlot[slot]++; const k=`${dia}|${slot}`; useDaySlot.set(k,(useDaySlot.get(k)||0)+1);
+    row.DIA=dia; row.HORA=slot;
   }
 
-  function renderTable(items){
-    const tbody = $("#tbody");
-    tbody.innerHTML = "";
-    const frag = document.createDocumentFragment();
-    for(const it of items){
-      const tr = document.createElement("tr");
+  const seeds=[1,7,29,71,97]; let best=null, bestSin=Infinity;
+  for(const seed of seeds){
+    Object.keys(useDay).forEach(k=>useDay[k]=0); Object.keys(useSlot).forEach(k=>useSlot[k]=0);
+    useDaySlot.clear(); occDoc.clear(); occCarSlot.clear(); occCarDay.clear(); occMateriaDay.clear();
+    filas.forEach(r=>{r.DIA=''; r.HORA='';});
 
-      const tdDoc = document.createElement("td");
-      tdDoc.innerHTML = `<span class="pill p-azul">${escapeHtml(it.DOCENTE)}</span>`;
-      tr.appendChild(tdDoc);
-
-      const tdMat = document.createElement("td");
-      tdMat.innerHTML = `<span class="pill p-mostaza">${escapeHtml(it.MATERIA)}</span>`;
-      tr.appendChild(tdMat);
-
-      const tdEst = document.createElement("td");
-      tdEst.textContent = it.ESTUDIANTES||"";
-      tr.appendChild(tdEst);
-
-      const tdPar = document.createElement("td");
-      tdPar.innerHTML = `<span class="pill p-vino">${escapeHtml(it.PARALELO)}</span>`;
-      tr.appendChild(tdPar);
-
-      const tdDia = document.createElement("td");
-      tdDia.innerHTML = `<span class="pill p-verde">${escapeHtml(it.DIA)}</span>`;
-      tr.appendChild(tdDia);
-
-      const tdHora = document.createElement("td");
-      tdHora.innerHTML = `<span class="pill p-celeste">${escapeHtml(it.HORA)}</span>`;
-      tr.appendChild(tdHora);
-
-      frag.appendChild(tr);
+    const rot=(arr,k)=>arr.length?arr.slice(k%arr.length).concat(arr.slice(0,k%arr.length)):arr;
+    for(const r of filas){
+      const ordered=rot([...r._pairs].sort((a,b)=>pairCost(a.d,a.s)-pairCost(b.d,b.s)), seed);
+      for(const p of ordered){ if(canPlace(r,p.d,p.s)){apply(r,p.d,p.s); break;} }
     }
-    tbody.appendChild(frag);
+    const sin=filas.filter(x=>x.DOCENTE && !x.DIA).length;
+    if(sin<bestSin){ bestSin=sin; best=filas.map(f=>({d:f.DIA,h:f.HORA})); }
+    if(bestSin===0) break;
   }
+  if(best){ for(let i=0;i<filas.length;i++){ filas[i].DIA=best[i].d; filas[i].HORA=best[i].h; } }
+  return {filas,conteo:{sin_horario:bestSin}};
+}
 
-  function escapeHtml(s){
-    return String(s)
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;")
-      .replace(/'/g,"&#039;");
-  }
-
-  $("#btnProcesar").addEventListener("click", async () => {
-    try{
-      const fi = $("#fileInput");
-      if(!fi.files || fi.files.length===0){
-        status("Adjunte al menos un Excel (.xlsx/.xls).");
-        return;
-      }
-      status("Leyendo Excel...");
-      const rows = await readFiles(fi.files);
-      if(rows.length===0){
-        status("No se encontraron filas válidas. Verifique encabezados.");
-        return;
-      }
-      status(`Filas leídas: ${rows.length}. Programando...`);
-
-      const items = schedule(rows);
-      renderTable(items);
-      const sinEspacio = items.filter(x=>x.DIA==="SIN ESPACIO").length;
-      if(sinEspacio>0){
-        status(`Programación completada con advertencias: ${sinEspacio} sin espacio.`);
-        $("#status").className = "status error";
-      }else{
-        status("Programación completada sin conflictos.");
-        $("#status").className = "status ok";
-      }
-    }catch(err){
-      console.error(err);
-      status("Error al procesar el/los archivo(s). Revise el formato.");
-      $("#status").className = "status error";
-    }
+/* ===== Ordenación por encabezado ===== */
+(function enableSortableMatrix(){
+  const table=document.getElementById('matriz'); if(!table) return;
+  const collator=new Intl.Collator('es',{sensitivity:'base',numeric:true});
+  const thead=table.tHead, tbody=table.tBodies[0];
+  const ths=Array.from(thead.rows[0].cells);
+  const arrows=Array.from(table.querySelectorAll('thead th .arrow'));
+  ths.forEach((th, colIndex)=>{ let asc=true;
+    th.addEventListener('click',()=>{
+      const rows=Array.from(tbody.rows);
+      rows.sort((ra,rb)=>{ const a=(ra.cells[colIndex]?.textContent||'').trim(); const b=(rb.cells[colIndex]?.textContent||'').trim(); const res=collator.compare(a,b); return asc?res:-res; });
+      const frag=document.createDocumentFragment(); rows.forEach(r=>frag.appendChild(r));
+      tbody.innerHTML=''; tbody.appendChild(frag);
+      arrows.forEach(s=>s.textContent='↕'); th.querySelector('.arrow').textContent=asc?'↑':'↓'; asc=!asc;
+    });
   });
 })();
+
+/* ===== Flujo principal ===== */
+document.getElementById('btnProcesar').addEventListener('click', async ()=>{
+  const fM=document.getElementById('fileMalla').files[0];
+  const fD=document.getElementById('fileDocentes').files[0];
+  const fR=document.getElementById('fileRest').files[0];
+  if(!fM||!fD||!fR){alert('Cargue los tres archivos: Malla, Docentes y Restricciones.');return;}
+
+  clearTable(); window.__colors=new Map();
+  gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};
+  gManualSem=new Map();
+  const badge=document.getElementById('resumen'); badge.style.display='none';
+
+  const [wbM,wbD,wbR]=await Promise.all([readWB(fM),readWB(fD),readWB(fR)]);
+  const malla=sheetToJSONAuto(wbM,['malla','plan']);
+  const docentes=sheetToJSONAuto(wbD,['docentes','docente']);
+  const rest=sheetToJSONAuto(wbR,['restric','dispon','bloqueo','restricciones']);
+  if(!malla.length||!docentes.length){alert('No se pudo leer Malla o Docentes.');return;}
+
+  gAgg=buildMallaAggregate(malla);
+  gIdxDoc=buildDocentesIndexStrict(docentes);
+  gIdxRest=buildRestriccionesIndex(rest);
+
+  const {filas,faltanDoc}=assembleRowsStrict(gAgg, gIdxDoc);
+  gFilasBase=filas.map(x=>({...x}));
+
+  const {filas:asignadas,conteo}=assignSchedulesSmart(filas, gIdxRest);
+  gAsignadas=asignadas;
+  gAsignadas.forEach(addRow);
+
+  const sin = gAsignadas.filter(r=>r.DOCENTE && !r.DIA).length;
+  badge.textContent=`TOTAL: ${gAsignadas.length} | Sin horario (restricciones): ${sin} | Faltan docente(s): ${faltanDoc}`;
+  badge.style.display='inline-block';
+
+  // activar panel manual (semestres)
+  renderManualUI();
+});
+
+document.getElementById('btnAddRestriccion').addEventListener('click', addManual);
+document.getElementById('btnApplyReprog').addEventListener('click', ()=>{
+  if(!gFilasBase || !gIdxRest){ alert('Primero pulsa Procesar.'); return; }
+  clearTable();
+  const {filas:asignadas,conteo}=assignSchedulesSmart(gFilasBase.map(x=>({...x})), gIdxRest);
+  gAsignadas=asignadas;
+  gAsignadas.forEach(addRow);
+  const badge=document.getElementById('resumen'); const sin = gAsignadas.filter(r=>r.DOCENTE && !r.DIA).length;
+  badge.textContent=`TOTAL: ${gAsignadas.length} | Sin horario (restricciones): ${sin}`;
+  badge.style.display='inline-block';
+});
+
+/* Exportar y limpiar */
+function tableToSheet(){
+  const headers=[...document.querySelectorAll('#matriz thead th')].map(th=>th.childNodes[0].textContent.trim());
+  const rows=[...document.querySelectorAll('#matriz tbody tr')].map(tr=>[...tr.children].map(td=>td.textContent));
+  return XLSX.utils.aoa_to_sheet([headers,...rows]);
+}
+document.getElementById('btnXLSX').addEventListener('click',()=>{
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, tableToSheet(), 'Matriz');
+  XLSX.writeFile(wb,'Planificacion_UIDE.xlsx');
+});
+document.getElementById('btnLimpiar').addEventListener('click',()=>{
+  document.getElementById('fileMalla').value=''; document.getElementById('fileDocentes').value=''; document.getElementById('fileRest').value='';
+  clearTable(); window.__colors=new Map(); gAgg=gIdxDoc=gIdxRest=gFilasBase=gAsignadas=null;
+  gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};
+  gManualSem=new Map(); gSemestresDetectados=[];
+  document.getElementById('btnXLSX').disabled=true;
+  document.getElementById('resumen').style.display='none';
+  document.getElementById('panelManual').style.display='none';
+});
 </script>
 </body>
 </html>
