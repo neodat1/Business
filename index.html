@@ -43,6 +43,10 @@ tbody tr:nth-child(odd){background:#fbfdff}
 .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;padding:2px 6px}
 .tag{display:inline-flex;align-items:center;gap:6px;background:#f7f7ff;border:1px solid #dfe3ff;color:#14206b;border-radius:999px;padding:2px 10px;margin:3px 6px 0 0}
 .tag button{all:unset;cursor:pointer;font-weight:900}
+
+/* NUEVO: estilo visual para celdas editables */
+.editable{outline:2px dashed transparent; border-radius:6px}
+.editable:focus{outline-color:#9CBEE3; background:#f5f9ff}
 </style>
 </head>
 <body>
@@ -66,7 +70,7 @@ tbody tr:nth-child(odd){background:#fbfdff}
     </div>
   </div>
 
-  <!-- === NUEVO: Panel de restricciones manuales por semestre === -->
+  <!-- === Panel de restricciones manuales por semestre (se mantiene) === -->
   <div class="card" id="panelManual" style="display:none">
     <h3 style="margin:0 0 10px 0">Restricciones por semestre</h3>
     <div class="row" style="grid-template-columns:2fr 2fr 1fr;">
@@ -90,7 +94,7 @@ tbody tr:nth-child(odd){background:#fbfdff}
       <button id="btnApplyReprog" class="accent">Aplicar y re-programar</button>
     </div>
     <div id="listaManual" style="margin-top:6px"></div>
-    <div class="small" style="margin-top:6px">Si marcas <b>días</b> y <b>franjas</b> a la vez, se bloquean las <b>combinaciones día-franja</b> (pares). Si marcas solo días o solo franjas, se bloquean <i>todos</i> esos días o <i>todas</i> esas franjas.</div>
+    <div class="small" style="margin-top:6px">Si marca <b>días</b> y <b>franjas</b> a la vez, se bloquean las <b>combinaciones día–franja</b>. Si marca solo días o solo franjas, se bloquean todos esos días o todas esas franjas.</div>
   </div>
 
   <div class="card">
@@ -139,9 +143,9 @@ const PALETA=['#04136C','#DE912E','#862B39','#9CBEE3','#8A9520'];
 
 /* ======= Estado Global ======= */
 let gAgg=null,gIdxDoc=null,gIdxRest=null,gFilasBase=null,gAsignadas=null;
-let gSemestresDetectados=[];                 // sugerencias UI
-let gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};   // GLOBAL
-let gManualSem=new Map();                    // Map(SEMESTRE -> {dias:Set, slots:Set, pairs:Set})
+let gSemestresDetectados=[];
+let gManualGlobal={dias:new Set(),slots:new Set(),pairs:new Set()};
+let gManualSem=new Map();
 
 /* ===== Utilidades ===== */
 const nz=v=>(v===undefined||v===null)?'':v;
@@ -182,9 +186,34 @@ function chipsHTML(pares,{dedupe=true}={}){
     return `<span class="chip" style="${style}">${esc(val)}</span>`;
   }).join('')+`</div>`;
 }
+
+/* NUEVO: utilidades para celdas editables (DIA/HORA) */
+function makeEditable(td, allowedList){
+  td.contentEditable = "true";
+  td.classList.add('editable');
+  td.addEventListener('blur', ()=>{
+    let val = td.textContent.trim().toUpperCase();
+    if (allowedList && allowedList.length){
+      // normalizar separadores de hora (– y - aceptados)
+      if(allowedList === DIAS){
+        if(!DIAS.includes(val)){ /* valor libre permitido */ }
+      }else{
+        val = val.replace(/–/g,'–').replace(/-/g,'–');
+        if(!SLOTS.includes(val)){ /* valor libre permitido */ }
+      }
+    }
+    td.textContent = val; // persistir texto plano, exportación lo leerá
+  });
+  td.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape'){ td.blur(); }
+  });
+  return td;
+}
+
 function addRow(row){
   const tb=document.querySelector('#matriz tbody'); const tr=document.createElement('tr');
   const simple=v=>{const td=document.createElement('td'); td.textContent=nz(v); return td;};
+
   tr.appendChild(simple(row.DOCENTE));
   tr.appendChild(simple(row.TITULO_ACADEMICO));
   tr.appendChild(simple(row.DEDICACION));
@@ -203,8 +232,19 @@ function addRow(row){
   tr.appendChild((()=>{const td=document.createElement('td'); td.innerHTML=chipsHTML(row._chipsOrden,{dedupe:false}); return td;})());
   tr.appendChild(simple(row.ESTUDIANTES));
   tr.appendChild(simple(row.PARALELO));
-  tr.appendChild(simple(row.DIA));
-  tr.appendChild(simple(row.HORA));
+
+  // === NUEVO: celdas editables para DIA y HORA ===
+  const tdDia = document.createElement('td');
+  tdDia.textContent = row.DIA || '';
+  makeEditable(tdDia, DIAS);
+  tr.appendChild(tdDia);
+
+  const tdHora = document.createElement('td');
+  tdHora.textContent = row.HORA || '';
+  makeEditable(tdHora, SLOTS);
+  tr.appendChild(tdHora);
+  // === FIN NUEVO ===
+
   tr.appendChild(simple(row.MODALIDAD));
   tr.appendChild(simple(row.NRO_HORAS));
   tb.appendChild(tr);
@@ -359,7 +399,6 @@ function assembleRowsStrict(aggMalla, idxDoc){
     const req=(totalEst>28)?2:1; const sel=cand.slice(0,req);
     while(sel.length<req) sel.push({DOCENTE:'',TITULO:'',DEDIC:'',MODALIDAD:''});
 
-    // recolectar semestres para el panel
     carreras.forEach(c=>{ const cyc=info.ciclo.get(c)??''; if(cyc) semSet.add(upper(cyc)); });
 
     const packs={
@@ -394,22 +433,17 @@ function assembleRowsStrict(aggMalla, idxDoc){
 }
 
 /* ========= Restricciones MANUALES por SEMESTRE ========= */
-/* (Se guardan en gManualSem: Map(sem->{dias,slots,pairs}); y GLOBAL en gManualGlobal) */
-
 function renderManualUI(){
-  // Días
   const gd=document.getElementById('gridDias'); gd.innerHTML='';
   DIAS.forEach(d=>{
     const id='d_'+d; const div=document.createElement('label'); div.style.display='flex'; div.style.gap='6px'; div.style.alignItems='center';
     div.innerHTML=`<input type="checkbox" value="${d}" id="${id}"><span>${d}</span>`; gd.appendChild(div);
   });
-  // Franjas
   const gs=document.getElementById('gridSlots'); gs.innerHTML='';
   SLOTS.forEach(s=>{
     const id='s_'+s; const div=document.createElement('label'); div.style.display='flex'; div.style.gap='6px'; div.style.alignItems='center';
     div.innerHTML=`<input type="checkbox" value="${s}" id="${id}"><span>${s}</span>`; gs.appendChild(div);
   });
-  // Datalist semestres
   const dl=document.getElementById('dlSemestres'); dl.innerHTML='<option value="GLOBAL"></option>';
   gSemestresDetectados.forEach(n=>{ const opt=document.createElement('option'); opt.value=n; dl.appendChild(opt); });
   document.getElementById('panelManual').style.display='block';
@@ -461,7 +495,6 @@ function addManual(){
 
 /* ========= Integración de restricciones en asignación ========= */
 function getSemesterBlocksForRow(row){
-  // Agrega restricciones de todos los semestres de la fila
   const acc={dias:new Set(),slots:new Set(),pairs:new Set()};
   row._ciclos.forEach(c=>{
     const sem=upper(c||''); if(!sem) return;
@@ -480,12 +513,10 @@ function assignSchedulesSmart(filas, restIdx){
     if(!row.DOCENTE) return [];
     const rd=byDoc.get(row.DOCENTE||'')||{dias:new Set(),slots:new Set(),pairs:new Set()};
 
-    // Global (archivo) + GLOBAL (manual)
     const gDias=new Set([...global.dias, ...gManualGlobal.dias]);
     const gSlots=new Set([...global.slots, ...gManualGlobal.slots]);
     const gPairs=new Set([...global.pairs, ...gManualGlobal.pairs]);
 
-    // Por semestre (manual)
     const semBlk=getSemesterBlocksForRow(row);
 
     let dias=DIAS.filter(d=>!gDias.has(d) && !rd.dias.has(d) && !semBlk.dias.has(d));
@@ -505,7 +536,6 @@ function assignSchedulesSmart(filas, restIdx){
 
   filas.forEach(r=>{ r._pairs=allowedPairsFor(r); r.DIA=''; r.HORA=''; });
 
-  // Orden por dificultad + semestre (más bajos primero)
   filas.sort((a,b)=>{
     const hasA=a._pairs.length>0, hasB=b._pairs.length>0; if(hasA!==hasB) return hasB-hasA;
     if(a._pairs.length!==b._pairs.length) return a._pairs.length-b._pairs.length;
@@ -513,7 +543,6 @@ function assignSchedulesSmart(filas, restIdx){
     if(ma!==mb) return ma-mb; return a.MATERIA.localeCompare(b.MATERIA,'es');
   });
 
-  // Ocupaciones y reglas
   const useDay=Object.fromEntries(DIAS.map(d=>[d,0]));
   const useSlot=Object.fromEntries(SLOTS.map(s=>[s,0]));
   const useDaySlot=new Map();
@@ -612,7 +641,7 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
   const {filas,faltanDoc}=assembleRowsStrict(gAgg, gIdxDoc);
   gFilasBase=filas.map(x=>({...x}));
 
-  const {filas:asignadas,conteo}=assignSchedulesSmart(filas, gIdxRest);
+  const {filas:asignadas}=assignSchedulesSmart(filas, gIdxRest);
   gAsignadas=asignadas;
   gAsignadas.forEach(addRow);
 
@@ -622,18 +651,24 @@ document.getElementById('btnProcesar').addEventListener('click', async ()=>{
 
   // activar panel manual (semestres)
   renderManualUI();
+
+  // NUEVO: habilitar exportación tras procesar
+  document.getElementById('btnXLSX').disabled=false;
 });
 
 document.getElementById('btnAddRestriccion').addEventListener('click', addManual);
 document.getElementById('btnApplyReprog').addEventListener('click', ()=>{
-  if(!gFilasBase || !gIdxRest){ alert('Primero pulsa Procesar.'); return; }
+  if(!gFilasBase || !gIdxRest){ alert('Primero pulse Procesar.'); return; }
   clearTable();
-  const {filas:asignadas,conteo}=assignSchedulesSmart(gFilasBase.map(x=>({...x})), gIdxRest);
+  const {filas:asignadas}=assignSchedulesSmart(gFilasBase.map(x=>({...x})), gIdxRest);
   gAsignadas=asignadas;
   gAsignadas.forEach(addRow);
   const badge=document.getElementById('resumen'); const sin = gAsignadas.filter(r=>r.DOCENTE && !r.DIA).length;
   badge.textContent=`TOTAL: ${gAsignadas.length} | Sin horario (restricciones): ${sin}`;
   badge.style.display='inline-block';
+
+  // asegurar que exportación siga habilitada tras reprogramar
+  document.getElementById('btnXLSX').disabled=false;
 });
 
 /* Exportar y limpiar */
