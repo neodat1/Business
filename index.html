@@ -3,29 +3,22 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Matriz UIDE — Offline</title>
-
-<!-- IMPORTANTE: copia local (sin CDN) -->
-<script src="xlsx.full.min.js"></script>
+<title>Matriz UIDE</title>
 
 <style>
 :root{--azul:#04136C;--mostaza:#DE912E;--vino:#862B39;--celeste:#9CBEE3;--verde:#8A9520}
 *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#F4F6FA;color:#1D2340}
 header{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--azul);border-bottom:6px solid var(--mostaza)}
-.logo{background:#fff;border-radius:12px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.18)}
-.logo img{height:46px;display:block}
+.logo{background:#fff;border-radius:12px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.18)} .logo img{height:46px;display:block}
 .h1{color:#fff;font-weight:800;letter-spacing:.2px}
-
 .container{padding:16px}
 .card{background:#fff;border:1px solid #E6E9F2;border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.06);padding:14px;margin-bottom:14px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 input[type=file]{padding:10px;border:2px dashed var(--celeste);border-radius:12px;background:#F8FBFF}
 .btn{border:0;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}
-.btn-prim{background:var(--vino);color:#fff}
-.btn-sec{background:var(--verde);color:#fff}
+.btn-prim{background:var(--vino);color:#fff} .btn-sec{background:var(--verde);color:#fff}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:800;font-size:.8rem}
 .b-ok{background:#EAF6EF;color:#145A32}.b-warn{background:#FFF2D6;color:#7A4E00}.b-err{background:#FCE3E1;color:#7C1D1A}.b-info{background:#EAF2FF;color:var(--azul)}
-
 table{width:100%;border-collapse:separate;border-spacing:0}
 thead th{position:sticky;top:0;background:var(--azul);color:#fff;padding:10px;font-size:.92rem}
 thead th:first-child{border-top-left-radius:12px} thead th:last-child{border-top-right-radius:12px}
@@ -43,7 +36,7 @@ tbody tr.conflict td{border-left:4px solid var(--vino);background:#FFF6F6}
 <body>
 <header>
   <div class="logo"><img src="UIDE-Ecuador.png" alt="UIDE"></div>
-  <div class="h1">Planificador de Horarios – UIDE (offline)</div>
+  <div class="h1">Planificador de Horarios – UIDE</div>
 </header>
 
 <div class="container">
@@ -74,62 +67,46 @@ tbody tr.conflict td{border-left:4px solid var(--vino);background:#FFF6F6}
 
 <div id="toast" class="toast"><div class="t"></div><div class="m"></div></div>
 
-<script>
-/* ===== UI ===== */
-const toast=(type,t,m)=>{const x=document.getElementById('toast');x.className=`toast ${type} show`;x.querySelector('.t').textContent=t||'';x.querySelector('.m').textContent=m||'';setTimeout(()=>x.classList.remove('show'),3500);};
-const setCounters=(ok,par,err)=>{document.getElementById('kOk').textContent=`OK: ${ok}`;document.getElementById('kPar').textContent=`Paralelos: ${par}`;document.getElementById('kErr').textContent=`Conflictos: ${err}`;};
+<!-- TODO: Todo el código vive dentro del módulo para garantizar que XLSX esté disponible -->
+<script type="module">
+/* 1) Importar XLSX desde CDN externo (esm.sh) */
+import * as XLSX from "https://esm.sh/xlsx@0.20.2?bundle";
+window.XLSX = XLSX; // por compatibilidad con utilidades que esperan window.XLSX
 
-/* ===== Normalización ===== */
+/* 2) UI mínima */
+const toast=(type,t,m)=>{const x=document.getElementById('toast');x.className=`toast ${type} show`;x.querySelector('.t').textContent=t||'';x.querySelector('.m').textContent=m||'';setTimeout(()=>x.classList.remove('show'),3500);};
+const setCounters=(ok,par,err)=>{kOk.textContent=`OK: ${ok}`;kPar.textContent=`Paralelos: ${par}`;kErr.textContent=`Conflictos: ${err}`;};
+const fileInput=document.getElementById('fileInput'), btnAsignar=document.getElementById('btnAsignar'), btnExportar=document.getElementById('btnExportar');
+const metaFilas=document.getElementById('metaFilas'), kOk=document.getElementById('kOk'), kPar=document.getElementById('kPar'), kErr=document.getElementById('kErr');
+
+/* 3) Utilidades */
 const N = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
 const I = v => {const n=parseInt(String(v).replace(/[^\d]/g,''),10); return Number.isFinite(n)?n:null;};
-
-/* ===== Dominio ===== */
 const DAYS=["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES"];
 const SLOTS=["07:00-10:00","10:00-13:00","13:00-16:00","16:00-19:00","19:00-22:00"];
-
-/* Horas */
-function slotsFrom(raw){
-  if(!raw) return [];
-  const txt=N(String(raw).replace(/[–—]/g,'-')).replace(/\s*A\s*/g,'-');
-  const one=txt.match(/^(\d{2}:\d{2})$/);
-  if(one){
-    const t=one[1]; return SLOTS.filter(s=>{const[a,b]=s.split('-');return t>=a&&t<=b;});
-  }
-  const m=txt.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
-  if(!m) return [];
-  const[a,b]=[m[1],m[2]]; const out=[];
-  for(const s of SLOTS){const[x,y]=s.split('-'); if(x>=a && y<=b) out.push(s);}
-  return out.length?out:[...SLOTS];
-}
-/* Días */
-function expandDays(txt){
-  const t=N(txt); if(!t) return [];
-  if(t.includes("A VIERNES")){
-    const m=t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/); const s=m?DAYS.indexOf(m[1]):0; return DAYS.slice(s);
-  }
-  if(t.includes("A ")){
-    const m=t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)\s*A\s*(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/);
-    if(m){const a=DAYS.indexOf(m[1]), b=DAYS.indexOf(m[2]); if(a>=0&&b>=a) return DAYS.slice(a,b+1);}
-  }
-  const list=t.split(/[,/]| Y /g).map(s=>s.trim()).filter(Boolean);
-  const out=[]; for(const d of list){ if(DAYS.includes(d)) out.push(d); }
-  return out.length?out:DAYS;
-}
+const slotsFrom=raw=>{ if(!raw) return []; const txt=N(String(raw).replace(/[–—]/g,'-')).replace(/\s*A\s*/g,'-');
+  const one=txt.match(/^(\d{2}:\d{2})$/); if(one){const t=one[1]; return SLOTS.filter(s=>{const[a,b]=s.split('-');return t>=a&&t<=b;});}
+  const m=txt.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/); if(!m) return []; const[a,b]=[m[1],m[2]];
+  const out=[]; for(const s of SLOTS){const[x,y]=s.split('-'); if(x>=a && y<=b) out.push(s);} return out.length?out:[...SLOTS]; };
+const expandDays=txt=>{ const t=N(txt); if(!t) return [];
+  if(t.includes("A VIERNES")){const m=t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/); const s=m?DAYS.indexOf(m[1]):0; return DAYS.slice(s);}
+  if(t.includes("A ")){const m=t.match(/(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)\s*A\s*(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES)/);
+    if(m){const a=DAYS.indexOf(m[1]), b=DAYS.indexOf(m[2]); if(a>=0&&b>=a) return DAYS.slice(a,b+1);} }
+  const list=t.split(/[,/]| Y /g).map(s=>s.trim()).filter(Boolean); const out=[]; for(const d of list){ if(DAYS.includes(d)) out.push(d);} return out.length?out:DAYS; };
 const restrDays=txt=>{ if(!txt) return new Set(); const t=N(txt), s=new Set(); for(const d of DAYS){ if(t.includes(d)) s.add(d);} return s; };
 
-/* ===== Lectura XLSX (local, sin Internet) ===== */
+/* 4) Lector con detección de encabezados (multi-hoja) */
 async function readAll(files){
-  if(!window.XLSX){ throw new Error("No se encontró xlsx.full.min.js en la carpeta."); }
-  const all=[];
+  const out=[];
   for(const f of files){
     const buf=await f.arrayBuffer();
     const wb=XLSX.read(buf,{type:'array'});
-    for(const name of wb.SheetNames){
-      const ws=wb.Sheets[name];
-      // 1) Intento directo con cabecera
+    for(const sh of wb.SheetNames){
+      const ws=wb.Sheets[sh];
+      // intento directo
       let json=XLSX.utils.sheet_to_json(ws,{defval:""});
       if(!json.length){
-        // 2) Buscar cabecera en cualquier fila
+        // detección de encabezado en cualquier fila
         const A=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:""});
         if(A && A.length){
           let headerRow=-1, header=[];
@@ -143,7 +120,7 @@ async function readAll(files){
           }
           if(headerRow>=0){
             json=[];
-            for(let r=headerRow+1; r<A.length; r++){
+            for(let r=headerRow+1;r<A.length;r++){
               const row=A[r]; if(!row || row.every(c=>String(c).trim()==="")) continue;
               const o={}; for(let c=0;c<header.length;c++){ o[header[c]||`COL_${c}`]=row[c]??""; }
               json.push(o);
@@ -151,36 +128,34 @@ async function readAll(files){
           }
         }
       }
-      all.push(...json);
+      out.push(...json);
     }
   }
-  return all;
+  return out;
 }
 
-/* ===== Normalización de filas ===== */
+/* 5) Normalización -> objeto interno */
 function mapRow(o){
   const d={}; for(const [k,v] of Object.entries(o)) d[N(k)]=v;
   const get=(...ks)=>{for(const k of ks){const kk=N(k); if(kk in d) return d[kk];} return "";};
-  const docente = String(get('DOCENTE')).trim();
-  const materia = String(get('MATERIA')).trim();
-  const diaDisp = String(get('DIA DISPONIBLE','DIAS DISPONIBLES','DIA')).trim();
-  const horaDisp = String(get('HORA DISPONIBLE','HORARIO DISPONIBLE','HORA')).trim();
-  const est = I(get('ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES')) ?? 0;
-  const restr = get('RESTRICCIONES','DIAS RESTRINGIDOS','DIA RESTRICCION');
-  const cicloA = get('CICLO DEL ESTUDIANTE','CICLO ESTUDIANTE','CICLO');
-  const cicloM = get('CICLO DE LA MATERIA EN LA MALLA','CICLO MATERIA');
-
+  const docente=String(get('DOCENTE')).trim();
+  const materia=String(get('MATERIA')).trim();
+  const diaDisp=String(get('DIA DISPONIBLE','DIAS DISPONIBLES','DIA')).trim();
+  const horaDisp=String(get('HORA DISPONIBLE','HORARIO DISPONIBLE','HORA')).trim();
+  const est=I(get('ESTUDIANTES','N ESTUDIANTES','NUM ESTUDIANTES')) ?? 0;
+  const restr=get('RESTRICCIONES','DIAS RESTRINGIDOS','DIA RESTRICCION');
+  const cicloA=get('CICLO DEL ESTUDIANTE','CICLO ESTUDIANTE','CICLO');
+  const cicloM=get('CICLO DE LA MATERIA EN LA MALLA','CICLO MATERIA');
   return {
-    docente, materia,
-    estudiantes: est,
+    docente, materia, estudiantes: est,
     diasDisponibles: expandDays(diaDisp),
     slotsDisponibles: slotsFrom(horaDisp),
-    restrDias: restrDays(restr),
+    restrDias: restr ? restrDays(restr) : new Set(),
     ciclo:(()=>{const c=I(cicloM)||I(cicloA); return Number.isFinite(c)?c:null;})()
   };
 }
 
-/* ===== Asignador ===== */
+/* 6) Asignación */
 function planificar(items){
   const usoDoc=new Map(), usoDocSlot=new Set(), usoMateriaSlot=new Set(), ciclosSlot=new Map();
   const out=[]; let ok=0, par=0, err=0;
@@ -236,7 +211,7 @@ function planificar(items){
   setCounters(ok,par,err); return out;
 }
 
-/* ===== Render & Export ===== */
+/* 7) Render & export */
 function render(rows){
   const tb=document.querySelector('#tabla tbody'); tb.innerHTML='';
   rows.forEach(r=>{
@@ -244,8 +219,8 @@ function render(rows){
     const td=v=>{const x=document.createElement('td'); x.textContent=v; return x;};
     tr.append(td(r.docente||''),td(r.materia||''),td(r.estudiantes??0),td(r.paralelo||''),td(r.dia||''),td(r.hora||'')); tb.appendChild(tr);
   });
-  document.getElementById('metaFilas').textContent=`${rows.length} filas`;
-  document.getElementById('btnExportar').disabled = rows.length===0;
+  metaFilas.textContent=`${rows.length} filas`;
+  btnExportar.disabled = rows.length===0;
 }
 function exportXLSX(){
   const rows=[]; document.querySelectorAll('#tabla tbody tr').forEach(tr=>{
@@ -255,12 +230,12 @@ function exportXLSX(){
   const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Matriz'); XLSX.writeFile(wb,'Matriz_UIDE.xlsx');
 }
 
-/* ===== Flujo ===== */
-document.getElementById('btnAsignar').addEventListener('click', async ()=>{
-  const fi=document.getElementById('fileInput'); if(!fi.files.length){ toast('warn','Seleccione un Excel',''); return; }
+/* 8) Flujo */
+btnAsignar.addEventListener('click', async ()=>{
+  if(!fileInput.files.length){ toast('warn','Seleccione un Excel',''); return; }
   let raw=[];
-  try{ raw=await readAll(fi.files); }
-  catch(e){ toast('err','Error de lectura', e.message || 'xlsx.full.min.js no encontrado'); return; }
+  try{ raw=await readAll(fileInput.files); }
+  catch(e){ console.error(e); toast('err','Error de lectura',''); return; }
   if(!raw.length){ toast('err','Sin filas',''); return; }
 
   const keys=new Set(); raw.forEach(r=>Object.keys(r).forEach(k=>keys.add(N(k))));
@@ -273,7 +248,7 @@ document.getElementById('btnAsignar').addEventListener('click', async ()=>{
   const items=raw.map(mapRow).filter(r=>r.docente&&r.materia);
   const out=planificar(items); render(out); toast('ok','Listo','');
 });
-document.getElementById('btnExportar').addEventListener('click', exportXLSX);
+btnExportar.addEventListener('click', exportXLSX);
 </script>
 </body>
 </html>
